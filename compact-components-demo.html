@@ -248,6 +248,12 @@ code {
         <p class="note">The recorder requests microphone permission, handles denial, shows a live waveform, and adds playback after stopping.</p>
       </section>
 
+      <section class="section" data-section="media">
+        <h2>Markdown Renderer</h2>
+        <compact-button id="mockStreamBtn" variant="primary">Start streaming</compact-button>
+        <compact-markdown id="demoMarkdown"></compact-markdown>
+      </section>
+
       <section class="section" data-section="controls">
         <h2>Messages, modal, dialog and toast</h2>
         <compact-message type="info">Info message with neutral guidance.</compact-message>
@@ -452,6 +458,69 @@ function writeString(view, offset, string) {
 
 const demoAudio = document.querySelector('#demoAudio')
 demoAudio.blob = makeDemoAudioBlob()
+
+const demoMarkdown = document.querySelector('#demoMarkdown')
+const mockStreamBtn = document.querySelector('#mockStreamBtn')
+
+const mockMarkdownContent = `
+# Markdown Renderer Test
+
+This is a demonstration of the streaming Markdown renderer. It supports **bold text**, *italic text*, and \`inline code\`.
+
+## Features Includes
+
+1. Ordered lists
+2. Unordered lists
+   - Nested lists support
+   - Multi-level rendering
+3. Blockquotes
+
+> "The true sign of intelligence is not knowledge but imagination."
+
+### Tables
+
+| Name | Role | Location |
+|---|---|---|
+| Alice | Engineer | Berlin |
+| Bob | Designer | London |
+
+### Code Blocks
+
+Here is an example code block in JavaScript:
+
+\`\`\`js
+function greet(name) {
+  console.log('Hello', name);
+}
+
+greet('World');
+\`\`\`
+
+The renderer can also gracefully handle incomplete code blocks while streaming!
+`
+
+mockStreamBtn.addEventListener('compact-click', () => {
+  let index = 0
+  demoMarkdown.content = ''
+  demoMarkdown.streaming = true
+  mockStreamBtn.setAttribute('disabled', '')
+  
+  // To make the streaming visually apparent, we use setTimeout instead of requestAnimationFrame for a slight delay
+  const streamChunks = () => {
+    const chunkSize = Math.floor(Math.random() * 5) + 2
+    index += chunkSize
+    if (index >= mockMarkdownContent.length) {
+      demoMarkdown.content = mockMarkdownContent
+      demoMarkdown.streaming = false
+      mockStreamBtn.removeAttribute('disabled')
+      return
+    }
+    demoMarkdown.content = mockMarkdownContent.substring(0, index)
+    setTimeout(streamChunks, 15)
+  }
+  
+  streamChunks()
+})
 </script>
 </body>
 </html>

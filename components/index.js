@@ -31,6 +31,7 @@ import {
   CompactTable 
 } from './charts.js'
 import { CompactList } from './lists.js'
+import './markdown.js'
 
 // Register all components
 defineElement('compact-navbar', CompactNavbar)

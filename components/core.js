@@ -31,6 +31,7 @@ export const componentsDocs = [
   ['compact-unordered-list', 'Styled unordered list. Attribute: items.'],
   ['compact-file-input', 'Dashed drag/drop file input. Attributes: label, accept, multiple. Event: files-change.'],
   ['compact-tag-selector', 'Tag input. Attribute/property: value array. Enter or two spaces adds a tag. Event: change.'],
+  ['compact-markdown', 'Markdown renderer with raw streaming support. Attributes: content, streaming.'],
 ]
 
 export const baseStyle = `
