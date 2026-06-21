@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>compact-tabs demo</title>
+  <style>
+    :root {
+      color: #222;
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 12px;
+    }
+    body.embedded {
+      padding: 0;
+    }
+    main {
+      display: grid;
+      gap: 10px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    body.embedded main {
+      max-width: none;
+    }
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+    h1 {
+      font-size: 20px;
+    }
+    h2 {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .intro {
+      display: grid;
+      gap: 4px;
+    }
+    .demo-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .log {
+      min-height: 28px;
+      padding: 5px 7px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fafafa;
+      color: #555;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="intro">
+      <h1>compact-tabs</h1>
+      <p>Compact tab selector with selected state, disabled states, and a bubbling change event.</p>
+    </section>
+
+    <section class="demo-card">
+      <h2>Comma-separated options</h2>
+      <compact-tabs id="basic" options="Draft,Review,Published" value="Review"></compact-tabs>
+      <div class="log" id="basicLog">Waiting for change...</div>
+    </section>
+
+    <section class="demo-card">
+      <h2>JSON options with one disabled item</h2>
+      <compact-tabs
+        id="json"
+        options='[{"label":"Small","value":"s"},{"label":"Medium","value":"m"},{"label":"Large","value":"l","disabled":true}]'
+        value="m"
+      ></compact-tabs>
+      <div class="log" id="jsonLog">Waiting for change...</div>
+    </section>
+
+    <section class="demo-card">
+      <h2>All disabled</h2>
+      <compact-tabs id="disabled" options="One,Two,Three" value="Two" disabled></compact-tabs>
+      <div class="log">Disabled via boolean attribute.</div>
+    </section>
+
+    <section class="demo-card">
+      <h2>Horizontal overflow</h2>
+      <compact-tabs
+        id="overflow"
+        options='[{"label":"January","value":"jan"},{"label":"February","value":"feb"},{"label":"March","value":"mar"},{"label":"April","value":"apr"},{"label":"May","value":"may"},{"label":"June","value":"jun"},{"label":"July","value":"jul"},{"label":"August","value":"aug"},{"label":"September","value":"sep"}]'
+        value="jun"
+      ></compact-tabs>
+      <div class="log" id="overflowLog">Waiting for change...</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import './CompactTabs.js'
+
+    const embedded = window.parent !== window
+
+    if (embedded) {
+      document.body.classList.add('embedded')
+    }
+
+    function postHeight() {
+      if (!embedded) {
+        return
+      }
+
+      window.parent.postMessage({
+        type: 'compact-component-demo-height',
+        path: window.location.pathname.split('/').slice(-2).join('/'),
+        height: Math.ceil(document.documentElement.scrollHeight),
+      }, '*')
+    }
+
+    const resizeObserver = new ResizeObserver(() => postHeight())
+    resizeObserver.observe(document.documentElement)
+    window.addEventListener('load', postHeight)
+
+    function wireLog(componentId, logId) {
+      const component = document.getElementById(componentId)
+      const log = document.getElementById(logId)
+
+      component.addEventListener('change', event => {
+        log.textContent = JSON.stringify(event.detail, null, 2)
+      })
+    }
+
+    wireLog('basic', 'basicLog')
+    wireLog('json', 'jsonLog')
+    wireLog('overflow', 'overflowLog')
+  </script>
+</body>
+</html>
