@@ -1,292 +1,526 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Compact Components Demo</title>
-  <style>
-    :root {
-      color: #222222;
-      background: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.35;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Compact Components Demo</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    * {
-      box-sizing: border-box;
-    }
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 
-    html,
-    body {
-      margin: 0;
-      min-height: 100%;
-    }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  background: #fff;
+  color: #222;
+}
 
-    body {
-      background: #ffffff;
-    }
+.demo-app {
+  height: 100svh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #fff;
+}
 
-    compact-navbar {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+.demo-main {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px;
+}
 
-    .brand {
-      font-weight: 700;
-      white-space: nowrap;
-    }
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 1220px;
+  margin: 0 auto;
+}
 
-    .nav-actions {
-      align-items: center;
-      display: flex;
-      gap: 4px;
-    }
+.section {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
 
-    .nav-action {
-      background: #ffffff;
-      border: 1px solid #999999;
-      border-radius: 4px;
-      cursor: pointer;
-      min-height: 28px;
-      padding: 3px 7px;
-      white-space: nowrap;
-    }
+.section.wide {
+  grid-column: 1 / -1;
+}
 
-    .nav-action:hover {
-      background: #f2f2f2;
-    }
+h1 {
+  font-size: 16px;
+  margin: 0;
+}
 
-    .shell {
-      display: grid;
-      gap: 8px;
-      margin: 0 auto;
-      max-width: 1180px;
-      padding: 8px;
-      width: 100%;
-    }
+h2 {
+  font-size: 14px;
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+}
 
-    .page[hidden] {
-      display: none;
-    }
+h3 {
+  font-size: 13px;
+  margin: 0;
+}
 
-    .intro {
-      display: grid;
-      gap: 3px;
-    }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
-    h1,
-    p {
-      margin: 0;
-    }
+.stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
 
-    h1 {
-      font-size: 21px;
-      font-weight: 700;
-      line-height: 1.15;
-    }
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
 
-    .intro p {
-      color: #666666;
-      font-size: 12px;
-    }
+.note {
+  color: #666;
+  font-size: 12px;
+}
 
-    .demos {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: minmax(0, 1fr);
-    }
+code {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
 
-    .demos.two-columns {
-      align-items: start;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+.docs-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 8px;
+}
 
-    .component-demo {
-      border: 1px solid #dddddd;
-      border-radius: 6px;
-      display: block;
-      min-width: 0;
-      overflow: hidden;
-      padding: 10px;
-    }
+.doc-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  min-width: 0;
+}
 
-    iframe {
-      border: 0;
-      display: block;
-      min-height: 120px;
-      overflow: hidden;
-      width: 100%;
-    }
+.doc-item strong {
+  display: block;
+  margin-bottom: 2px;
+}
 
-    .empty-page {
-      background: #fafafa;
-      border: 1px dashed #cccccc;
-      border-radius: 6px;
-      color: #666666;
-      font-size: 12px;
-      padding: 10px;
-    }
+.doc-item span {
+  color: #555;
+  overflow-wrap: anywhere;
+}
 
-    body.hide-notes .intro p {
-      display: none;
-    }
+.demo-tooltip-card {
+  display: grid;
+  gap: 4px;
+}
 
-    body.hide-notes .shell {
-      gap: 6px;
-    }
+.demo-tooltip-card .metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #ddd;
+  padding-top: 4px;
+}
 
-    @media (max-width: 760px) {
-      .demos.two-columns {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .component-demo {
-        padding: 8px;
-      }
-    }
-  </style>
+@media (max-width: 760px) {
+  .demo-grid,
+  .two-col,
+  .docs-list {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 </head>
 <body>
-  <compact-navbar id="mainNav" tabs="Components,Media,Data" value="Components">
-    <span class="brand" slot="left">Compact Components</span>
-    <span class="nav-actions" slot="right">
-      <button id="notesToggle" class="nav-action" type="button">Hide notes</button>
-      <button id="layoutToggle" class="nav-action" type="button">2-up</button>
-    </span>
+<div class="demo-app">
+  <compact-navbar
+    tabs='[{"value":"controls","label":"Controls"},{"value":"media","label":"Media"},{"value":"data","label":"Data"},{"value":"docs","label":"Docs"}]'
+    value="controls">
+    <div slot="left" style="font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Compact Components</div>
+    <button slot="right" id="configBtn" type="button" aria-label="Configuration" style="border: 1px solid #ccc; background: #fff; border-radius: 4px; min-width: 40px; min-height: 40px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">⚙</button>
   </compact-navbar>
 
-  <main class="shell">
-    <section id="componentsPage" class="page">
-      <div id="demos" class="demos"></div>
-    </section>
+  <main class="demo-main" id="demoMain">
+    <div class="demo-grid">
+      <section class="section wide">
+        <h1>Web component library demo</h1>
+        <p class="note">The page itself never scrolls: only this inner app pane scrolls, which keeps the mobile browser location bar stable while testing long content.</p>
+      </section>
 
-    <section id="mediaPage" class="page" hidden>
-      <div class="empty-page">Media tab kept intentionally empty.</div>
-    </section>
+      <section class="section" data-section="controls">
+        <h2>Buttons and selectors</h2>
+        <h3>Buttons - all variants</h3>
+        <div class="row">
+          <compact-button variant="primary">Primary</compact-button>
+          <compact-button variant="secondary">Secondary</compact-button>
+          <compact-button variant="danger">Danger</compact-button>
+        </div>
+        <div class="row">
+          <compact-button variant="primary" disabled>Primary disabled</compact-button>
+          <compact-button variant="secondary" disabled>Secondary disabled</compact-button>
+          <compact-button variant="danger" disabled>Danger disabled</compact-button>
+        </div>
+        <h3>Split buttons</h3>
+        <div class="row">
+          <compact-split-button main-label="Run" alt-label="Dry run"></compact-split-button>
+          <compact-split-button variant="danger" main-label="Delete" alt-label="Archive"></compact-split-button>
+        </div>
+      </section>
 
-    <section id="dataPage" class="page" hidden>
-      <div class="empty-page">Data tab kept intentionally empty.</div>
-    </section>
+      <section class="section" data-section="controls">
+        <h2>Form controls</h2>
+        <h3>Checkboxes - all states</h3>
+        <compact-checkbox label="Checked checkbox" checked></compact-checkbox>
+        <compact-checkbox label="Unchecked checkbox"></compact-checkbox>
+        <compact-checkbox label="Indeterminate checkbox" indeterminate></compact-checkbox>
+        <compact-checkbox label="Disabled checked" checked disabled></compact-checkbox>
+        <compact-checkbox label="Disabled unchecked" disabled></compact-checkbox>
+        <h3>Selects and dropdowns</h3>
+        <compact-select label="Labeled dropdown" placeholder="Choose status" options='[{"value":"new","label":"New"},{"value":"review","label":"Review"},{"value":"done","label":"Done"}]' value="review"></compact-select>
+        <div class="row">
+          <span>Plain dropdown:</span>
+          <compact-dropdown options="Small,Medium,Large" value="Medium"></compact-dropdown>
+        </div>
+        <compact-horizontal-select options="English,Polish,German,French,Spanish,Japanese,Korean,Arabic" value="Polish"></compact-horizontal-select>
+        <compact-file-input label="Upload files" multiple></compact-file-input>
+      </section>
+
+      <section class="section" data-section="controls">
+        <h2>Text inputs</h2>
+        <compact-input label="Search" placeholder="Case and diacritics insensitive"></compact-input>
+        <compact-textarea label="Notes" rows="4" value="Click Fullscreen to edit in a full-screen mobile-friendly layer."></compact-textarea>
+        <compact-tag-selector label="Tags" placeholder="Type and press Enter" value='["speech","practice","review"]'></compact-tag-selector>
+      </section>
+
+      <section class="section" data-section="controls">
+        <h2>Boxes, lists and files</h2>
+        <compact-tabs options='[{"value":"one","label":"First"},{"value":"two","label":"Second"},{"value":"three","label":"Disabled","disabled":true}]' value="one"></compact-tabs>
+        <compact-box heading="Selected box" meta="score 92" selected>Rounded card suitable for dense lists.</compact-box>
+        <compact-box heading="Normal box" meta="today">Boxes do not overflow; long text wraps safely across the component width.</compact-box>
+        <div class="two-col">
+          <compact-ordered-list items='["Install module","Import script","Use elements"]'></compact-ordered-list>
+          <compact-unordered-list items='["Keyboard focus","Touch targets","Screen-fit overlays"]'></compact-unordered-list>
+        </div>
+      </section>
+
+      <section class="section" data-section="media">
+        <h2>Audio player</h2>
+        <compact-audio-player id="demoAudio"></compact-audio-player>
+        <p class="note">The player uses a generated WAV sample, draws an analyzed waveform, and supports click/drag seeking.</p>
+      </section>
+
+      <section class="section" data-section="media">
+        <h2>Audio recorder</h2>
+        <compact-audio-recorder></compact-audio-recorder>
+        <p class="note">The recorder requests microphone permission, handles denial, shows a live waveform, and adds playback after stopping.</p>
+      </section>
+
+      <section class="section" data-section="media">
+        <h2>Markdown Renderer</h2>
+        <compact-button id="mockStreamBtn" variant="primary">Start streaming</compact-button>
+        <compact-markdown id="demoMarkdown"></compact-markdown>
+      </section>
+
+      <section class="section" data-section="controls">
+        <h2>Messages, modal, dialog and toast</h2>
+        <compact-message type="info">Info message with neutral guidance.</compact-message>
+        <compact-message type="warning">Warning message with a non-color icon.</compact-message>
+        <compact-message type="success">Success message with clear confirmation.</compact-message>
+        <compact-message type="error">Error message with strong contrast.</compact-message>
+        <div class="row">
+          <compact-button id="openModal" variant="primary">Open modal</compact-button>
+          <compact-button id="openDialog" variant="secondary">Open dialog</compact-button>
+          <compact-button id="showToast" variant="secondary">Show toast</compact-button>
+        </div>
+        <h3>Tooltip and hint</h3>
+        <div class="row">
+          <compact-tooltip>
+            <compact-button variant="secondary">Rich tooltip</compact-button>
+            <div slot="content" class="demo-tooltip-card">
+              <h4>Complex tooltip</h4>
+              <p class="muted">This content is slotted, styled, and automatically flipped when it would overflow the viewport.</p>
+              <div class="metric"><span>Quality</span><strong>98%</strong></div>
+              <div class="metric"><span>Latency</span><strong>24 ms</strong></div>
+            </div>
+          </compact-tooltip>
+          <compact-hint text="Plain cursor hint. Move near screen edges to see it flip.">
+            <compact-button variant="secondary">Hover for hint</compact-button>
+          </compact-hint>
+        </div>
+      </section>
+
+      <section class="section wide" data-section="data">
+        <h2>Charts</h2>
+        <div class="two-col">
+          <compact-stacked-bar-chart id="stackedChart"></compact-stacked-bar-chart>
+          <compact-horizontal-bar-chart id="barChart"></compact-horizontal-bar-chart>
+        </div>
+        <compact-line-chart id="lineChart"></compact-line-chart>
+      </section>
+
+      <section class="section wide" data-section="data">
+        <h2>Table</h2>
+        <compact-table id="demoTable"></compact-table>
+      </section>
+
+      <section class="section wide" data-section="docs">
+        <h2>Component documentation</h2>
+        <p class="note">The same documentation is exported from <code>componentsDocs</code> in the module and available as <code>window.CompactUi.docs</code>.</p>
+        <div class="docs-list" id="docsList"></div>
+      </section>
+    </div>
   </main>
+</div>
 
-  <script type="module">
-    import './index.js'
+<compact-modal id="demoModal" heading="Responsive modal">
+  <div class="stack">
+    <p>This modal locks background scrolling, becomes fullscreen on small screens, and closes with the cross, Escape, backdrop click, or mobile back button.</p>
+    <compact-input label="Modal input" placeholder="Focusable control"></compact-input>
+    <compact-textarea label="Modal notes" rows="3" value="Content scrolls inside the modal body, not behind it."></compact-textarea>
+  </div>
+  <div slot="footer" class="row">
+    <compact-button id="closeModal" variant="secondary">Close</compact-button>
+  </div>
+</compact-modal>
 
-    const componentDemos = [
-      { name: 'Navbar', path: 'navbar/demo.html' },
-      { name: 'Tabs', path: 'tabs/demo.html' },
-    ]
+<compact-dialog id="demoDialog" heading="Delete item?" message="This is a demo dialog with confirm and cancel events." confirm-label="Delete" cancel-label="Keep" danger></compact-dialog>
 
-    const mainNav = document.getElementById('mainNav')
-    const demos = document.getElementById('demos')
-    const notesToggle = document.getElementById('notesToggle')
-    const layoutToggle = document.getElementById('layoutToggle')
+<script type="module">
+import './index.js'
+import { componentsDocs } from './index.js'
 
-    const pages = {
-      Components: document.getElementById('componentsPage'),
-      Media: document.getElementById('mediaPage'),
-      Data: document.getElementById('dataPage'),
+const sectionMap = {
+  controls: ['controls'],
+  media: ['media'],
+  data: ['data'],
+  docs: ['docs'],
+}
+
+const navbar = document.querySelector('compact-navbar')
+navbar.addEventListener('change', event => {
+  showSection(event.detail.value)
+})
+document.querySelector('#configBtn').addEventListener('click', () => {
+  window.CompactUi.toast({ message: 'Configuration clicked', type: 'info' })
+})
+
+function showSection(value) {
+  const visible = sectionMap[value] || ['controls']
+  const sections = document.querySelectorAll('[data-section]')
+  for (let i = 0; i < sections.length; i++) {
+    sections[i].style.display = visible.includes(sections[i].dataset.section) ? 'flex' : 'none'
+  }
+}
+
+showSection('controls')
+
+const modal = document.querySelector('#demoModal')
+document.querySelector('#openModal').addEventListener('compact-click', () => modal.open())
+document.querySelector('#closeModal').addEventListener('compact-click', () => modal.close())
+
+const dialog = document.querySelector('#demoDialog')
+document.querySelector('#openDialog').addEventListener('compact-click', () => dialog.open())
+dialog.addEventListener('confirm', () => {
+  window.CompactUi.toast({ message: 'Confirmed', type: 'success' })
+})
+dialog.addEventListener('cancel', () => {
+  window.CompactUi.toast({ message: 'Canceled', type: 'warning' })
+})
+
+document.querySelector('#showToast').addEventListener('compact-click', () => {
+  window.CompactUi.toast({ message: 'Saved locally', type: 'success', duration: 2500 })
+})
+
+const stackedChart = document.querySelector('#stackedChart')
+stackedChart.data = [
+  { label: 'Mon', values: { Speaking: 24, Listening: 12, Reading: 8 } },
+  { label: 'Tue', values: { Speaking: 12, Listening: 18, Reading: 9 } },
+  { label: 'Wed', values: { Speaking: 28, Listening: 8, Reading: 12 } },
+  { label: 'Thu', values: { Speaking: 18, Listening: 22, Reading: 6 } },
+]
+
+const barChart = document.querySelector('#barChart')
+barChart.data = [
+  { label: 'Accuracy', value: 88 },
+  { label: 'Fluency', value: 74 },
+  { label: 'Vocabulary', value: 91 },
+  { label: 'Pronunciation', value: 66 },
+]
+
+const lineChart = document.querySelector('#lineChart')
+lineChart.data = [
+  { label: 'Jun 1', value: 44 },
+  { label: 'Jun 5', value: 51 },
+  { label: 'Jun 9', value: 58 },
+  { label: 'Jun 13', value: 73 },
+  { label: 'Jun 17', value: 79 },
+]
+
+const table = document.querySelector('#demoTable')
+table.data = {
+  columns: [
+    { key: 'component', label: 'Component' },
+    { key: 'state', label: 'State' },
+    { key: 'event', label: 'Main event' },
+  ],
+  rows: [
+    { component: 'compact-button', state: 'primary / secondary / danger / disabled', event: 'compact-click' },
+    { component: 'compact-file-input', state: 'idle / dragover / selected files', event: 'files-change' },
+    { component: 'compact-audio-recorder', state: 'ready / recording / paused / recorded / denied', event: 'recording-stop' },
+    { component: 'compact-modal', state: 'desktop card / mobile fullscreen', event: 'open, close' },
+  ],
+}
+
+table.addEventListener('row-click', event => {
+  window.CompactUi.toast({ message: `${event.detail.row.component} clicked`, type: 'info' })
+})
+
+const docsList = document.querySelector('#docsList')
+for (let i = 0; i < componentsDocs.length; i++) {
+  const item = document.createElement('div')
+  item.className = 'doc-item'
+  const title = document.createElement('strong')
+  title.textContent = componentsDocs[i][0]
+  const text = document.createElement('span')
+  text.textContent = componentsDocs[i][1]
+  item.append(title, text)
+  docsList.append(item)
+}
+
+function makeDemoAudioBlob() {
+  const sampleRate = 44100
+  const seconds = 2.25
+  const samples = Math.floor(sampleRate * seconds)
+  const buffer = new ArrayBuffer(44 + samples * 2)
+  const view = new DataView(buffer)
+  writeString(view, 0, 'RIFF')
+  view.setUint32(4, 36 + samples * 2, true)
+  writeString(view, 8, 'WAVE')
+  writeString(view, 12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * 2, true)
+  view.setUint16(32, 2, true)
+  view.setUint16(34, 16, true)
+  writeString(view, 36, 'data')
+  view.setUint32(40, samples * 2, true)
+  for (let i = 0; i < samples; i++) {
+    const t = i / sampleRate
+    const envelope = Math.min(1, i / 2500) * Math.min(1, (samples - i) / 4000)
+    const tone = Math.sin(2 * Math.PI * 220 * t) * .45 + Math.sin(2 * Math.PI * 330 * t) * .25
+    const pulse = Math.sin(2 * Math.PI * 3 * t) * .5 + .5
+    const sample = Math.max(-1, Math.min(1, tone * envelope * (.65 + pulse * .35)))
+    view.setInt16(44 + i * 2, sample * 32767, true)
+  }
+  return new Blob([buffer], { type: 'audio/wav' })
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i))
+  }
+}
+
+const demoAudio = document.querySelector('#demoAudio')
+demoAudio.blob = makeDemoAudioBlob()
+
+const demoMarkdown = document.querySelector('#demoMarkdown')
+const mockStreamBtn = document.querySelector('#mockStreamBtn')
+
+const mockMarkdownContent = `
+# Markdown Renderer Test
+
+This is a demonstration of the streaming Markdown renderer. It supports **bold text**, *italic text*, and \`inline code\`.
+
+## Features Includes
+
+1. Ordered lists
+2. Unordered lists
+   - Nested lists support
+   - Multi-level rendering
+3. Blockquotes
+
+> "The true sign of intelligence is not knowledge but imagination."
+
+### Tables
+
+| Name | Role | Location |
+|---|---|---|
+| Alice | Engineer | Berlin |
+| Bob | Designer | London |
+
+### Code Blocks
+
+Here is an example code block in JavaScript:
+
+\`\`\`js
+function greet(name) {
+  console.log('Hello', name);
+}
+
+greet('World');
+\`\`\`
+
+The renderer can also gracefully handle incomplete code blocks while streaming!
+`
+
+mockStreamBtn.addEventListener('compact-click', () => {
+  let index = 0
+  demoMarkdown.content = ''
+  demoMarkdown.streaming = true
+  mockStreamBtn.setAttribute('disabled', '')
+  
+  // To make the streaming visually apparent, we use setTimeout instead of requestAnimationFrame for a slight delay
+  const streamChunks = () => {
+    const chunkSize = Math.floor(Math.random() * 5) + 2
+    index += chunkSize
+    if (index >= mockMarkdownContent.length) {
+      demoMarkdown.content = mockMarkdownContent
+      demoMarkdown.streaming = false
+      mockStreamBtn.removeAttribute('disabled')
+      return
     }
-
-    const frames = []
-    let hideNotes = localStorage.getItem('compactDemoHideNotes') === 'true'
-    let twoColumns = localStorage.getItem('compactDemoTwoColumns') === 'true'
-
-    function showPage(value) {
-      const keys = Object.keys(pages)
-
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i]
-        pages[key].hidden = key !== value
-      }
-    }
-
-    function sendVisibility(frame) {
-      if (!frame.contentWindow) {
-        return
-      }
-
-      frame.contentWindow.postMessage({
-        type: 'compact-demo-visibility',
-        hideNotes,
-      }, '*')
-    }
-
-    function syncVisibility() {
-      document.body.classList.toggle('hide-notes', hideNotes)
-      notesToggle.textContent = hideNotes ? 'Show notes' : 'Hide notes'
-      localStorage.setItem('compactDemoHideNotes', String(hideNotes))
-
-      for (let i = 0; i < frames.length; i++) {
-        sendVisibility(frames[i])
-      }
-    }
-
-    function syncLayout() {
-      demos.classList.toggle('two-columns', twoColumns)
-      layoutToggle.textContent = twoColumns ? '1-up' : '2-up'
-      localStorage.setItem('compactDemoTwoColumns', String(twoColumns))
-    }
-
-    function renderDemos() {
-      demos.innerHTML = ''
-      frames.length = 0
-
-      for (let i = 0; i < componentDemos.length; i++) {
-        const item = componentDemos[i]
-        const section = document.createElement('section')
-        const frame = document.createElement('iframe')
-
-        section.className = 'component-demo'
-        frame.title = `${item.name} demo`
-        frame.src = item.path
-        frame.loading = 'lazy'
-        frame.addEventListener('load', () => {
-          sendVisibility(frame)
-        })
-        frames.push(frame)
-        section.append(frame)
-        demos.append(section)
-      }
-    }
-
-    mainNav.addEventListener('change', event => {
-      showPage(event.detail.value)
-    })
-
-    notesToggle.addEventListener('click', () => {
-      hideNotes = !hideNotes
-      syncVisibility()
-    })
-
-    layoutToggle.addEventListener('click', () => {
-      twoColumns = !twoColumns
-      syncLayout()
-    })
-
-    window.addEventListener('message', event => {
-      if (!event.data || event.data.type !== 'compact-component-demo-height') {
-        return
-      }
-
-      for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i]
-
-        if (frame.contentWindow !== event.source) {
-          continue
-        }
-
-        frame.style.height = `${Math.max(120, event.data.height)}px`
-        break
-      }
-    })
-
-    renderDemos()
-    syncLayout()
-    syncVisibility()
-    showPage(mainNav.getAttribute('value') || 'Components')
-  </script>
+    demoMarkdown.content = mockMarkdownContent.substring(0, index)
+    setTimeout(streamChunks, 15)
+  }
+  
+  streamChunks()
+})
+</script>
 </body>
 </html>
