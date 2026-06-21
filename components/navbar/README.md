@@ -1,14 +1,12 @@
 # compact-navbar
 
-`compact-navbar` is a compact navigation custom element implemented by the `CompactNavbar` class.
-
 ## Native HTML basis
 
 The component is based on a native `<nav>` landmark. Inside the shadow DOM it renders a `role="tablist"` container with native `<button>` elements using `role="tab"`.
 
-Unlike plain HTML, tab data is provided through one attribute, the current value is reflected to the host, and the component dispatches one structured `change` event. It does not include a built-in configuration button; use the `right` slot for icons or actions.
+Unlike plain HTML, tab data is provided through one attribute, the current value is reflected to the host, and the component dispatches one structured `change` event.
 
-## Props / attributes
+## Props (attributes)
 
 | Name | TypeScript type | Description |
 | --- | --- | --- |
@@ -30,7 +28,7 @@ Unlike plain HTML, tab data is provided through one attribute, the current value
 | `left` | None | `{}` | Content shown before the tab strip, usually a title or logo. |
 | `right` | None | `{}` | Content shown after the tab strip, usually actions such as a settings button. |
 
-## Behavior and quirks
+## Behavior
 
 The component re-renders whenever `tabs` or `value` changes. Every render creates buttons from the parsed `tabs` attribute and marks the selected button with `aria-selected="true"`.
 

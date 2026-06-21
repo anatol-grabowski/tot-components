@@ -1,14 +1,12 @@
 # compact-tabs
 
-`compact-tabs` is a compact tab selector custom element implemented by the `CompactTabs` class.
-
 ## Native HTML basis
 
 The component is based on a row of native `<button>` elements in a `role="tablist"` container. There is no native HTML `<tabs>` element, so this component provides a small custom wrapper around accessible button markup.
 
 Unlike plain buttons, options are provided through one attribute, selected state is reflected to the host, item-level disabled states are supported, and a structured `change` event is emitted.
 
-## Props / attributes
+## Props (attributes)
 
 | Name | TypeScript type | Description |
 | --- | --- | --- |
@@ -32,7 +30,7 @@ This component does not define slots.
 | --- | --- | --- | --- |
 | None | None | `never` | All rendered content comes from the `options` attribute. |
 
-## Behavior and quirks
+## Behavior
 
 The component re-renders whenever `options`, `value`, or `disabled` changes. It creates one native button per parsed option and marks the selected option with `aria-selected="true"`.
 
