@@ -6,11 +6,8 @@ import { CompactInput } from './input/CompactInput.js'
 import { CompactTextarea } from './textarea/CompactTextarea.js'
 import { CompactHorizontalSelect } from './horizontal-select/CompactHorizontalSelect.js'
 import { CompactFileInput } from './file-input/CompactFileInput.js'
-import { componentsDocs } from './core.js'
-
-window.CompactUi = {
-  docs: componentsDocs,
-}
+import { CompactAudioPlayer } from './audio-player/CompactAudioPlayer.js'
+import { CompactAudioRecorder } from './audio-recorder/CompactAudioRecorder.js'
 
 export {
   CompactNavbar,
@@ -21,5 +18,6 @@ export {
   CompactTextarea,
   CompactHorizontalSelect,
   CompactFileInput,
-  componentsDocs,
+  CompactAudioPlayer,
+  CompactAudioRecorder,
 }

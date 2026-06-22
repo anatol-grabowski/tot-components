@@ -2,16 +2,6 @@
  * Compact Components - Core utilities and styles
  * Shared resources used across all components
  */
-export const componentsDocs = [
-  ['compact-navbar', 'Tabs in a compact top bar. Attributes: tabs, value. Slots: left, right. Event: change.'],
-  ['compact-tabs', 'Compact tab selector. Attributes: options, value, disabled. Event: change.'],
-  ['compact-button', 'Button variants primary, secondary, danger. Attribute: disabled. Event: compact-click.'],
-  ['compact-checkbox', 'Labeled checkbox. Attributes/properties: label, checked, indeterminate, disabled. Event: change.'],
-  ['compact-input', 'Labeled input. Attributes: label, type, value, placeholder. Events: input, change.'],
-  ['compact-textarea', 'Labeled textarea with fullscreen editor. Attributes: label, rows, value. Events: input, change, fullscreen-open, fullscreen-close.'],
-  ['compact-horizontal-select', 'Horizontally scrollable one-of-many selector. Attributes: options, value. Event: change.'],
-  ['compact-file-input', 'Dashed drag/drop file input. Attributes: label, accept, multiple. Event: files-change.'],
-]
 
 export const baseStyle = `
   :host {
@@ -209,4 +199,31 @@ export function unlockDocumentScroll() {
     delete document.documentElement.dataset.compactPreviousOverflow
     delete document.body.dataset.compactPreviousOverflow
   }
+}
+
+export function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    seconds = 0
+  }
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
+export function drawEmptyCanvas(canvas, label) {
+  const ctx = canvas.getContext('2d')
+  const ratio = window.devicePixelRatio || 1
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = Math.max(1, Math.floor(rect.width * ratio))
+  canvas.height = Math.max(1, Math.floor(rect.height * ratio))
+  ctx.scale(ratio, ratio)
+  ctx.clearRect(0, 0, rect.width, rect.height)
+  ctx.fillStyle = '#fafafa'
+  ctx.fillRect(0, 0, rect.width, rect.height)
+  ctx.strokeStyle = '#ccc'
+  ctx.strokeRect(.5, .5, rect.width - 1, rect.height - 1)
+  ctx.fillStyle = '#666'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label || 'No data', rect.width / 2, rect.height / 2)
 }
