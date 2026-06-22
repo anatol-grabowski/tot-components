@@ -5,6 +5,12 @@
 export const componentsDocs = [
   ['compact-navbar', 'Tabs in a compact top bar. Attributes: tabs, value. Slots: left, right. Event: change.'],
   ['compact-tabs', 'Compact tab selector. Attributes: options, value, disabled. Event: change.'],
+  ['compact-button', 'Button variants primary, secondary, danger. Attribute: disabled. Event: compact-click.'],
+  ['compact-checkbox', 'Labeled checkbox. Attributes/properties: label, checked, indeterminate, disabled. Event: change.'],
+  ['compact-input', 'Labeled input. Attributes: label, type, value, placeholder. Events: input, change.'],
+  ['compact-textarea', 'Labeled textarea with fullscreen editor. Attributes: label, rows, value. Events: input, change, fullscreen-open, fullscreen-close.'],
+  ['compact-horizontal-select', 'Horizontally scrollable one-of-many selector. Attributes: options, value. Event: change.'],
+  ['compact-file-input', 'Dashed drag/drop file input. Attributes: label, accept, multiple. Event: files-change.'],
 ]
 
 export const baseStyle = `
@@ -63,6 +69,70 @@ export const baseStyle = `
   }
 `
 
+export const buttonStyle = `
+  .btn {
+    border: 1px solid var(--cc-border-strong);
+    border-radius: var(--cc-radius);
+    background: var(--cc-bg);
+    min-height: 32px;
+    padding: 5px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    max-width: 100%;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: #f0f0f0;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn.primary {
+    background: var(--cc-blue);
+    border-color: var(--cc-blue);
+    color: #fff;
+  }
+
+  .btn.primary:hover:not(:disabled) {
+    background: #005bb8;
+  }
+
+  .btn.secondary {
+    background: #fff;
+    border-color: var(--cc-border-strong);
+    color: var(--cc-text);
+  }
+
+  .btn.danger {
+    background: var(--cc-red);
+    border-color: var(--cc-red);
+    color: #fff;
+  }
+
+  .btn.danger:hover:not(:disabled) {
+    background: #8f001a;
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+  }
+`
+
+let modalLocks = 0
+let uid = 0
+
+export function nextId(prefix) {
+  uid += 1
+  return `${prefix}-${uid}`
+}
+
 export function defineElement(name, klass) {
   if (!customElements.get(name)) {
     customElements.define(name, klass)
@@ -119,4 +189,24 @@ export function parseOptions(value) {
 
 export function setText(node, value) {
   node.textContent = value === undefined || value === null ? '' : String(value)
+}
+
+export function lockDocumentScroll() {
+  modalLocks += 1
+  if (modalLocks === 1) {
+    document.documentElement.dataset.compactPreviousOverflow = document.documentElement.style.overflow || ''
+    document.body.dataset.compactPreviousOverflow = document.body.style.overflow || ''
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+  }
+}
+
+export function unlockDocumentScroll() {
+  modalLocks = Math.max(0, modalLocks - 1)
+  if (modalLocks === 0) {
+    document.documentElement.style.overflow = document.documentElement.dataset.compactPreviousOverflow || ''
+    document.body.style.overflow = document.body.dataset.compactPreviousOverflow || ''
+    delete document.documentElement.dataset.compactPreviousOverflow
+    delete document.body.dataset.compactPreviousOverflow
+  }
 }

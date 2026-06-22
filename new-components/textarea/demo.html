@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>compact-textarea demo</title>
+</head>
+<body>
+  <script type="module">
+    import './CompactTextarea.js'
+    import '../demo-common.js'
+
+    window.CompactDemo.render({
+      title: 'compact-textarea',
+      intro: 'A labeled textarea with a fullscreen editor option.',
+      cases: [
+        {
+          title: 'Basic use',
+          note: 'Provides a fullscreen mode for more space.',
+          render(container, log) {
+            const textarea = document.createElement('compact-textarea')
+            textarea.setAttribute('label', 'Description')
+            textarea.setAttribute('placeholder', 'Enter details...')
+            textarea.addEventListener('input', event => log({ event: 'input', value: event.detail.value }))
+            textarea.addEventListener('change', event => log({ event: 'change', value: event.detail.value }))
+            textarea.addEventListener('fullscreen-open', () => log({ event: 'fullscreen-open' }))
+            textarea.addEventListener('fullscreen-close', () => log({ event: 'fullscreen-close' }))
+            container.append(textarea)
+          },
+        },
+        {
+          title: 'Rows and Value',
+          note: 'Set initial rows and value.',
+          render(container, log) {
+            const textarea = document.createElement('compact-textarea')
+            textarea.setAttribute('label', 'Message')
+            textarea.setAttribute('rows', '6')
+            textarea.setAttribute('value', 'Hello\\nWorld')
+            textarea.addEventListener('input', event => log(event.detail))
+            container.append(textarea)
+          },
+        },
+        {
+          title: 'Disabled state',
+          note: 'The disabled attribute makes the textarea read-only.',
+          render(container, log) {
+            const textarea = document.createElement('compact-textarea')
+            textarea.setAttribute('label', 'Read-only log')
+            textarea.setAttribute('value', 'Some saved logs\\nCannot edit')
+            textarea.setAttribute('disabled', '')
+            container.append(textarea)
+          },
+        },
+      ],
+    })
+  </script>
+</body>
+</html>

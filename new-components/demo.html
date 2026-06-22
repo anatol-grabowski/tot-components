@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -148,6 +149,7 @@
     }
   </style>
 </head>
+
 <body>
   <compact-navbar id="mainNav" tabs="Components,Media,Data" value="Components">
     <span class="brand" slot="left">Compact Components</span>
@@ -177,6 +179,12 @@
     const componentDemos = [
       { name: 'Navbar', path: 'navbar/demo.html' },
       { name: 'Tabs', path: 'tabs/demo.html' },
+      { name: 'Button', path: 'button/demo.html' },
+      { name: 'Checkbox', path: 'checkbox/demo.html' },
+      { name: 'Input', path: 'input/demo.html' },
+      { name: 'Textarea', path: 'textarea/demo.html' },
+      { name: 'File Input', path: 'file-input/demo.html' },
+      { name: 'Horizontal Select', path: 'horizontal-select/demo.html' },
     ]
 
     const mainNav = document.getElementById('mainNav')
@@ -289,4 +297,5 @@
     showPage(mainNav.getAttribute('value') || 'Components')
   </script>
 </body>
+
 </html>
