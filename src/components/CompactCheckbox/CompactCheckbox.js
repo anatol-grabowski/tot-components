@@ -1,5 +1,4 @@
-import { shadow, emit, nextId, setText, defineElement } from '../core.js'
-
+import { shadow, emit, nextId, setText } from '../core.js'
 
 export class CompactCheckbox extends HTMLElement {
   static get observedAttributes() {
@@ -80,5 +79,3 @@ export class CompactCheckbox extends HTMLElement {
     })
   }
 }
-
-defineElement('compact-checkbox', CompactCheckbox)

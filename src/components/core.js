@@ -29,15 +29,19 @@ export const baseStyle = `
     line-height: 1.35;
     box-sizing: border-box;
   }
+
   *, *::before, *::after {
     box-sizing: border-box;
   }
+
   button, input, select, textarea {
     font: inherit;
   }
+
   button, select, input, textarea {
     color: var(--cc-text);
   }
+
   .sr-only {
     width: 1px;
     height: 1px;
@@ -49,6 +53,7 @@ export const baseStyle = `
     border: 0;
     position: absolute;
   }
+
   .focusable:focus-visible,
   button:focus-visible,
   input:focus-visible,
@@ -115,6 +120,8 @@ export const buttonStyle = `
   }
 `
 
+export const palette = ['#0066cc', '#b35c00', '#0b7a3b', '#7a3db8', '#b00020', '#007c89', '#6b5b00', '#444']
+
 let modalLocks = 0
 let uid = 0
 
@@ -143,11 +150,14 @@ export function emit(element, name, detail) {
   }))
 }
 
+export function toBool(value) {
+  return value !== null && value !== 'false'
+}
+
 export function parseJson(value, fallback) {
   if (value === null || value === undefined || value === '') {
     return fallback
   }
-
   try {
     return JSON.parse(value)
   } catch (error) {
@@ -159,10 +169,8 @@ export function parseOptions(value) {
   const parsed = parseJson(value, null)
   const source = parsed || String(value || '').split(',').map(item => item.trim()).filter(Boolean)
   const options = []
-
   for (let i = 0; i < source.length; i++) {
     const item = source[i]
-
     if (typeof item === 'string') {
       options.push({ value: item, label: item })
     } else if (item && typeof item === 'object') {
@@ -173,12 +181,20 @@ export function parseOptions(value) {
       })
     }
   }
-
   return options
 }
 
 export function setText(node, value) {
   node.textContent = value === undefined || value === null ? '' : String(value)
+}
+
+export function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    seconds = 0
+  }
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
 export function lockDocumentScroll() {
@@ -201,13 +217,35 @@ export function unlockDocumentScroll() {
   }
 }
 
-export function formatTime(seconds) {
-  if (!Number.isFinite(seconds) || seconds < 0) {
-    seconds = 0
+export function placeLayer(triggerRect, layer, pointer) {
+  const gap = 8
+  const margin = 8
+  const width = layer.offsetWidth
+  const height = layer.offsetHeight
+  let left = triggerRect.right + gap
+  let top = triggerRect.bottom + gap
+
+  if (pointer) {
+    left = pointer.clientX + gap
+    top = pointer.clientY + gap
   }
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${String(secs).padStart(2, '0')}`
+
+  if (left + width + margin > window.innerWidth) {
+    left = Math.max(margin, triggerRect.left - width - gap)
+    if (pointer) {
+      left = Math.max(margin, pointer.clientX - width - gap)
+    }
+  }
+
+  if (top + height + margin > window.innerHeight) {
+    top = Math.max(margin, triggerRect.top - height - gap)
+    if (pointer) {
+      top = Math.max(margin, pointer.clientY - height - gap)
+    }
+  }
+
+  layer.style.left = `${Math.min(Math.max(margin, left), Math.max(margin, window.innerWidth - width - margin))}px`
+  layer.style.top = `${Math.min(Math.max(margin, top), Math.max(margin, window.innerHeight - height - margin))}px`
 }
 
 export function drawEmptyCanvas(canvas, label) {

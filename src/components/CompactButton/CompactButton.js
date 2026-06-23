@@ -1,5 +1,4 @@
-import { shadow, emit, buttonStyle, defineElement } from '../core.js'
-
+import { shadow, emit, buttonStyle } from '../core.js'
 
 export class CompactButton extends HTMLElement {
   static get observedAttributes() {
@@ -23,8 +22,5 @@ export class CompactButton extends HTMLElement {
     `)
     const btn = root.querySelector('button')
     btn.disabled = this.hasAttribute('disabled')
-    btn.addEventListener('click', () => emit(this, 'compact-click'))
   }
 }
-
-defineElement('compact-button', CompactButton)
