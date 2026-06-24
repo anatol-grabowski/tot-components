@@ -589,7 +589,7 @@ export class TotMenuItem extends HTMLElement {
         <span class="item__check" aria-hidden="true">✓</span>
         <span class="item__loader" aria-hidden="true">⌛</span>
         <span class="item__label"><slot></slot></span>
-        <span class="item__submenu-caret" aria-hidden="true">▸</span>
+        <span class="item__submenu-caret" aria-hidden="true">❯</span>
         <span class="submenu"><slot name="submenu"></slot></span>
       </div>
     `

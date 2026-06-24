@@ -21,6 +21,15 @@ registerDemo({
           <tot-button variant="danger" outline>Danger outline</tot-button>
         `,
       },
+
+      {
+        label: 'Caret buttons',
+        html: `
+          <tot-button caret>Default caret</tot-button>
+          <tot-button variant="primary" caret>Primary caret</tot-button>
+          <tot-button variant="danger" outline caret>Danger outline caret</tot-button>
+        `,
+      },
       {
         label: 'Sizes',
         html: `
@@ -97,6 +106,7 @@ registerDemo({
           outline: button.hasAttribute('outline'),
           disabled: button.hasAttribute('disabled'),
           loading: button.hasAttribute('loading'),
+          caret: button.hasAttribute('caret'),
           href: button.getAttribute('href') || '',
           text: getButtonText(button),
         })

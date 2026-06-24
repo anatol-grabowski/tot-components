@@ -151,6 +151,18 @@ const buttonStyle = `
     display: none;
   }
 
+  .button__caret {
+    color: currentColor;
+    display: none;
+    font-size: .9em;
+    line-height: 1;
+    margin-inline-start: calc(var(--tot-spacing-3x-small, .125rem) * -1);
+  }
+
+  .button--caret .button__caret {
+    display: inline-flex;
+  }
+
   .button__loader {
     display: none;
     line-height: 1;
@@ -178,6 +190,7 @@ export class TotButton extends HTMLElement {
       'disabled',
       'href',
       'loading',
+      'caret',
       'label',
       'target',
       'rel',
@@ -220,6 +233,7 @@ export class TotButton extends HTMLElement {
     const disabled = this.hasAttribute('disabled')
     const loading = this.hasAttribute('loading')
     const outline = this.hasAttribute('outline')
+    const caret = this.hasAttribute('caret')
     const href = this.getAttribute('href') || ''
     const label = this.getAttribute('label') || ''
     const tag = href ? 'a' : 'button'
@@ -241,6 +255,10 @@ export class TotButton extends HTMLElement {
       classes.push('button--loading')
     }
 
+    if (caret) {
+      classes.push('button--caret')
+    }
+
     const hasDefaultSlotContent = this.hasDefaultSlotContent()
     this._hasDefaultSlotContent = hasDefaultSlotContent
 
@@ -255,6 +273,7 @@ export class TotButton extends HTMLElement {
         <span class="button__content">
           <span class="button__slot"><slot></slot></span>
           <span class="button__fallback">${escapeHtml(label)}</span>
+          <span class="button__caret" part="caret" aria-hidden="true">▾</span>
         </span>
         <span class="button__loader" aria-hidden="true">⌛</span>
       </${tag}>

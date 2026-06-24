@@ -324,6 +324,7 @@ h2 {
   import './components/AudioRecorder/AudioRecorder.demo.js'
   import './components/Divider/Divider.demo.js'
   import './components/Menu/Menu.demo.js'
+  import './components/Dropdown/Dropdown.demo.js'
 
   const componentEventNames = [
     'change',
@@ -376,6 +377,10 @@ h2 {
     document.body.classList.toggle('tot-theme-light', currentTheme === 'light')
     document.body.classList.toggle('tot-theme-dark', currentTheme === 'dark')
     themeButton.textContent = currentTheme === 'light' ? 'Use dark theme' : 'Use light theme'
+    document.dispatchEvent(new CustomEvent('tot-theme-change', {
+      bubbles: true,
+      detail: { theme: currentTheme },
+    }))
   })
 
   logsButton.addEventListener('click', () => {

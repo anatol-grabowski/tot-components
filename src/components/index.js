@@ -9,6 +9,7 @@ import { TotAudioPlayer } from './AudioPlayer/AudioPlayer.js'
 import { TotAudioRecorder } from './AudioRecorder/AudioRecorder.js'
 import { TotDivider } from './Divider/Divider.js'
 import { TotMenu, TotMenuItem, TotMenuLabel } from './Menu/Menu.js'
+import { TotDropdown } from './Dropdown/Dropdown.js'
 
 export function defineElement(name, klass) {
   if (!customElements.get(name)) {
@@ -30,6 +31,7 @@ defineElement('tot-divider', TotDivider)
 defineElement('tot-menu', TotMenu)
 defineElement('tot-menu-item', TotMenuItem)
 defineElement('tot-menu-label', TotMenuLabel)
+defineElement('tot-dropdown', TotDropdown)
 
 export {
   TotButton,
@@ -42,4 +44,5 @@ export {
   TotMenu,
   TotMenuItem,
   TotMenuLabel,
+  TotDropdown,
 }

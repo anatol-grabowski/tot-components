@@ -215,6 +215,9 @@ export class TotAudioRecorder extends HTMLElement {
     this._audioContext = null
     this._resizeObserver = null
     this._themeObserver = null
+    this._themeStylesheetLinks = []
+    this._handleThemeChange = () => this.scheduleThemeRedraw()
+    this._handleThemeStylesheetLoad = () => this.scheduleThemeRedraw()
     this._isAbort = false
   }
 
@@ -235,6 +238,9 @@ export class TotAudioRecorder extends HTMLElement {
       this._themeObserver.disconnect()
       this._themeObserver = null
     }
+    this.clearThemeStylesheetListeners()
+    window.removeEventListener('tot-theme-change', this._handleThemeChange)
+    document.removeEventListener('tot-theme-change', this._handleThemeChange)
   }
 
   render() {
@@ -297,11 +303,8 @@ export class TotAudioRecorder extends HTMLElement {
     }
 
     this._themeObserver = new MutationObserver(() => {
-      requestAnimationFrame(() => {
-        if (!this._recorder || this._recorder.state === 'inactive' || this._recorder.state === 'paused') {
-          this.drawFlatWave()
-        }
-      })
+      this.syncThemeStylesheetListeners()
+      this.scheduleThemeRedraw()
     })
 
     if (document.body) {
@@ -315,6 +318,53 @@ export class TotAudioRecorder extends HTMLElement {
       attributeFilter: ['class', 'style'],
       attributes: true,
     })
+
+    if (document.head) {
+      this._themeObserver.observe(document.head, {
+        attributeFilter: ['href', 'media', 'disabled', 'class', 'style'],
+        attributes: true,
+        childList: true,
+        subtree: true,
+      })
+    }
+
+    window.addEventListener('tot-theme-change', this._handleThemeChange)
+    document.addEventListener('tot-theme-change', this._handleThemeChange)
+    this.syncThemeStylesheetListeners()
+  }
+
+  scheduleThemeRedraw() {
+    const draw = () => {
+      if (!this.isConnected) {
+        return
+      }
+
+      if (this._recorder && this._recorder.state === 'recording' && this._analyser) {
+        return
+      }
+
+      this.drawFlatWave()
+    }
+
+    requestAnimationFrame(draw)
+    window.setTimeout(draw, 60)
+    window.setTimeout(draw, 180)
+  }
+
+  syncThemeStylesheetListeners() {
+    this.clearThemeStylesheetListeners()
+    const links = document.querySelectorAll('link[rel~="stylesheet"]')
+    for (let i = 0; i < links.length; i++) {
+      links[i].addEventListener('load', this._handleThemeStylesheetLoad)
+      this._themeStylesheetLinks.push(links[i])
+    }
+  }
+
+  clearThemeStylesheetListeners() {
+    for (let i = 0; i < this._themeStylesheetLinks.length; i++) {
+      this._themeStylesheetLinks[i].removeEventListener('load', this._handleThemeStylesheetLoad)
+    }
+    this._themeStylesheetLinks = []
   }
 
   async startRecording() {
