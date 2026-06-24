@@ -1,10 +1,12 @@
-import { shadow } from '../core.js'
-
 const buttonStyle = `
   :host {
     display: inline-block;
     max-width: 100%;
     vertical-align: middle;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
 
   .button {
@@ -39,7 +41,7 @@ const buttonStyle = `
     user-select: none;
     white-space: nowrap;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-button-font-size-medium, var(--tot-font-size-small, .875rem));
+    font-size: var(--tot-button-font-size-medium, var(--tot-input-font-size-medium, .875rem));
     font-weight: var(--tot-font-weight-semibold, 500);
     line-height: 1;
     letter-spacing: var(--tot-input-letter-spacing, normal);
@@ -104,13 +106,13 @@ const buttonStyle = `
   .button--small {
     min-height: var(--tot-input-height-small, 1.875rem);
     padding: 0 var(--tot-input-spacing-small, .75rem);
-    font-size: var(--tot-button-font-size-small, var(--tot-font-size-x-small, .75rem));
+    font-size: var(--tot-button-font-size-small, var(--tot-input-font-size-small, .75rem));
   }
 
   .button--large {
     min-height: var(--tot-input-height-large, 3.125rem);
     padding: 0 var(--tot-input-spacing-large, 1.25rem);
-    font-size: var(--tot-button-font-size-large, var(--tot-font-size-medium, 1rem));
+    font-size: var(--tot-button-font-size-large, var(--tot-input-font-size-large, 1rem));
   }
 
   .button--disabled {
@@ -247,7 +249,8 @@ export class TotButton extends HTMLElement {
     }
 
     const attributes = this.getControlAttributes(tag, href, disabled, loading, classes)
-    const root = shadow(this, buttonStyle, `
+    const root = this.getRoot()
+    root.innerHTML = `<style>${buttonStyle}</style>
       <${tag} ${attributes}>
         <span class="button__content">
           <span class="button__slot"><slot></slot></span>
@@ -255,7 +258,7 @@ export class TotButton extends HTMLElement {
         </span>
         <span class="button__loader" aria-hidden="true">⌛</span>
       </${tag}>
-    `)
+    `
 
     const control = root.querySelector('.button')
     const slot = root.querySelector('slot')
@@ -268,11 +271,15 @@ export class TotButton extends HTMLElement {
     })
 
     slot.addEventListener('slotchange', () => {
-      const hasDefaultSlotContent = this.hasDefaultSlotContent()
-      if (hasDefaultSlotContent !== this._hasDefaultSlotContent) {
+      const nextHasDefaultSlotContent = this.hasDefaultSlotContent()
+      if (nextHasDefaultSlotContent !== this._hasDefaultSlotContent) {
         this.render()
       }
     })
+  }
+
+  getRoot() {
+    return this.shadowRoot || this.attachShadow({ mode: 'open' })
   }
 
   hasDefaultSlotContent() {
@@ -301,7 +308,7 @@ export class TotButton extends HTMLElement {
 
   getControlAttributes(tag, href, disabled, loading, classes) {
     const attributes = [
-      `part="base"`,
+      'part="base"',
       `class="${escapeAttribute(classes.join(' '))}"`,
       `aria-disabled="${disabled ? 'true' : 'false'}"`,
     ]

@@ -26,7 +26,7 @@ body {
 }
 
 .demo-app {
-  padding: 20px;
+  padding: 20px 20px 260px;
 }
 
 .demo-shell {
@@ -124,31 +124,76 @@ h2 {
   border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #ccc);
   border-radius: var(--tot-border-radius-large, 6px);
   background: var(--tot-panel-background-color, #fafafa);
+  box-shadow: var(--tot-shadow-large, 0 10px 30px rgb(15 23 42 / 18%));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  margin: 0 auto;
+  max-height: min(70vh, 520px);
+  max-width: 1220px;
+  min-height: 44px;
+  overflow: auto;
   padding: 10px;
+  position: fixed;
+  resize: vertical;
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 100;
+}
+
+.event-panel[open] {
+  height: min(34vh, 320px);
+}
+
+.event-panel:not([open]) {
+  height: auto !important;
+  resize: none;
+}
+
+.event-resize-handle {
+  cursor: ns-resize;
+  height: 8px;
+  margin: -10px -10px 4px;
+  touch-action: none;
+}
+
+.event-resize-handle::before {
+  background: var(--tot-panel-border-color, #ccc);
+  border-radius: var(--tot-border-radius-pill, 999px);
+  content: '';
+  display: block;
+  height: 3px;
+  margin: 3px auto 0;
+  width: 46px;
 }
 
 .event-panel summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: grid;
+  gap: 4px;
   list-style: none;
+}
+
+.event-summary-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
 }
 
 .event-panel summary::-webkit-details-marker {
   display: none;
 }
 
-.event-panel summary::before {
+.event-summary-label::before {
   content: '▸';
 }
 
-.event-panel[open] summary::before {
+.event-panel[open] .event-summary-label::before {
   content: '▾';
 }
 
 .event-content {
   display: grid;
   gap: 8px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100% - 40px);
   margin-top: 10px;
 }
 
@@ -158,9 +203,10 @@ h2 {
 }
 
 .event-log {
+  align-content: start;
   display: grid;
   gap: 6px;
-  max-height: 220px;
+  min-height: 0;
   overflow: auto;
   padding: 0;
 }
@@ -197,7 +243,7 @@ h2 {
 
 @media (max-width: 760px) {
   .demo-app {
-    padding: 12px;
+    padding: 12px 12px 260px;
   }
 
   .demo-grid {
@@ -222,7 +268,10 @@ h2 {
     <main class="demo-grid" id="demoMain"></main>
 
     <details class="event-panel" id="eventPanel">
-      <summary>Component event log <span id="eventCount">0</span></summary>
+      <summary>
+        <span class="event-resize-handle" id="eventResizeHandle" aria-hidden="true"></span>
+        <span class="event-summary-label">Component event log <span id="eventCount">0</span></span>
+      </summary>
       <div class="event-content">
         <div class="event-toolbar">
           <button class="event-clear-button" id="clearEventsButton" type="button">Clear</button>
@@ -252,6 +301,7 @@ h2 {
 
   const componentEventNames = [
     'change',
+    'input',
     'play',
     'pause',
     'loaded',
@@ -270,6 +320,8 @@ h2 {
   const eventCount = document.getElementById('eventCount')
   const eventLog = document.getElementById('eventLog')
   const clearEventsButton = document.getElementById('clearEventsButton')
+  const eventPanel = document.getElementById('eventPanel')
+  const eventResizeHandle = document.getElementById('eventResizeHandle')
   let eventsLogged = 0
   let currentTheme = 'light'
 
@@ -279,7 +331,7 @@ h2 {
 
   for (let i = 0; i < componentEventNames.length; i++) {
     demoMain.addEventListener(componentEventNames[i], (event) => {
-      if (!(event instanceof CustomEvent)) {
+      if (!(event instanceof CustomEvent) || event.__totDemoLogged) {
         return
       }
 
@@ -301,6 +353,45 @@ h2 {
     eventsLogged = 0
     eventCount.textContent = '0'
     eventLog.innerHTML = '<div class="event-empty">No events yet.</div>'
+  })
+
+  eventPanel.addEventListener('toggle', () => {
+    if (!eventPanel.open) {
+      eventPanel.style.height = ''
+    }
+  })
+
+  eventResizeHandle.addEventListener('click', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+  })
+
+  eventResizeHandle.addEventListener('pointerdown', (event) => {
+    event.stopPropagation()
+    event.preventDefault()
+    eventPanel.open = true
+    const startY = event.clientY
+    const startHeight = eventPanel.getBoundingClientRect().height
+    const minHeight = 160
+    const maxHeight = Math.min(window.innerHeight * .7, 520)
+
+    eventResizeHandle.setPointerCapture(event.pointerId)
+
+    function handlePointerMove(moveEvent) {
+      const nextHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + startY - moveEvent.clientY))
+      eventPanel.style.height = `${nextHeight}px`
+    }
+
+    function handlePointerUp(upEvent) {
+      eventResizeHandle.releasePointerCapture(upEvent.pointerId)
+      eventResizeHandle.removeEventListener('pointermove', handlePointerMove)
+      eventResizeHandle.removeEventListener('pointerup', handlePointerUp)
+      eventResizeHandle.removeEventListener('pointercancel', handlePointerUp)
+    }
+
+    eventResizeHandle.addEventListener('pointermove', handlePointerMove)
+    eventResizeHandle.addEventListener('pointerup', handlePointerUp)
+    eventResizeHandle.addEventListener('pointercancel', handlePointerUp)
   })
 
   function appendEventLog(source, eventName, detail, time) {

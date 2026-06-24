@@ -14,35 +14,61 @@ registerDemo({
         `,
       },
       {
+        label: 'Outline variants',
+        html: `
+          <tot-button variant="default" outline>Default outline</tot-button>
+          <tot-button variant="primary" outline>Primary outline</tot-button>
+          <tot-button variant="danger" outline>Danger outline</tot-button>
+        `,
+      },
+      {
         label: 'Sizes',
         html: `
-          <tot-button size="small">Small</tot-button>
-          <tot-button size="medium">Medium</tot-button>
-          <tot-button size="large">Large</tot-button>
+          <tot-button size="small" variant="primary">Small primary</tot-button>
+          <tot-button size="medium" variant="primary">Medium primary</tot-button>
+          <tot-button size="large" variant="primary">Large primary</tot-button>
         `,
       },
       {
-        label: 'Outline',
+        label: 'Small outline combinations',
         html: `
-          <tot-button variant="default" outline>Default</tot-button>
-          <tot-button variant="primary" outline>Primary</tot-button>
-          <tot-button variant="danger" outline>Danger</tot-button>
+          <tot-button size="small" variant="default" outline>Default</tot-button>
+          <tot-button size="small" variant="primary" outline>Primary</tot-button>
+          <tot-button size="small" variant="danger" outline>Danger</tot-button>
         `,
       },
       {
-        label: 'States',
+        label: 'Disabled combinations',
         html: `
-          <tot-button variant="primary" disabled>Disabled</tot-button>
-          <tot-button variant="primary" loading>Loading</tot-button>
-          <tot-button variant="danger" loading outline>Outline loading</tot-button>
+          <tot-button variant="default" disabled>Disabled</tot-button>
+          <tot-button variant="primary" disabled>Disabled primary</tot-button>
+          <tot-button variant="danger" outline disabled>Disabled outline danger</tot-button>
         `,
       },
       {
-        label: 'Href and label attribute',
+        label: 'Loading combinations',
         html: `
-          <tot-button href="https://example.com" target="_blank">Href button</tot-button>
+          <tot-button variant="default" loading>Default loading</tot-button>
+          <tot-button variant="primary" loading>Primary loading</tot-button>
+          <tot-button variant="danger" outline loading>Danger outline loading</tot-button>
+        `,
+      },
+      {
+        label: 'Href combinations',
+        html: `
+          <tot-button href="https://example.com" target="_blank">Href default</tot-button>
+          <tot-button href="https://example.com" target="_blank" variant="primary">Href primary</tot-button>
+          <tot-button href="https://example.com" target="_blank" variant="danger" outline>Href danger outline</tot-button>
+          <tot-button href="https://example.com" target="_blank" disabled>Disabled href</tot-button>
+        `,
+      },
+      {
+        label: 'Label fallback and long text',
+        html: `
           <tot-button label="Label fallback"></tot-button>
           <tot-button label="Slot wins">Default slot wins</tot-button>
+          <tot-button variant="primary" size="small" label="Small label fallback"></tot-button>
+          <tot-button variant="danger" outline label="Very long label fallback that should keep the button compact"></tot-button>
         `,
       },
     ]
@@ -62,13 +88,14 @@ registerDemo({
       const button = buttons[i]
       button.addEventListener('click', (event) => {
         if (button.hasAttribute('href')) {
-          // event.preventDefault()
+          event.preventDefault()
         }
 
         logEvent(button, 'click', {
           variant: button.getAttribute('variant') || 'default',
           size: button.getAttribute('size') || 'medium',
           outline: button.hasAttribute('outline'),
+          disabled: button.hasAttribute('disabled'),
           loading: button.hasAttribute('loading'),
           href: button.getAttribute('href') || '',
           text: getButtonText(button),

@@ -24,6 +24,7 @@ export {
   TotButton,
   TotCheckbox,
   TotNavbar,
+  TotTabs,
   TotAudioPlayer,
   TotAudioRecorder,
 }

@@ -6,16 +6,30 @@ registerDemo({
   render: (container) => {
     const row = document.createElement('div')
     row.className = 'stack'
-    
+
     row.innerHTML = `
-      <tot-checkbox label="Unchecked"></tot-checkbox>
-      <tot-checkbox label="Checked" checked></tot-checkbox>
-      <tot-checkbox label="Indeterminate" indeterminate></tot-checkbox>
-      <tot-checkbox label="Disabled" disabled></tot-checkbox>
-      <tot-checkbox label="Disabled Checked" checked disabled></tot-checkbox>
-      <tot-checkbox label="Disabled Indeterminate" indeterminate disabled></tot-checkbox>
+      <div class="stack demo-group">
+        <div class="demo-label">States</div>
+        <tot-checkbox>Unchecked</tot-checkbox>
+        <tot-checkbox checked>Checked</tot-checkbox>
+        <tot-checkbox indeterminate>Indeterminate</tot-checkbox>
+        <tot-checkbox disabled>Disabled</tot-checkbox>
+        <tot-checkbox checked disabled>Disabled checked</tot-checkbox>
+        <tot-checkbox indeterminate disabled>Disabled indeterminate</tot-checkbox>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Sizes and help text</div>
+        <tot-checkbox size="small" help-text="Compact helper text">Small</tot-checkbox>
+        <tot-checkbox size="medium" help-text="A medium checkbox with help text">Medium</tot-checkbox>
+        <tot-checkbox size="large" help-text="Larger checkbox for touch-heavy UIs">Large</tot-checkbox>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Label fallback compatibility</div>
+        <tot-checkbox label="Label attribute fallback"></tot-checkbox>
+        <tot-checkbox label="Slot has priority">Slotted label wins</tot-checkbox>
+      </div>
     `
 
     container.appendChild(row)
-  }
+  },
 })
