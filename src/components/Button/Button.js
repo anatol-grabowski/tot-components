@@ -157,6 +157,10 @@ const buttonStyle = `
     font-size: .9em;
     line-height: 1;
     margin-inline-start: calc(var(--tot-spacing-3x-small, .125rem) * -1);
+    
+    top: -0.15em;
+    position: relative;
+    font-size: 1.1em;
   }
 
   .button--caret .button__caret {
@@ -273,7 +277,7 @@ export class TotButton extends HTMLElement {
         <span class="button__content">
           <span class="button__slot"><slot></slot></span>
           <span class="button__fallback">${escapeHtml(label)}</span>
-          <span class="button__caret" part="caret" aria-hidden="true">▾</span>
+          <span class="button__caret" part="caret" aria-hidden="true">⌵</span>
         </span>
         <span class="button__loader" aria-hidden="true">⌛</span>
       </${tag}>
