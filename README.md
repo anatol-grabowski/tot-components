@@ -8,8 +8,11 @@
 
 Usage:
 ```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anatol-grabowski/tot-components@main/src/themes/light.css">
 <script type="module" src="https://cdn.jsdelivr.net/gh/anatol-grabowski/tot-components@main/src/components/index.js"></script>
-<body>
+
+<body class="tot-theme-light">
   <tot-button>Click me</tot-button>
 </body>
 ```
+
