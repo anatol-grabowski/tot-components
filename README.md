@@ -3,8 +3,8 @@
 - no external dependencies, all code is self-contained within the library
 - vanilla JS implementation, no frameworks or builder tools used
 
-- See [DEVELOPMENT.md](DEVELOPMENT.md) for development guidelines and file structure.
-- See [src/demo.html](src/demo.html) for a demo of all components.
+- Follow guidelines in [DEVELOPMENT.md](DEVELOPMENT.md) when adding new components or modifying existing ones
+- See [src/demo.html](src/demo.html) for a demo of all components
 
 Usage:
 ```html
