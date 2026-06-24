@@ -1,3 +1,8 @@
+/*
+ * A copy of https://github.com/shoelace-style/shoelace/blob/next/src/themes/light.css
+ * with the only difference being that the prefix is changed from --sl- to --tot-
+ */
+
 :root,
 :host,
 .tot-theme-light {
