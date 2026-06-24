@@ -1,0 +1,48 @@
+import { registerDemo } from '../demoCommon.js'
+
+registerDemo({
+  id: 'tot-file-input',
+  title: 'File Input',
+  render: (container, { logEvent }) => {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'stack'
+    wrapper.innerHTML = `
+      <div class="stack demo-group">
+        <div class="demo-label">Single file dropzone</div>
+        <tot-file-input label="Upload one file" help-text="Drag a file onto the dashed area or click to choose one."></tot-file-input>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Multiple files</div>
+        <tot-file-input label="Upload many files" help-text="Accepts several files at once." multiple></tot-file-input>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Directory-capable picker and dropzone</div>
+        <tot-file-input label="Upload a folder" help-text="Directory picking uses browser directory support; folder drag and drop is handled recursively when available." multiple directory button-label="Choose folder"></tot-file-input>
+      </div>
+    `
+
+    const fileInputs = wrapper.querySelectorAll('tot-file-input')
+    for (let i = 0; i < fileInputs.length; i++) {
+      const fileInput = fileInputs[i]
+      fileInput.addEventListener('change', (event) => {
+        event.__totDemoLogged = true
+        logEvent(fileInput, 'change', {
+          count: event.detail.count,
+          multiple: event.detail.multiple,
+          directory: event.detail.directory,
+          entries: event.detail.entries,
+        })
+      })
+      fileInput.addEventListener('clear', (event) => {
+        event.__totDemoLogged = true
+        logEvent(fileInput, 'clear', {
+          count: event.detail.count,
+          multiple: event.detail.multiple,
+          directory: event.detail.directory,
+        })
+      })
+    }
+
+    container.appendChild(wrapper)
+  },
+})
