@@ -89,17 +89,17 @@ const buttonStyle = `
     --button-color-hover: var(--tot-color-neutral-0, #fff);
   }
 
-  .button--outline {
+  .button--outline:not(.button--default) {
     background: transparent;
     color: var(--button-border-color);
   }
 
-  .button--outline:hover:not(.button--disabled) {
+  .button--outline:not(.button--default):hover:not(.button--disabled) {
     background: var(--button-outline-background-color-hover);
     color: var(--button-border-color-hover);
   }
 
-  .button--outline:active:not(.button--disabled) {
+  .button--outline:not(.button--default):active:not(.button--disabled) {
     background: var(--button-outline-background-color-active);
   }
 

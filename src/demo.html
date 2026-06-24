@@ -26,7 +26,7 @@ body {
 }
 
 .demo-app {
-  padding: 20px 20px 260px;
+  padding: 20px 20px calc(var(--event-panel-space, 72px) + 20px);
 }
 
 .demo-shell {
@@ -82,10 +82,27 @@ h2 {
 .stack {
   display: grid;
   gap: 10px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .demo-group {
   gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.demo-scroll-host {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.demo-scroll-host > tot-navbar,
+.demo-scroll-host > tot-tabs {
+  display: block;
+  min-width: 0;
+  width: 100%;
 }
 
 .demo-label {
@@ -243,7 +260,7 @@ h2 {
 
 @media (max-width: 760px) {
   .demo-app {
-    padding: 12px 12px 260px;
+    padding: 12px 12px calc(var(--event-panel-space, 72px) + 12px);
   }
 
   .demo-grid {
@@ -359,7 +376,12 @@ h2 {
     if (!eventPanel.open) {
       eventPanel.style.height = ''
     }
+    updateEventPanelSpace()
   })
+
+  window.addEventListener('resize', () => updateEventPanelSpace())
+  new ResizeObserver(() => updateEventPanelSpace()).observe(eventPanel)
+  updateEventPanelSpace()
 
   eventResizeHandle.addEventListener('click', (event) => {
     event.preventDefault()
@@ -380,6 +402,7 @@ h2 {
     function handlePointerMove(moveEvent) {
       const nextHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + startY - moveEvent.clientY))
       eventPanel.style.height = `${nextHeight}px`
+      updateEventPanelSpace()
     }
 
     function handlePointerUp(upEvent) {
@@ -393,6 +416,12 @@ h2 {
     eventResizeHandle.addEventListener('pointerup', handlePointerUp)
     eventResizeHandle.addEventListener('pointercancel', handlePointerUp)
   })
+
+  function updateEventPanelSpace() {
+    const rect = eventPanel.getBoundingClientRect()
+    const bottom = Math.max(10, window.innerHeight - rect.bottom)
+    document.documentElement.style.setProperty('--event-panel-space', `${Math.ceil(rect.height + bottom)}px`)
+  }
 
   function appendEventLog(source, eventName, detail, time) {
     eventsLogged += 1

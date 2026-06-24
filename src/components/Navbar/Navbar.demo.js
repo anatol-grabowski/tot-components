@@ -8,12 +8,19 @@ const initialTabs = [
 ]
 
 const expandedTabs = [
+  { value: 'overview', label: 'Overview' },
   { value: 'controls', label: 'Controls' },
   { value: 'media', label: 'Media' },
   { value: 'data', label: 'Data' },
   { value: 'docs', label: 'Docs' },
   { value: 'settings', label: 'Settings' },
   { value: 'account', label: 'Account' },
+  { value: 'reports', label: 'Reports' },
+  { value: 'exports', label: 'Exports' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'members', label: 'Members' },
+  { value: 'audit', label: 'Audit Log' },
+  { value: 'integrations', label: 'Integrations' },
   { value: 'disabled', label: 'Disabled', disabled: true },
 ]
 
@@ -26,26 +33,39 @@ registerDemo({
     row.innerHTML = `
       <div class="stack demo-group">
         <div class="demo-label">Attribute tabs</div>
-        <tot-navbar tabs='[{
-          "value":"home",
-          "label":"Home"
-        },{
-          "value":"media",
-          "label":"Media"
-        },{
-          "value":"data",
-          "label":"Data"
-        }]' value="media">
-          <span slot="left">Demo app</span>
-          <tot-button slot="right" size="small" label="Config">⚙</tot-button>
-        </tot-navbar>
+        <div class="demo-scroll-host">
+          <tot-navbar tabs='[{
+            "value":"home",
+            "label":"Home"
+          },{
+            "value":"media",
+            "label":"Media"
+          },{
+            "value":"data",
+            "label":"Data"
+          }]' value="media">
+            <span slot="left">Demo app</span>
+            <tot-button slot="right" size="small" label="Config">⚙</tot-button>
+          </tot-navbar>
+        </div>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Many options stay inside the demo and scroll horizontally</div>
+        <div class="demo-scroll-host">
+          <tot-navbar id="manyNavbar">
+            <span slot="left">Tools</span>
+            <tot-button slot="right" size="small" label="Save"></tot-button>
+          </tot-navbar>
+        </div>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Dynamic tabs property</div>
-        <tot-navbar id="dynamicNavbar"></tot-navbar>
+        <div class="demo-scroll-host">
+          <tot-navbar id="dynamicNavbar"></tot-navbar>
+        </div>
         <div class="row">
           <button class="demo-native-button" type="button" data-action="initial">Set initial tabs</button>
-          <button class="demo-native-button" type="button" data-action="expanded">Set expanded tabs</button>
+          <button class="demo-native-button" type="button" data-action="expanded">Set many tabs</button>
           <button class="demo-native-button" type="button" data-action="reports">Select Reports</button>
           <button class="demo-native-button" type="button" data-action="toggle-disabled">Toggle disabled</button>
         </div>
@@ -59,6 +79,10 @@ registerDemo({
         logEvent(navbars[i], 'change', event.detail)
       })
     }
+
+    const manyNavbar = row.querySelector('#manyNavbar')
+    manyNavbar.tabs = expandedTabs
+    manyNavbar.value = 'reports'
 
     const dynamicNavbar = row.querySelector('#dynamicNavbar')
     dynamicNavbar.tabs = initialTabs
@@ -79,15 +103,11 @@ registerDemo({
       if (action === 'expanded') {
         dynamicNavbar.tabs = expandedTabs
         dynamicNavbar.value = 'settings'
-        logEvent(dynamicNavbar, 'tabs-update', { mode: 'expanded', count: expandedTabs.length })
+        logEvent(dynamicNavbar, 'tabs-update', { mode: 'many', count: expandedTabs.length })
       }
 
       if (action === 'reports') {
-        dynamicNavbar.tabs = [
-          { value: 'overview', label: 'Overview' },
-          { value: 'reports', label: 'Reports' },
-          { value: 'exports', label: 'Exports' },
-        ]
+        dynamicNavbar.tabs = expandedTabs
         dynamicNavbar.value = 'reports'
         logEvent(dynamicNavbar, 'tabs-update', { mode: 'reports', selected: dynamicNavbar.value })
       }
