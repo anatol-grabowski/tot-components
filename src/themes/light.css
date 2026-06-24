@@ -1,0 +1,529 @@
+:root,
+:host,
+.tot-theme-light {
+  color-scheme: light;
+
+  /*
+   * Color Primitives
+   */
+
+  /* Gray */
+  --tot-color-gray-50: hsl(0 0% 97.5%);
+  --tot-color-gray-100: hsl(240 4.8% 95.9%);
+  --tot-color-gray-200: hsl(240 5.9% 90%);
+  --tot-color-gray-300: hsl(240 4.9% 83.9%);
+  --tot-color-gray-400: hsl(240 5% 64.9%);
+  --tot-color-gray-500: hsl(240 3.8% 46.1%);
+  --tot-color-gray-600: hsl(240 5.2% 33.9%);
+  --tot-color-gray-700: hsl(240 5.3% 26.1%);
+  --tot-color-gray-800: hsl(240 3.7% 15.9%);
+  --tot-color-gray-900: hsl(240 5.9% 10%);
+  --tot-color-gray-950: hsl(240 7.3% 8%);
+
+  /* Red */
+  --tot-color-red-50: hsl(0 85.7% 97.3%);
+  --tot-color-red-100: hsl(0 93.3% 94.1%);
+  --tot-color-red-200: hsl(0 96.3% 89.4%);
+  --tot-color-red-300: hsl(0 93.5% 81.8%);
+  --tot-color-red-400: hsl(0 90.6% 70.8%);
+  --tot-color-red-500: hsl(0 84.2% 60.2%);
+  --tot-color-red-600: hsl(0 72.2% 50.6%);
+  --tot-color-red-700: hsl(0 73.7% 41.8%);
+  --tot-color-red-800: hsl(0 70% 35.3%);
+  --tot-color-red-900: hsl(0 62.8% 30.6%);
+  --tot-color-red-950: hsl(0 60% 19.6%);
+
+  /* Orange */
+  --tot-color-orange-50: hsl(33.3 100% 96.5%);
+  --tot-color-orange-100: hsl(34.3 100% 91.8%);
+  --tot-color-orange-200: hsl(32.1 97.7% 83.1%);
+  --tot-color-orange-300: hsl(30.7 97.2% 72.4%);
+  --tot-color-orange-400: hsl(27 96% 61%);
+  --tot-color-orange-500: hsl(24.6 95% 53.1%);
+  --tot-color-orange-600: hsl(20.5 90.2% 48.2%);
+  --tot-color-orange-700: hsl(17.5 88.3% 40.4%);
+  --tot-color-orange-800: hsl(15 79.1% 33.7%);
+  --tot-color-orange-900: hsl(15.3 74.6% 27.8%);
+  --tot-color-orange-950: hsl(15.2 69.1% 19%);
+
+  /* Amber */
+  --tot-color-amber-50: hsl(48 100% 96.1%);
+  --tot-color-amber-100: hsl(48 96.5% 88.8%);
+  --tot-color-amber-200: hsl(48 96.6% 76.7%);
+  --tot-color-amber-300: hsl(45.9 96.7% 64.5%);
+  --tot-color-amber-400: hsl(43.3 96.4% 56.3%);
+  --tot-color-amber-500: hsl(37.7 92.1% 50.2%);
+  --tot-color-amber-600: hsl(32.1 94.6% 43.7%);
+  --tot-color-amber-700: hsl(26 90.5% 37.1%);
+  --tot-color-amber-800: hsl(22.7 82.5% 31.4%);
+  --tot-color-amber-900: hsl(21.7 77.8% 26.5%);
+  --tot-color-amber-950: hsl(22.9 74.1% 16.7%);
+
+  /* Yellow */
+  --tot-color-yellow-50: hsl(54.5 91.7% 95.3%);
+  --tot-color-yellow-100: hsl(54.9 96.7% 88%);
+  --tot-color-yellow-200: hsl(52.8 98.3% 76.9%);
+  --tot-color-yellow-300: hsl(50.4 97.8% 63.5%);
+  --tot-color-yellow-400: hsl(47.9 95.8% 53.1%);
+  --tot-color-yellow-500: hsl(45.4 93.4% 47.5%);
+  --tot-color-yellow-600: hsl(40.6 96.1% 40.4%);
+  --tot-color-yellow-700: hsl(35.5 91.7% 32.9%);
+  --tot-color-yellow-800: hsl(31.8 81% 28.8%);
+  --tot-color-yellow-900: hsl(28.4 72.5% 25.7%);
+  --tot-color-yellow-950: hsl(33.1 69% 13.9%);
+
+  /* Lime */
+  --tot-color-lime-50: hsl(78.3 92% 95.1%);
+  --tot-color-lime-100: hsl(79.6 89.1% 89.2%);
+  --tot-color-lime-200: hsl(80.9 88.5% 79.6%);
+  --tot-color-lime-300: hsl(82 84.5% 67.1%);
+  --tot-color-lime-400: hsl(82.7 78% 55.5%);
+  --tot-color-lime-500: hsl(83.7 80.5% 44.3%);
+  --tot-color-lime-600: hsl(84.8 85.2% 34.5%);
+  --tot-color-lime-700: hsl(85.9 78.4% 27.3%);
+  --tot-color-lime-800: hsl(86.3 69% 22.7%);
+  --tot-color-lime-900: hsl(87.6 61.2% 20.2%);
+  --tot-color-lime-950: hsl(86.5 60.6% 13.9%);
+
+  /* Green */
+  --tot-color-green-50: hsl(138.5 76.5% 96.7%);
+  --tot-color-green-100: hsl(140.6 84.2% 92.5%);
+  --tot-color-green-200: hsl(141 78.9% 85.1%);
+  --tot-color-green-300: hsl(141.7 76.6% 73.1%);
+  --tot-color-green-400: hsl(141.9 69.2% 58%);
+  --tot-color-green-500: hsl(142.1 70.6% 45.3%);
+  --tot-color-green-600: hsl(142.1 76.2% 36.3%);
+  --tot-color-green-700: hsl(142.4 71.8% 29.2%);
+  --tot-color-green-800: hsl(142.8 64.2% 24.1%);
+  --tot-color-green-900: hsl(143.8 61.2% 20.2%);
+  --tot-color-green-950: hsl(144.3 60.7% 12%);
+
+  /* Emerald */
+  --tot-color-emerald-50: hsl(151.8 81% 95.9%);
+  --tot-color-emerald-100: hsl(149.3 80.4% 90%);
+  --tot-color-emerald-200: hsl(152.4 76% 80.4%);
+  --tot-color-emerald-300: hsl(156.2 71.6% 66.9%);
+  --tot-color-emerald-400: hsl(158.1 64.4% 51.6%);
+  --tot-color-emerald-500: hsl(160.1 84.1% 39.4%);
+  --tot-color-emerald-600: hsl(161.4 93.5% 30.4%);
+  --tot-color-emerald-700: hsl(162.9 93.5% 24.3%);
+  --tot-color-emerald-800: hsl(163.1 88.1% 19.8%);
+  --tot-color-emerald-900: hsl(164.2 85.7% 16.5%);
+  --tot-color-emerald-950: hsl(164.3 87.5% 9.4%);
+
+  /* Teal */
+  --tot-color-teal-50: hsl(166.2 76.5% 96.7%);
+  --tot-color-teal-100: hsl(167.2 85.5% 89.2%);
+  --tot-color-teal-200: hsl(168.4 83.8% 78.2%);
+  --tot-color-teal-300: hsl(170.6 76.9% 64.3%);
+  --tot-color-teal-400: hsl(172.5 66% 50.4%);
+  --tot-color-teal-500: hsl(173.4 80.4% 40%);
+  --tot-color-teal-600: hsl(174.7 83.9% 31.6%);
+  --tot-color-teal-700: hsl(175.3 77.4% 26.1%);
+  --tot-color-teal-800: hsl(176.1 69.4% 21.8%);
+  --tot-color-teal-900: hsl(175.9 60.8% 19%);
+  --tot-color-teal-950: hsl(176.5 58.6% 11.4%);
+
+  /* Cyan */
+  --tot-color-cyan-50: hsl(183.2 100% 96.3%);
+  --tot-color-cyan-100: hsl(185.1 95.9% 90.4%);
+  --tot-color-cyan-200: hsl(186.2 93.5% 81.8%);
+  --tot-color-cyan-300: hsl(187 92.4% 69%);
+  --tot-color-cyan-400: hsl(187.9 85.7% 53.3%);
+  --tot-color-cyan-500: hsl(188.7 94.5% 42.7%);
+  --tot-color-cyan-600: hsl(191.6 91.4% 36.5%);
+  --tot-color-cyan-700: hsl(192.9 82.3% 31%);
+  --tot-color-cyan-800: hsl(194.4 69.6% 27.1%);
+  --tot-color-cyan-900: hsl(196.4 63.6% 23.7%);
+  --tot-color-cyan-950: hsl(196.8 61% 16.1%);
+
+  /* Sky */
+  --tot-color-sky-50: hsl(204 100% 97.1%);
+  --tot-color-sky-100: hsl(204 93.8% 93.7%);
+  --tot-color-sky-200: hsl(200.6 94.4% 86.1%);
+  --tot-color-sky-300: hsl(199.4 95.5% 73.9%);
+  --tot-color-sky-400: hsl(198.4 93.2% 59.6%);
+  --tot-color-sky-500: hsl(198.6 88.7% 48.4%);
+  --tot-color-sky-600: hsl(200.4 98% 39.4%);
+  --tot-color-sky-700: hsl(201.3 96.3% 32.2%);
+  --tot-color-sky-800: hsl(201 90% 27.5%);
+  --tot-color-sky-900: hsl(202 80.3% 23.9%);
+  --tot-color-sky-950: hsl(202.3 73.8% 16.5%);
+
+  /* Blue */
+  --tot-color-blue-50: hsl(213.8 100% 96.9%);
+  --tot-color-blue-100: hsl(214.3 94.6% 92.7%);
+  --tot-color-blue-200: hsl(213.3 96.9% 87.3%);
+  --tot-color-blue-300: hsl(211.7 96.4% 78.4%);
+  --tot-color-blue-400: hsl(213.1 93.9% 67.8%);
+  --tot-color-blue-500: hsl(217.2 91.2% 59.8%);
+  --tot-color-blue-600: hsl(221.2 83.2% 53.3%);
+  --tot-color-blue-700: hsl(224.3 76.3% 48%);
+  --tot-color-blue-800: hsl(225.9 70.7% 40.2%);
+  --tot-color-blue-900: hsl(224.4 64.3% 32.9%);
+  --tot-color-blue-950: hsl(226.2 55.3% 18.4%);
+
+  /* Indigo */
+  --tot-color-indigo-50: hsl(225.9 100% 96.7%);
+  --tot-color-indigo-100: hsl(226.5 100% 93.9%);
+  --tot-color-indigo-200: hsl(228 96.5% 88.8%);
+  --tot-color-indigo-300: hsl(229.7 93.5% 81.8%);
+  --tot-color-indigo-400: hsl(234.5 89.5% 73.9%);
+  --tot-color-indigo-500: hsl(238.7 83.5% 66.7%);
+  --tot-color-indigo-600: hsl(243.4 75.4% 58.6%);
+  --tot-color-indigo-700: hsl(244.5 57.9% 50.6%);
+  --tot-color-indigo-800: hsl(243.7 54.5% 41.4%);
+  --tot-color-indigo-900: hsl(242.2 47.4% 34.3%);
+  --tot-color-indigo-950: hsl(243.5 43.6% 22.9%);
+
+  /* Violet */
+  --tot-color-violet-50: hsl(250 100% 97.6%);
+  --tot-color-violet-100: hsl(251.4 91.3% 95.5%);
+  --tot-color-violet-200: hsl(250.5 95.2% 91.8%);
+  --tot-color-violet-300: hsl(252.5 94.7% 85.1%);
+  --tot-color-violet-400: hsl(255.1 91.7% 76.3%);
+  --tot-color-violet-500: hsl(258.3 89.5% 66.3%);
+  --tot-color-violet-600: hsl(262.1 83.3% 57.8%);
+  --tot-color-violet-700: hsl(263.4 70% 50.4%);
+  --tot-color-violet-800: hsl(263.4 69.3% 42.2%);
+  --tot-color-violet-900: hsl(263.5 67.4% 34.9%);
+  --tot-color-violet-950: hsl(265.1 61.5% 21.4%);
+
+  /* Purple */
+  --tot-color-purple-50: hsl(270 100% 98%);
+  --tot-color-purple-100: hsl(268.7 100% 95.5%);
+  --tot-color-purple-200: hsl(268.6 100% 91.8%);
+  --tot-color-purple-300: hsl(269.2 97.4% 85.1%);
+  --tot-color-purple-400: hsl(270 95.2% 75.3%);
+  --tot-color-purple-500: hsl(270.7 91% 65.1%);
+  --tot-color-purple-600: hsl(271.5 81.3% 55.9%);
+  --tot-color-purple-700: hsl(272.1 71.7% 47.1%);
+  --tot-color-purple-800: hsl(272.9 67.2% 39.4%);
+  --tot-color-purple-900: hsl(273.6 65.6% 32%);
+  --tot-color-purple-950: hsl(276 59.5% 16.5%);
+
+  /* Fuchsia */
+  --tot-color-fuchsia-50: hsl(289.1 100% 97.8%);
+  --tot-color-fuchsia-100: hsl(287 100% 95.5%);
+  --tot-color-fuchsia-200: hsl(288.3 95.8% 90.6%);
+  --tot-color-fuchsia-300: hsl(291.1 93.1% 82.9%);
+  --tot-color-fuchsia-400: hsl(292 91.4% 72.5%);
+  --tot-color-fuchsia-500: hsl(292.2 84.1% 60.6%);
+  --tot-color-fuchsia-600: hsl(293.4 69.5% 48.8%);
+  --tot-color-fuchsia-700: hsl(294.7 72.4% 39.8%);
+  --tot-color-fuchsia-800: hsl(295.4 70.2% 32.9%);
+  --tot-color-fuchsia-900: hsl(296.7 63.6% 28%);
+  --tot-color-fuchsia-950: hsl(297.1 56.8% 14.5%);
+
+  /* Pink */
+  --tot-color-pink-50: hsl(327.3 73.3% 97.1%);
+  --tot-color-pink-100: hsl(325.7 77.8% 94.7%);
+  --tot-color-pink-200: hsl(325.9 84.6% 89.8%);
+  --tot-color-pink-300: hsl(327.4 87.1% 81.8%);
+  --tot-color-pink-400: hsl(328.6 85.5% 70.2%);
+  --tot-color-pink-500: hsl(330.4 81.2% 60.4%);
+  --tot-color-pink-600: hsl(333.3 71.4% 50.6%);
+  --tot-color-pink-700: hsl(335.1 77.6% 42%);
+  --tot-color-pink-800: hsl(335.8 74.4% 35.3%);
+  --tot-color-pink-900: hsl(335.9 69% 30.4%);
+  --tot-color-pink-950: hsl(336.2 65.4% 15.9%);
+
+  /* Rose */
+  --tot-color-rose-50: hsl(355.7 100% 97.3%);
+  --tot-color-rose-100: hsl(355.6 100% 94.7%);
+  --tot-color-rose-200: hsl(352.7 96.1% 90%);
+  --tot-color-rose-300: hsl(352.6 95.7% 81.8%);
+  --tot-color-rose-400: hsl(351.3 94.5% 71.4%);
+  --tot-color-rose-500: hsl(349.7 89.2% 60.2%);
+  --tot-color-rose-600: hsl(346.8 77.2% 49.8%);
+  --tot-color-rose-700: hsl(345.3 82.7% 40.8%);
+  --tot-color-rose-800: hsl(343.4 79.7% 34.7%);
+  --tot-color-rose-900: hsl(341.5 75.5% 30.4%);
+  --tot-color-rose-950: hsl(341.3 70.1% 17.1%);
+
+  /*
+   * Theme Tokens
+   */
+
+  /* Primary */
+  --tot-color-primary-50: var(--tot-color-sky-50);
+  --tot-color-primary-100: var(--tot-color-sky-100);
+  --tot-color-primary-200: var(--tot-color-sky-200);
+  --tot-color-primary-300: var(--tot-color-sky-300);
+  --tot-color-primary-400: var(--tot-color-sky-400);
+  --tot-color-primary-500: var(--tot-color-sky-500);
+  --tot-color-primary-600: var(--tot-color-sky-600);
+  --tot-color-primary-700: var(--tot-color-sky-700);
+  --tot-color-primary-800: var(--tot-color-sky-800);
+  --tot-color-primary-900: var(--tot-color-sky-900);
+  --tot-color-primary-950: var(--tot-color-sky-950);
+
+  /* Success */
+  --tot-color-success-50: var(--tot-color-green-50);
+  --tot-color-success-100: var(--tot-color-green-100);
+  --tot-color-success-200: var(--tot-color-green-200);
+  --tot-color-success-300: var(--tot-color-green-300);
+  --tot-color-success-400: var(--tot-color-green-400);
+  --tot-color-success-500: var(--tot-color-green-500);
+  --tot-color-success-600: var(--tot-color-green-600);
+  --tot-color-success-700: var(--tot-color-green-700);
+  --tot-color-success-800: var(--tot-color-green-800);
+  --tot-color-success-900: var(--tot-color-green-900);
+  --tot-color-success-950: var(--tot-color-green-950);
+
+  /* Warning */
+  --tot-color-warning-50: var(--tot-color-amber-50);
+  --tot-color-warning-100: var(--tot-color-amber-100);
+  --tot-color-warning-200: var(--tot-color-amber-200);
+  --tot-color-warning-300: var(--tot-color-amber-300);
+  --tot-color-warning-400: var(--tot-color-amber-400);
+  --tot-color-warning-500: var(--tot-color-amber-500);
+  --tot-color-warning-600: var(--tot-color-amber-600);
+  --tot-color-warning-700: var(--tot-color-amber-700);
+  --tot-color-warning-800: var(--tot-color-amber-800);
+  --tot-color-warning-900: var(--tot-color-amber-900);
+  --tot-color-warning-950: var(--tot-color-amber-950);
+
+  /* Danger */
+  --tot-color-danger-50: var(--tot-color-red-50);
+  --tot-color-danger-100: var(--tot-color-red-100);
+  --tot-color-danger-200: var(--tot-color-red-200);
+  --tot-color-danger-300: var(--tot-color-red-300);
+  --tot-color-danger-400: var(--tot-color-red-400);
+  --tot-color-danger-500: var(--tot-color-red-500);
+  --tot-color-danger-600: var(--tot-color-red-600);
+  --tot-color-danger-700: var(--tot-color-red-700);
+  --tot-color-danger-800: var(--tot-color-red-800);
+  --tot-color-danger-900: var(--tot-color-red-900);
+  --tot-color-danger-950: var(--tot-color-red-950);
+
+  /* Neutral */
+  --tot-color-neutral-50: var(--tot-color-gray-50);
+  --tot-color-neutral-100: var(--tot-color-gray-100);
+  --tot-color-neutral-200: var(--tot-color-gray-200);
+  --tot-color-neutral-300: var(--tot-color-gray-300);
+  --tot-color-neutral-400: var(--tot-color-gray-400);
+  --tot-color-neutral-500: var(--tot-color-gray-500);
+  --tot-color-neutral-600: var(--tot-color-gray-600);
+  --tot-color-neutral-700: var(--tot-color-gray-700);
+  --tot-color-neutral-800: var(--tot-color-gray-800);
+  --tot-color-neutral-900: var(--tot-color-gray-900);
+  --tot-color-neutral-950: var(--tot-color-gray-950);
+
+  /* Neutral one-offs */
+  --tot-color-neutral-0: hsl(0, 0%, 100%);
+  --tot-color-neutral-1000: hsl(0, 0%, 0%);
+
+  /*
+   * Border radii
+   */
+
+  --tot-border-radius-small: 0.1875rem; /* 3px */
+  --tot-border-radius-medium: 0.25rem; /* 4px */
+  --tot-border-radius-large: 0.5rem; /* 8px */
+  --tot-border-radius-x-large: 1rem; /* 16px */
+
+  --tot-border-radius-circle: 50%;
+  --tot-border-radius-pill: 9999px;
+
+  /*
+   * Elevations
+   */
+
+  --tot-shadow-x-small: 0 1px 2px hsl(240 3.8% 46.1% / 6%);
+  --tot-shadow-small: 0 1px 2px hsl(240 3.8% 46.1% / 12%);
+  --tot-shadow-medium: 0 2px 4px hsl(240 3.8% 46.1% / 12%);
+  --tot-shadow-large: 0 2px 8px hsl(240 3.8% 46.1% / 12%);
+  --tot-shadow-x-large: 0 4px 16px hsl(240 3.8% 46.1% / 12%);
+
+  /*
+   * Spacings
+   */
+
+  --tot-spacing-3x-small: 0.125rem; /* 2px */
+  --tot-spacing-2x-small: 0.25rem; /* 4px */
+  --tot-spacing-x-small: 0.5rem; /* 8px */
+  --tot-spacing-small: 0.75rem; /* 12px */
+  --tot-spacing-medium: 1rem; /* 16px */
+  --tot-spacing-large: 1.25rem; /* 20px */
+  --tot-spacing-x-large: 1.75rem; /* 28px */
+  --tot-spacing-2x-large: 2.25rem; /* 36px */
+  --tot-spacing-3x-large: 3rem; /* 48px */
+  --tot-spacing-4x-large: 4.5rem; /* 72px */
+
+  /*
+   * Transitions
+   */
+
+  --tot-transition-x-slow: 1000ms;
+  --tot-transition-slow: 500ms;
+  --tot-transition-medium: 250ms;
+  --tot-transition-fast: 150ms;
+  --tot-transition-x-fast: 50ms;
+
+  /*
+   * Typography
+   */
+
+  /* Fonts */
+  --tot-font-mono: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  --tot-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --tot-font-serif: Georgia, 'Times New Roman', serif;
+
+  /* Font sizes */
+  --tot-font-size-2x-small: 0.625rem; /* 10px */
+  --tot-font-size-x-small: 0.75rem; /* 12px */
+  --tot-font-size-small: 0.875rem; /* 14px */
+  --tot-font-size-medium: 1rem; /* 16px */
+  --tot-font-size-large: 1.25rem; /* 20px */
+  --tot-font-size-x-large: 1.5rem; /* 24px */
+  --tot-font-size-2x-large: 2.25rem; /* 36px */
+  --tot-font-size-3x-large: 3rem; /* 48px */
+  --tot-font-size-4x-large: 4.5rem; /* 72px */
+
+  /* Font weights */
+  --tot-font-weight-light: 300;
+  --tot-font-weight-normal: 400;
+  --tot-font-weight-semibold: 500;
+  --tot-font-weight-bold: 700;
+
+  /* Letter spacings */
+  --tot-letter-spacing-denser: -0.03em;
+  --tot-letter-spacing-dense: -0.015em;
+  --tot-letter-spacing-normal: normal;
+  --tot-letter-spacing-loose: 0.075em;
+  --tot-letter-spacing-looser: 0.15em;
+
+  /* Line heights */
+  --tot-line-height-denser: 1;
+  --tot-line-height-dense: 1.4;
+  --tot-line-height-normal: 1.8;
+  --tot-line-height-loose: 2.2;
+  --tot-line-height-looser: 2.6;
+
+  /* Focus rings */
+  --tot-focus-ring-color: var(--tot-color-primary-600);
+  --tot-focus-ring-style: solid;
+  --tot-focus-ring-width: 3px;
+  --tot-focus-ring: var(--tot-focus-ring-style) var(--tot-focus-ring-width) var(--tot-focus-ring-color);
+  --tot-focus-ring-offset: 1px;
+
+  /*
+   * Forms
+   */
+
+  /* Buttons */
+  --tot-button-font-size-small: var(--tot-font-size-x-small);
+  --tot-button-font-size-medium: var(--tot-font-size-small);
+  --tot-button-font-size-large: var(--tot-font-size-medium);
+
+  /* Inputs */
+  --tot-input-height-small: 1.875rem; /* 30px */
+  --tot-input-height-medium: 2.5rem; /* 40px */
+  --tot-input-height-large: 3.125rem; /* 50px */
+
+  --tot-input-background-color: var(--tot-color-neutral-0);
+  --tot-input-background-color-hover: var(--tot-input-background-color);
+  --tot-input-background-color-focus: var(--tot-input-background-color);
+  --tot-input-background-color-disabled: var(--tot-color-neutral-100);
+  --tot-input-border-color: var(--tot-color-neutral-300);
+  --tot-input-border-color-hover: var(--tot-color-neutral-400);
+  --tot-input-border-color-focus: var(--tot-color-primary-500);
+  --tot-input-border-color-disabled: var(--tot-color-neutral-300);
+  --tot-input-border-width: 1px;
+  --tot-input-required-content: '*';
+  --tot-input-required-content-offset: -2px;
+  --tot-input-required-content-color: var(--tot-input-label-color);
+
+  --tot-input-border-radius-small: var(--tot-border-radius-medium);
+  --tot-input-border-radius-medium: var(--tot-border-radius-medium);
+  --tot-input-border-radius-large: var(--tot-border-radius-medium);
+
+  --tot-input-font-family: var(--tot-font-sans);
+  --tot-input-font-weight: var(--tot-font-weight-normal);
+  --tot-input-font-size-small: var(--tot-font-size-small);
+  --tot-input-font-size-medium: var(--tot-font-size-medium);
+  --tot-input-font-size-large: var(--tot-font-size-large);
+  --tot-input-letter-spacing: var(--tot-letter-spacing-normal);
+
+  --tot-input-color: var(--tot-color-neutral-700);
+  --tot-input-color-hover: var(--tot-color-neutral-700);
+  --tot-input-color-focus: var(--tot-color-neutral-700);
+  --tot-input-color-disabled: var(--tot-color-neutral-900);
+  --tot-input-icon-color: var(--tot-color-neutral-500);
+  --tot-input-icon-color-hover: var(--tot-color-neutral-600);
+  --tot-input-icon-color-focus: var(--tot-color-neutral-600);
+  --tot-input-placeholder-color: var(--tot-color-neutral-500);
+  --tot-input-placeholder-color-disabled: var(--tot-color-neutral-600);
+  --tot-input-spacing-small: var(--tot-spacing-small);
+  --tot-input-spacing-medium: var(--tot-spacing-medium);
+  --tot-input-spacing-large: var(--tot-spacing-large);
+
+  --tot-input-focus-ring-color: hsl(198.6 88.7% 48.4% / 40%);
+  --tot-input-focus-ring-offset: 0;
+
+  --tot-input-filled-background-color: var(--tot-color-neutral-100);
+  --tot-input-filled-background-color-hover: var(--tot-color-neutral-100);
+  --tot-input-filled-background-color-focus: var(--tot-color-neutral-100);
+  --tot-input-filled-background-color-disabled: var(--tot-color-neutral-100);
+  --tot-input-filled-color: var(--tot-color-neutral-800);
+  --tot-input-filled-color-hover: var(--tot-color-neutral-800);
+  --tot-input-filled-color-focus: var(--tot-color-neutral-700);
+  --tot-input-filled-color-disabled: var(--tot-color-neutral-800);
+
+  /* Labels */
+  --tot-input-label-font-size-small: var(--tot-font-size-small);
+  --tot-input-label-font-size-medium: var(--tot-font-size-medium);
+  --tot-input-label-font-size-large: var(--tot-font-size-large);
+  --tot-input-label-color: inherit;
+
+  /* Help text */
+  --tot-input-help-text-font-size-small: var(--tot-font-size-x-small);
+  --tot-input-help-text-font-size-medium: var(--tot-font-size-small);
+  --tot-input-help-text-font-size-large: var(--tot-font-size-medium);
+  --tot-input-help-text-color: var(--tot-color-neutral-500);
+
+  /* Toggles (checkboxes, radios, switches) */
+  --tot-toggle-size-small: 0.875rem; /* 14px */
+  --tot-toggle-size-medium: 1.125rem; /* 18px */
+  --tot-toggle-size-large: 1.375rem; /* 22px */
+
+  /*
+   * Overlays
+   */
+
+  --tot-overlay-background-color: hsl(240 3.8% 46.1% / 33%);
+
+  /*
+   * Panels
+   */
+
+  --tot-panel-background-color: var(--tot-color-neutral-0);
+  --tot-panel-border-color: var(--tot-color-neutral-200);
+  --tot-panel-border-width: 1px;
+
+  /*
+   * Tooltips
+   */
+
+  --tot-tooltip-border-radius: var(--tot-border-radius-medium);
+  --tot-tooltip-background-color: var(--tot-color-neutral-800);
+  --tot-tooltip-color: var(--tot-color-neutral-0);
+  --tot-tooltip-font-family: var(--tot-font-sans);
+  --tot-tooltip-font-weight: var(--tot-font-weight-normal);
+  --tot-tooltip-font-size: var(--tot-font-size-small);
+  --tot-tooltip-line-height: var(--tot-line-height-dense);
+  --tot-tooltip-padding: var(--tot-spacing-2x-small) var(--tot-spacing-x-small);
+  --tot-tooltip-arrow-size: 6px;
+
+  /*
+   * Z-indexes
+   */
+
+  --tot-z-index-drawer: 700;
+  --tot-z-index-dialog: 800;
+  --tot-z-index-dropdown: 900;
+  --tot-z-index-toast: 950;
+  --tot-z-index-tooltip: 1000;
+}

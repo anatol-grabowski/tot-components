@@ -88,17 +88,21 @@ h2 {
 
 <script type="module">
   // Import components themselves so they are registered
-  import './components/main.js';
+  import './components/main.js'
 
   // Import demo orchestrator
-  import { renderDemos } from './components/demoCommon.js';
+  import { renderDemos } from './components/demoCommon.js'
 
   // Import individual demo files
-  import './components/CompactButton/CompactButton.demo.js';
-  import './components/CompactCheckbox/CompactCheckbox.demo.js';
+  import './components/Button/Button.demo.js'
+  import './components/Checkbox/Checkbox.demo.js'
+  import './components/Navbar/Navbar.demo.js'
+  import './components/Tabs/Tabs.demo.js'
+  import './components/AudioPlayer/AudioPlayer.demo.js'
+  import './components/AudioRecorder/AudioRecorder.demo.js'
 
-  const demoMain = document.getElementById('demoMain');
-  renderDemos(demoMain);
+  const demoMain = document.getElementById('demoMain')
+  renderDemos(demoMain)
 </script>
 </body>
 </html>

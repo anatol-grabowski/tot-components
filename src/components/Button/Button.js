@@ -1,6 +1,6 @@
 import { shadow, emit, buttonStyle } from '../core.js'
 
-export class CompactButton extends HTMLElement {
+export class TotButton extends HTMLElement {
   static get observedAttributes() {
     return ['variant', 'disabled']
   }

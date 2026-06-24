@@ -1,6 +1,6 @@
 import { shadow, emit, nextId, setText } from '../core.js'
 
-export class CompactCheckbox extends HTMLElement {
+export class TotCheckbox extends HTMLElement {
   static get observedAttributes() {
     return ['label', 'checked', 'disabled', 'indeterminate']
   }
