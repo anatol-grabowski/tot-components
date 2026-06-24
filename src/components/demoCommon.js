@@ -1,10 +1,32 @@
 const sections = []
+let demoLogger = null
 
 export function registerDemo(sectionConfig) {
   sections.push(sectionConfig)
 }
 
+export function setDemoLogger(logger) {
+  demoLogger = logger
+}
+
+export function logDemoEvent(source, eventName, detail) {
+  if (!demoLogger) {
+    return
+  }
+
+  demoLogger({
+    source,
+    eventName,
+    detail: detail || {},
+    time: new Date(),
+  })
+}
+
 export function renderDemos(mainElement) {
+  const context = {
+    logEvent: logDemoEvent,
+  }
+
   for (const { id, title, render } of sections) {
     const section = document.createElement('section')
     section.className = 'section'
@@ -14,7 +36,7 @@ export function renderDemos(mainElement) {
     heading.textContent = title
     section.appendChild(heading)
 
-    render(section)
+    render(section, context)
     mainElement.appendChild(section)
   }
 }

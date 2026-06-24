@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Compact Components Demo</title>
+<link id="themeStylesheet" rel="stylesheet" href="./themes/light.css">
 <style>
 * {
   margin: 0;
@@ -17,29 +18,46 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif);
   font-size: 13px;
   line-height: 1.4;
-  background: #fff;
-  color: #222;
+  background: var(--tot-color-neutral-0, #fff);
+  color: var(--tot-color-neutral-900, #222);
 }
 
 .demo-app {
   padding: 20px;
 }
 
+.demo-shell {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.demo-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.demo-topbar h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
 .demo-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  max-width: 1220px;
-  margin: 0 auto;
 }
 
 .section {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fafafa;
+  border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #ccc);
+  border-radius: var(--tot-border-radius-large, 6px);
+  background: var(--tot-panel-background-color, #fafafa);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -47,17 +65,11 @@ body {
   min-width: 0;
 }
 
-h1 {
-  font-size: 20px;
-  grid-column: 1 / -1;
-  margin-bottom: 20px;
-}
-
 h2 {
   font-size: 16px;
   margin: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--tot-color-neutral-200, #ddd);
 }
 
 .row {
@@ -72,26 +84,163 @@ h2 {
   gap: 10px;
 }
 
+.demo-group {
+  gap: 6px;
+}
+
+.demo-label {
+  color: var(--tot-color-neutral-600, #666);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.demo-native-button,
+.event-panel summary,
+.event-clear-button {
+  border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #ccc);
+  border-radius: var(--tot-input-border-radius-medium, 4px);
+  background: var(--tot-input-background-color, #fff);
+  color: var(--tot-input-color, #222);
+  cursor: pointer;
+  font: inherit;
+  min-height: 30px;
+  padding: 4px 10px;
+}
+
+.demo-native-button:hover,
+.event-clear-button:hover {
+  background: var(--tot-input-background-color-hover, #f3f4f6);
+  border-color: var(--tot-input-border-color-hover, #999);
+}
+
+.demo-native-button:focus-visible,
+.event-clear-button:focus-visible,
+.event-panel summary:focus-visible {
+  outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+  outline-offset: var(--tot-focus-ring-offset, 1px);
+}
+
+.event-panel {
+  border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #ccc);
+  border-radius: var(--tot-border-radius-large, 6px);
+  background: var(--tot-panel-background-color, #fafafa);
+  padding: 10px;
+}
+
+.event-panel summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.event-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.event-panel summary::before {
+  content: '▸';
+}
+
+.event-panel[open] summary::before {
+  content: '▾';
+}
+
+.event-content {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.event-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.event-log {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0;
+}
+
+.event-log-entry {
+  border: 1px solid var(--tot-color-neutral-200, #ddd);
+  border-radius: var(--tot-border-radius-medium, 4px);
+  background: var(--tot-input-background-color, #fff);
+  color: var(--tot-input-color, #222);
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+}
+
+.event-log-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.event-log-time,
+.event-log-source,
+.event-empty {
+  color: var(--tot-color-neutral-600, #666);
+}
+
+.event-log-detail {
+  color: var(--tot-color-neutral-700, #444);
+  font-family: var(--tot-font-mono, monospace);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 760px) {
+  .demo-app {
+    padding: 12px;
+  }
+
   .demo-grid {
     grid-template-columns: 1fr;
+  }
+
+  .demo-topbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>
 </head>
-<body>
+<body class="tot-theme-light">
 <div class="demo-app">
-  <div class="demo-grid" id="demoMain">
-    <h1>Web component library demo</h1>
+  <div class="demo-shell">
+    <div class="demo-topbar">
+      <h1>Web component library demo</h1>
+      <button class="demo-native-button" id="themeButton" type="button">Use dark theme</button>
+    </div>
+
+    <main class="demo-grid" id="demoMain"></main>
+
+    <details class="event-panel" id="eventPanel">
+      <summary>Component event log <span id="eventCount">0</span></summary>
+      <div class="event-content">
+        <div class="event-toolbar">
+          <button class="event-clear-button" id="clearEventsButton" type="button">Clear</button>
+        </div>
+        <div class="event-log" id="eventLog">
+          <div class="event-empty">No events yet.</div>
+        </div>
+      </div>
+    </details>
   </div>
 </div>
 
 <script type="module">
   // Import components themselves so they are registered
-  import './components'
+  import './components/index.js'
 
   // Import demo orchestrator
-  import { renderDemos } from './components/demoCommon.js'
+  import { renderDemos, setDemoLogger, logDemoEvent } from './components/demoCommon.js'
 
   // Import individual demo files
   import './components/Button/Button.demo.js'
@@ -101,8 +250,146 @@ h2 {
   import './components/AudioPlayer/AudioPlayer.demo.js'
   import './components/AudioRecorder/AudioRecorder.demo.js'
 
+  const componentEventNames = [
+    'change',
+    'play',
+    'pause',
+    'loaded',
+    'error',
+    'seek',
+    'recording-error',
+    'recording-start',
+    'recording-pause',
+    'recording-resume',
+    'recording-stop',
+  ]
+
   const demoMain = document.getElementById('demoMain')
+  const themeButton = document.getElementById('themeButton')
+  const themeStylesheet = document.getElementById('themeStylesheet')
+  const eventCount = document.getElementById('eventCount')
+  const eventLog = document.getElementById('eventLog')
+  const clearEventsButton = document.getElementById('clearEventsButton')
+  let eventsLogged = 0
+  let currentTheme = 'light'
+
+  setDemoLogger((entry) => {
+    appendEventLog(entry.source, entry.eventName, entry.detail, entry.time)
+  })
+
+  for (let i = 0; i < componentEventNames.length; i++) {
+    demoMain.addEventListener(componentEventNames[i], (event) => {
+      if (!(event instanceof CustomEvent)) {
+        return
+      }
+
+      logDemoEvent(getEventSource(event), event.type, event.detail || {})
+    })
+  }
+
   renderDemos(demoMain)
+
+  themeButton.addEventListener('click', () => {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light'
+    themeStylesheet.href = `./themes/${currentTheme}.css`
+    document.body.classList.toggle('tot-theme-light', currentTheme === 'light')
+    document.body.classList.toggle('tot-theme-dark', currentTheme === 'dark')
+    themeButton.textContent = currentTheme === 'light' ? 'Use dark theme' : 'Use light theme'
+  })
+
+  clearEventsButton.addEventListener('click', () => {
+    eventsLogged = 0
+    eventCount.textContent = '0'
+    eventLog.innerHTML = '<div class="event-empty">No events yet.</div>'
+  })
+
+  function appendEventLog(source, eventName, detail, time) {
+    eventsLogged += 1
+    eventCount.textContent = String(eventsLogged)
+
+    const empty = eventLog.querySelector('.event-empty')
+    if (empty) {
+      empty.remove()
+    }
+
+    const row = document.createElement('div')
+    row.className = 'event-log-entry'
+
+    const main = document.createElement('div')
+    main.className = 'event-log-main'
+
+    const timeNode = document.createElement('span')
+    timeNode.className = 'event-log-time'
+    timeNode.textContent = formatLogTime(time)
+
+    const sourceNode = document.createElement('strong')
+    sourceNode.className = 'event-log-source'
+    sourceNode.textContent = formatSource(source)
+
+    const eventNode = document.createElement('span')
+    eventNode.textContent = eventName
+
+    const detailNode = document.createElement('div')
+    detailNode.className = 'event-log-detail'
+    detailNode.textContent = formatDetail(detail)
+
+    main.appendChild(timeNode)
+    main.appendChild(sourceNode)
+    main.appendChild(eventNode)
+    row.appendChild(main)
+    row.appendChild(detailNode)
+    eventLog.prepend(row)
+  }
+
+  function getEventSource(event) {
+    const path = event.composedPath()
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i]
+      if (node instanceof HTMLElement && node.localName.startsWith('tot-')) {
+        return node
+      }
+    }
+    return event.target
+  }
+
+  function formatSource(source) {
+    if (source instanceof HTMLElement) {
+      return source.localName
+    }
+    return String(source || 'component')
+  }
+
+  function formatDetail(detail) {
+    if (!detail || Object.keys(detail).length === 0) {
+      return '{}'
+    }
+
+    return JSON.stringify(detail, getJsonValue, 2)
+  }
+
+  function getJsonValue(key, value) {
+    if (value instanceof Blob) {
+      return `[Blob ${value.type || 'unknown'} ${value.size} bytes]`
+    }
+
+    if (value instanceof HTMLElement) {
+      return value.localName
+    }
+
+    if (value instanceof EventTarget) {
+      return '[EventTarget]'
+    }
+
+    return value
+  }
+
+  function formatLogTime(time) {
+    return time.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  }
 </script>
 </body>
 </html>
