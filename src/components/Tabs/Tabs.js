@@ -9,7 +9,7 @@ const tabsStyle = `
   }
 
   .tabs {
-    box-shadow: inset 0 calc(var(--tot-panel-border-width, 1px) * -1) 0 var(--tot-panel-border-color, #e2e8f0);
+    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     color: var(--tot-input-color, #1e293b);
     display: flex;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
@@ -60,7 +60,7 @@ const tabsStyle = `
 
   button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: calc(var(--tot-focus-ring-offset, 1px) * -1);
+    outline-offset: -1px;
     z-index: 2;
   }
 

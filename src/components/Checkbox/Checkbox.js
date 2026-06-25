@@ -18,6 +18,7 @@ const checkboxStyle = `
   .checkbox {
     --toggle-size: var(--tot-toggle-size-medium, 1.125rem);
     --checkbox-font-size: var(--tot-input-font-size-medium, .875rem);
+    --checkbox-help-offset: 1.625rem;
 
     color: var(--tot-input-label-color, var(--tot-input-color, #1e293b));
     cursor: pointer;
@@ -36,11 +37,13 @@ const checkboxStyle = `
   .checkbox--small {
     --toggle-size: var(--tot-toggle-size-small, 1rem);
     --checkbox-font-size: var(--tot-input-font-size-small, .8125rem);
+    --checkbox-help-offset: 1.375rem;
   }
 
   .checkbox--large {
     --toggle-size: var(--tot-toggle-size-large, 1.375rem);
     --checkbox-font-size: var(--tot-input-font-size-large, 1rem);
+    --checkbox-help-offset: 1.875rem;
   }
 
   .checkbox__input {
@@ -76,7 +79,7 @@ const checkboxStyle = `
   .checkbox__checked-icon,
   .checkbox__indeterminate-icon {
     display: none;
-    font-size: calc(var(--toggle-size) * .78);
+    font-size: .875em;
     font-weight: var(--tot-font-weight-bold, 700);
     line-height: 1;
   }
@@ -96,7 +99,7 @@ const checkboxStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-help-text-font-size-medium, .8125rem);
     line-height: 1.35;
-    margin-inline-start: calc(var(--toggle-size) + .5em);
+    margin-inline-start: var(--checkbox-help-offset);
     max-width: 100%;
     overflow-wrap: anywhere;
   }

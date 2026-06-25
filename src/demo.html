@@ -287,7 +287,7 @@ h2 {
       <h1>Web component library demo</h1>
       <div class="demo-topbar-actions">
         <button class="demo-native-button" id="logsButton" type="button" aria-pressed="true">Hide logs</button>
-        <button class="demo-native-button" id="themeButton" type="button">Use dark theme</button>
+        <tot-theme-selector id="themeSelector" themes="light,dark"></tot-theme-selector>
       </div>
     </div>
   </header>
@@ -322,24 +322,22 @@ h2 {
   import './components/Tabs/Tabs.demo.js'
   import './components/AudioPlayer/AudioPlayer.demo.js'
   import './components/AudioRecorder/AudioRecorder.demo.js'
+  import './components/Dropdown/Dropdown.demo.js'
+  import './components/ThemeSelector/ThemeSelector.demo.js'
   import './components/Divider/Divider.demo.js'
   import './components/Menu/Menu.demo.js'
-  import './components/Dropdown/Dropdown.demo.js'
   import './components/Input/Input.demo.js'
   import './components/FileInput/FileInput.demo.js'
   import './components/HorizontalSelect/HorizontalSelect.demo.js'
 
   const demoMain = document.getElementById('demoMain')
-  const themeButton = document.getElementById('themeButton')
   const logsButton = document.getElementById('logsButton')
-  const themeStylesheet = document.getElementById('themeStylesheet')
   const eventCount = document.getElementById('eventCount')
   const eventLog = document.getElementById('eventLog')
   const clearEventsButton = document.getElementById('clearEventsButton')
   const eventPanel = document.getElementById('eventPanel')
   const eventResizeHandle = document.getElementById('eventResizeHandle')
   let eventsLogged = 0
-  let currentTheme = 'light'
   let logsVisible = true
 
   setDemoLogger((entry) => {
@@ -348,17 +346,6 @@ h2 {
 
   renderDemos(demoMain)
 
-  themeButton.addEventListener('click', () => {
-    currentTheme = currentTheme === 'light' ? 'dark' : 'light'
-    themeStylesheet.href = `./themes/${currentTheme}.css`
-    document.body.classList.toggle('tot-theme-light', currentTheme === 'light')
-    document.body.classList.toggle('tot-theme-dark', currentTheme === 'dark')
-    themeButton.textContent = currentTheme === 'light' ? 'Use dark theme' : 'Use light theme'
-    document.dispatchEvent(new CustomEvent('tot-theme-change', {
-      bubbles: true,
-      detail: { theme: currentTheme },
-    }))
-  })
 
   logsButton.addEventListener('click', () => {
     logsVisible = !logsVisible

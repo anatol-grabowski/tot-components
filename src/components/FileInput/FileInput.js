@@ -31,8 +31,13 @@ const fileInputStyle = `
 
   .dropzone {
     align-items: center;
+    --dropzone-border-color: var(--tot-input-border-color, #cbd5e1);
+    --dropzone-border-size: var(--tot-file-input-border-width, 2px);
+    --dropzone-dash-size: var(--tot-file-input-dash-size, .625rem);
+    --dropzone-dash-repeat: var(--tot-file-input-dash-repeat, 1.375rem);
+
     background: var(--tot-input-background-color, #fff);
-    border: 1.5px dashed var(--tot-input-border-color, #cbd5e1);
+    border: 0;
     border-radius: var(--tot-border-radius-large, 8px);
     color: var(--tot-input-color, #1e293b);
     cursor: pointer;
@@ -40,9 +45,10 @@ const fileInputStyle = `
     gap: var(--tot-spacing-x-small, .5rem);
     justify-items: center;
     max-width: 100%;
-    min-height: var(--tot-file-input-min-height, 7.5rem);
+    min-height: var(--tot-file-input-min-height, 5.5rem);
     min-width: 0;
-    padding: var(--tot-spacing-medium, 1rem);
+    padding: var(--tot-file-input-padding, .75rem);
+    position: relative;
     text-align: center;
     transition:
       var(--tot-transition-fast, 150ms) background-color,
@@ -51,10 +57,30 @@ const fileInputStyle = `
       var(--tot-transition-fast, 150ms) box-shadow;
   }
 
+  .dropzone::before {
+    background-image:
+      repeating-linear-gradient(90deg, var(--dropzone-border-color) 0 var(--dropzone-dash-size), transparent var(--dropzone-dash-size) var(--dropzone-dash-repeat)),
+      repeating-linear-gradient(90deg, var(--dropzone-border-color) 0 var(--dropzone-dash-size), transparent var(--dropzone-dash-size) var(--dropzone-dash-repeat)),
+      repeating-linear-gradient(0deg, var(--dropzone-border-color) 0 var(--dropzone-dash-size), transparent var(--dropzone-dash-size) var(--dropzone-dash-repeat)),
+      repeating-linear-gradient(0deg, var(--dropzone-border-color) 0 var(--dropzone-dash-size), transparent var(--dropzone-dash-size) var(--dropzone-dash-repeat));
+    background-position: 0 0, 0 100%, 0 0, 100% 0;
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size:
+      var(--dropzone-dash-repeat) var(--dropzone-border-size),
+      var(--dropzone-dash-repeat) var(--dropzone-border-size),
+      var(--dropzone-border-size) var(--dropzone-dash-repeat),
+      var(--dropzone-border-size) var(--dropzone-dash-repeat);
+    border-radius: inherit;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
   .dropzone:hover:not(.dropzone--disabled),
   .dropzone--drag-active:not(.dropzone--disabled) {
     background: var(--tot-input-background-color-hover, #f8fafc);
-    border-color: var(--tot-color-primary-600, #0284c7);
+    --dropzone-border-color: var(--tot-color-primary-600, #0284c7);
   }
 
   .dropzone:focus-visible {
@@ -64,7 +90,7 @@ const fileInputStyle = `
 
   .dropzone--disabled {
     background: var(--tot-input-background-color-disabled, #f1f5f9);
-    border-color: var(--tot-input-border-color-disabled, #cbd5e1);
+    --dropzone-border-color: var(--tot-input-border-color-disabled, #cbd5e1);
     color: var(--tot-input-color-disabled, #64748b);
     cursor: not-allowed;
     opacity: .7;
@@ -72,8 +98,15 @@ const fileInputStyle = `
 
   .dropzone__icon {
     color: var(--tot-input-icon-color, #64748b);
-    font-size: 1.65rem;
+    align-items: center;
+    display: none;
+    font-size: 1.25rem;
+    justify-content: center;
     line-height: 1;
+  }
+
+  .dropzone__icon--has-content {
+    display: inline-flex;
   }
 
   .dropzone__title {
@@ -254,7 +287,7 @@ export class TotFileInput extends HTMLElement {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const disabled = this.disabled
     const browseLabel = this.getAttribute('button-label') || 'Choose files'
-    const title = this.directory ? 'Drop files or folders here' : 'Drop files here'
+    const title = this.directory ? 'Drop files/directories' : this.multiple ? 'Drop files' : 'Drop a file'
     const hint = this.getModeHint()
     const fileListHtml = this.getFileListHtml()
 
@@ -263,7 +296,7 @@ export class TotFileInput extends HTMLElement {
         <span class="label" part="form-control-label"><slot name="label">${escapeHtml(this.label)}</slot></span>
         <div class="dropzone${disabled ? ' dropzone--disabled' : ''}" part="dropzone" tabindex="${disabled ? '-1' : '0'}" role="button" aria-disabled="${disabled ? 'true' : 'false'}">
           <input class="file-native-input" part="input" type="file" ${this.multiple || this.directory ? 'multiple' : ''} ${this.directory ? 'webkitdirectory directory' : ''} ${disabled ? 'disabled' : ''} ${this.hasAttribute('accept') ? `accept="${escapeAttribute(this.getAttribute('accept') || '')}"` : ''}>
-          <span class="dropzone__icon" aria-hidden="true">⇪</span>
+          <span class="dropzone__icon" aria-hidden="true"><slot name="icon"></slot></span>
           <span class="dropzone__title">${escapeHtml(title)}</span>
           <span class="dropzone__hint">${escapeHtml(hint)}</span>
           <span class="file-actions">
@@ -280,7 +313,11 @@ export class TotFileInput extends HTMLElement {
     const input = root.querySelector('.file-native-input')
     const browseButton = root.querySelector('.file-button:not(.file-button--neutral)')
     const clearButton = root.querySelector('[data-action="clear"]')
+    const icon = root.querySelector('.dropzone__icon')
+    const iconSlot = root.querySelector('slot[name="icon"]')
 
+    this.syncIconSlot(icon, iconSlot)
+    iconSlot.addEventListener('slotchange', () => this.syncIconSlot(icon, iconSlot))
     input.addEventListener('change', () => this.handleInputChange(input))
     browseButton.addEventListener('click', (event) => {
       event.stopPropagation()
@@ -298,6 +335,19 @@ export class TotFileInput extends HTMLElement {
     dropzone.addEventListener('drop', (event) => {
       void this.handleDrop(event)
     })
+  }
+
+  syncIconSlot(icon, iconSlot) {
+    const nodes = iconSlot.assignedNodes({ flatten: true })
+    let hasContent = false
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].nodeType === Node.ELEMENT_NODE || String(nodes[i].textContent || '').trim()) {
+        hasContent = true
+        break
+      }
+    }
+
+    icon.classList.toggle('dropzone__icon--has-content', hasContent)
   }
 
   handleDropzoneClick(event) {

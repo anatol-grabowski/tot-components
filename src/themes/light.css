@@ -424,9 +424,9 @@
   --tot-button-font-size-large: var(--tot-font-size-medium);
 
   /* Inputs */
-  --tot-input-height-small: 1.875rem; /* 30px */
-  --tot-input-height-medium: 2.5rem; /* 40px */
-  --tot-input-height-large: 3.125rem; /* 50px */
+  --tot-input-height-small: 1.75rem; /* 28px */
+  --tot-input-height-medium: 2.25rem; /* 36px */
+  --tot-input-height-large: 2.75rem; /* 44px */
 
   --tot-input-background-color: var(--tot-color-neutral-0);
   --tot-input-background-color-hover: var(--tot-input-background-color);
@@ -461,9 +461,9 @@
   --tot-input-icon-color-focus: var(--tot-color-neutral-600);
   --tot-input-placeholder-color: var(--tot-color-neutral-500);
   --tot-input-placeholder-color-disabled: var(--tot-color-neutral-600);
-  --tot-input-spacing-small: var(--tot-spacing-small);
-  --tot-input-spacing-medium: var(--tot-spacing-medium);
-  --tot-input-spacing-large: var(--tot-spacing-large);
+  --tot-input-spacing-small: var(--tot-spacing-x-small);
+  --tot-input-spacing-medium: var(--tot-spacing-small);
+  --tot-input-spacing-large: var(--tot-spacing-medium);
 
   --tot-input-focus-ring-color: hsl(198.6 88.7% 48.4% / 40%);
   --tot-input-focus-ring-offset: 0;
@@ -507,6 +507,35 @@
   --tot-panel-background-color: var(--tot-color-neutral-0);
   --tot-panel-border-color: var(--tot-color-neutral-200);
   --tot-panel-border-width: 1px;
+
+  /* Dropdowns */
+  --tot-dropdown-min-width: 12rem;
+  --tot-dropdown-max-width: 28rem;
+  --tot-dropdown-padding: 0;
+  --tot-dropdown-panel-gap: var(--tot-spacing-2x-small);
+
+  /* Menus */
+  --tot-menu-min-width: 12rem;
+  --tot-menu-max-height: none;
+  --tot-menu-overflow: visible;
+  --tot-menu-padding: .125rem;
+  --tot-menu-divider-spacing: .125rem;
+  --tot-menu-item-gap: .375rem;
+  --tot-menu-item-height: 1.5rem;
+  --tot-menu-item-padding-block: .1875rem;
+  --tot-menu-item-padding-inline: .5rem;
+  --tot-menu-label-padding-block: .1875rem;
+  --tot-menu-submenu-min-width: 12rem;
+
+  /* File inputs */
+  --tot-file-input-border-width: 2px;
+  --tot-file-input-dash-size: .625rem;
+  --tot-file-input-dash-repeat: 1.375rem;
+  --tot-file-input-min-height: 5.5rem;
+  --tot-file-input-padding: .75rem;
+
+  /* Audio recorder */
+  --tot-audio-recorder-main-control-size: 2.625rem;
 
   /*
    * Tooltips

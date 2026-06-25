@@ -28,9 +28,10 @@ const dropdownStyle = `
   .panel {
     left: 0;
     min-width: var(--tot-dropdown-min-width, 12rem);
-    max-width: min(var(--tot-dropdown-max-width, 28rem), calc(100vw - 1rem));
+    max-width: min(var(--tot-dropdown-max-width, 28rem), 100vw);
     position: absolute;
-    top: calc(100% + var(--tot-spacing-2x-small, .25rem));
+    margin-top: var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem));
+    top: 100%;
     z-index: var(--tot-z-index-dropdown, 900);
   }
 
@@ -39,6 +40,7 @@ const dropdownStyle = `
   }
 
   .dropdown--hoist .panel {
+    margin-top: 0;
     position: fixed;
   }
 
@@ -62,9 +64,6 @@ const dropdownStyle = `
 
   ::slotted(tot-menu),
   .panel__generated-menu {
-    --tot-menu-min-width: 0;
-    --tot-panel-border-width: 0;
-    --tot-shadow-small: none;
     display: block;
     min-width: 0;
     width: 100%;
@@ -190,6 +189,7 @@ export class TotDropdown extends HTMLElement {
       const slot = document.createElement('slot')
       slot.addEventListener('slotchange', () => this.handleDefaultSlotChange())
       content.append(slot)
+      this.syncSlottedMenus()
     } else {
       content.append(this.createMenu())
     }
@@ -213,6 +213,7 @@ export class TotDropdown extends HTMLElement {
     const menu = document.createElement('tot-menu')
     const items = this.menuItems
     menu.className = 'panel__generated-menu'
+    menu.setAttribute('embedded', '')
     menu.setAttribute('items', JSON.stringify(items))
     menu.items = items
     return menu
@@ -275,8 +276,22 @@ export class TotDropdown extends HTMLElement {
     if (hasDefaultSlotContent !== this._hasDefaultSlotContent) {
       this.render()
     } else {
+      this.syncSlottedMenus()
       this.schedulePanelPosition()
     }
+  }
+
+  syncSlottedMenus() {
+    requestAnimationFrame(() => {
+      const slot = this.shadowRoot?.querySelector('.panel slot:not([name])')
+      const assigned = slot ? slot.assignedElements({ flatten: true }) : []
+
+      for (let i = 0; i < assigned.length; i++) {
+        if (assigned[i].localName === 'tot-menu') {
+          assigned[i].setAttribute('embedded', '')
+        }
+      }
+    })
   }
 
   schedulePanelPosition() {
@@ -304,7 +319,8 @@ export class TotDropdown extends HTMLElement {
 
     if (!this.hoist) {
       panel.style.left = '0px'
-      panel.style.top = 'calc(100% + var(--tot-spacing-2x-small, .25rem))'
+      panel.style.marginTop = 'var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem))'
+      panel.style.top = '100%'
       return
     }
 
@@ -322,6 +338,7 @@ export class TotDropdown extends HTMLElement {
     left = Math.round(left)
     top = Math.round(Math.max(margin, Math.min(top, window.innerHeight - panelRect.height - margin)))
     panel.style.left = `${left}px`
+    panel.style.marginTop = '0'
     panel.style.top = `${top}px`
   }
 

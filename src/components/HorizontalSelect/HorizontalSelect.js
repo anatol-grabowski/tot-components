@@ -12,7 +12,7 @@ const horizontalSelectStyle = `
     color: var(--tot-input-color, #1e293b);
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    gap: var(--tot-spacing-2x-small, .25rem);
+    gap: var(--tot-spacing-3x-small, .125rem);
     max-width: 100%;
     min-width: 0;
   }
@@ -34,7 +34,7 @@ const horizontalSelectStyle = `
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-block: var(--tot-spacing-3x-small, .125rem);
+    padding-block: 0;
     scrollbar-width: thin;
   }
 
@@ -47,8 +47,8 @@ const horizontalSelectStyle = `
   }
 
   .option {
-    --option-height: var(--tot-input-height-medium, 2.5rem);
-    --option-spacing: var(--tot-input-spacing-medium, 1rem);
+    --option-height: var(--tot-input-height-medium, 2.25rem);
+    --option-spacing: var(--tot-input-spacing-medium, .75rem);
     --option-font-size: var(--tot-input-font-size-medium, .875rem);
 
     -webkit-appearance: none;
@@ -64,7 +64,7 @@ const horizontalSelectStyle = `
     font: inherit;
     font-size: var(--option-font-size);
     font-weight: var(--tot-input-font-weight, 400);
-    gap: var(--tot-spacing-2x-small, .25rem);
+    gap: var(--tot-spacing-3x-small, .125rem);
     justify-content: center;
     line-height: 1;
     min-height: var(--option-height);
@@ -92,14 +92,14 @@ const horizontalSelectStyle = `
   }
 
   .select--small .option {
-    --option-height: var(--tot-input-height-small, 1.875rem);
-    --option-spacing: var(--tot-input-spacing-small, .75rem);
+    --option-height: var(--tot-input-height-small, 1.75rem);
+    --option-spacing: var(--tot-input-spacing-small, .5rem);
     --option-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
   .select--large .option {
-    --option-height: var(--tot-input-height-large, 3.125rem);
-    --option-spacing: var(--tot-input-spacing-large, 1.25rem);
+    --option-height: var(--tot-input-height-large, 2.75rem);
+    --option-spacing: var(--tot-input-spacing-large, 1rem);
     --option-font-size: var(--tot-input-font-size-large, 1rem);
   }
 
@@ -111,7 +111,7 @@ const horizontalSelectStyle = `
 
   .option:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: calc(var(--tot-focus-ring-offset, 1px) * -1);
+    outline-offset: -1px;
     z-index: 2;
   }
 

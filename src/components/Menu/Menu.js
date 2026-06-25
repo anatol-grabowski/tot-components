@@ -17,16 +17,26 @@ const menuStyle = `
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
-    gap: var(--tot-spacing-3x-small, .125rem);
+    gap: 0;
     max-height: var(--tot-menu-max-height, none);
     max-width: 100%;
     min-width: var(--tot-menu-min-width, 12rem);
     overflow: var(--tot-menu-overflow, visible);
-    padding: var(--tot-spacing-2x-small, .25rem);
+    padding: var(--tot-menu-padding, .125rem);
   }
 
+  :host([embedded]) .menu {
+    border: 0;
+    box-shadow: none;
+    min-width: 0;
+  }
+
+  .menu > tot-divider,
   ::slotted(tot-divider) {
-    margin: var(--tot-spacing-2x-small, .25rem) calc(var(--tot-spacing-2x-small, .25rem) * -1);
+    display: block;
+    margin-block: var(--tot-menu-divider-spacing, .125rem);
+    margin-inline: 0;
+    width: 100%;
   }
 `
 
@@ -51,12 +61,12 @@ const menuItemStyle = `
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
-    gap: var(--tot-spacing-x-small, .5rem);
-    grid-template-columns: 1rem minmax(0, 1fr) auto;
-    line-height: 1.35;
-    min-height: var(--tot-menu-item-height, 2rem);
+    gap: var(--tot-menu-item-gap, .375rem);
+    grid-template-columns: .875rem minmax(0, 1fr) auto;
+    line-height: 1.25;
+    min-height: var(--tot-menu-item-height, 1.625rem);
     outline: none;
-    padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
+    padding: var(--tot-menu-item-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem);
     position: relative;
     text-align: left;
     user-select: none;
@@ -133,10 +143,10 @@ const menuItemStyle = `
 
   .submenu {
     display: none;
-    left: calc(100% - var(--tot-spacing-2x-small, .25rem));
+    left: 100%;
     min-width: 12rem;
     position: absolute;
-    top: calc(var(--tot-spacing-2x-small, .25rem) * -1);
+    top: 0;
     z-index: var(--tot-z-index-dropdown, 1000);
   }
 
@@ -153,7 +163,7 @@ const menuItemStyle = `
   @media (max-width: 640px) {
     .submenu {
       left: var(--tot-spacing-small, .75rem);
-      max-width: calc(100vw - 2rem);
+      max-width: 100vw;
       position: relative;
       top: auto;
     }
@@ -169,7 +179,7 @@ const menuLabelStyle = `
     font-weight: var(--tot-font-weight-semibold, 600);
     line-height: 1.35;
     max-width: 100%;
-    padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem) var(--tot-spacing-2x-small, .25rem);
+    padding: var(--tot-menu-label-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem) var(--tot-spacing-3x-small, .125rem);
     text-transform: none;
   }
 

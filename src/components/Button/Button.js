@@ -30,11 +30,11 @@ const buttonStyle = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--tot-spacing-x-small, .5rem);
+    gap: var(--tot-spacing-2x-small, .25rem);
     min-width: 0;
     width: 100%;
-    min-height: var(--tot-input-height-medium, 2.5rem);
-    padding: 0 var(--tot-input-spacing-medium, 1rem);
+    min-height: var(--tot-input-height-medium, 2.25rem);
+    padding: 0 var(--tot-input-spacing-medium, .75rem);
     position: relative;
     text-align: center;
     text-decoration: none;
@@ -104,14 +104,14 @@ const buttonStyle = `
   }
 
   .button--small {
-    min-height: var(--tot-input-height-small, 1.875rem);
-    padding: 0 var(--tot-input-spacing-small, .75rem);
+    min-height: var(--tot-input-height-small, 1.75rem);
+    padding: 0 var(--tot-input-spacing-small, .5rem);
     font-size: var(--tot-button-font-size-small, var(--tot-input-font-size-small, .75rem));
   }
 
   .button--large {
-    min-height: var(--tot-input-height-large, 3.125rem);
-    padding: 0 var(--tot-input-spacing-large, 1.25rem);
+    min-height: var(--tot-input-height-large, 2.75rem);
+    padding: 0 var(--tot-input-spacing-large, 1rem);
     font-size: var(--tot-button-font-size-large, var(--tot-input-font-size-large, 1rem));
   }
 
@@ -128,7 +128,7 @@ const buttonStyle = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--tot-spacing-x-small, .5rem);
+    gap: var(--tot-spacing-2x-small, .25rem);
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
@@ -156,7 +156,7 @@ const buttonStyle = `
     display: none;
     font-size: .9em;
     line-height: 1;
-    margin-inline-start: calc(var(--tot-spacing-3x-small, .125rem) * -1);
+    margin-inline-start: 0;
     
     top: -0.15em;
     position: relative;

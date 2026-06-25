@@ -36,8 +36,8 @@ const audioRecorderStyle = `
     color: var(--tot-input-color, #1e293b);
     cursor: pointer;
     font: inherit;
-    min-height: var(--tot-input-height-medium, 2.5rem);
-    min-width: var(--tot-input-height-medium, 2.5rem);
+    min-height: var(--tot-input-height-medium, 2.25rem);
+    min-width: var(--tot-input-height-medium, 2.25rem);
     transition:
       var(--tot-transition-fast, 150ms) background-color,
       var(--tot-transition-fast, 150ms) border-color,
@@ -64,21 +64,27 @@ const audioRecorderStyle = `
     opacity: .55;
   }
 
-  .record {
+  button[hidden] {
+    display: none;
+  }
+
+  .record,
+  .pause {
     border: 2px solid var(--tot-color-danger-600, #dc2626);
     border-radius: var(--tot-border-radius-circle, 50%);
     display: inline-grid;
-    height: 42px;
+    height: var(--tot-audio-recorder-main-control-size, 2.625rem);
+    padding: 0;
     place-items: center;
-    width: 42px;
+    width: var(--tot-audio-recorder-main-control-size, 2.625rem);
   }
 
   .record::before {
     background: var(--tot-color-danger-600, #dc2626);
     border-radius: var(--tot-border-radius-circle, 50%);
     content: '';
-    height: 26px;
-    width: 26px;
+    height: 1.625rem;
+    width: 1.625rem;
   }
 
   .record:disabled::before {
@@ -104,20 +110,25 @@ const audioRecorderStyle = `
   }
 
   .pause {
-    align-content: center;
-    border-radius: var(--tot-input-border-radius-medium, var(--tot-border-radius-medium, 4px));
-    display: inline-grid;
-    gap: 5px;
-    grid-template-columns: 5px 5px;
-    justify-content: center;
+    gap: .3125rem;
+    grid-template-columns: .3125rem .3125rem;
   }
 
   .pause::before,
   .pause::after {
     background: var(--tot-input-color, #1e293b);
     content: '';
-    height: 19px;
-    width: 5px;
+    height: 1.1875rem;
+    width: .3125rem;
+
+    position: relative;
+    left: 0.7rem;
+  }
+
+  .resume::before,
+  .resume::after {
+    position: relative;
+    left: 0;
   }
 
   .pause:disabled::before,
@@ -125,11 +136,15 @@ const audioRecorderStyle = `
     background: var(--tot-input-color-disabled, var(--tot-color-neutral-500, #64748b));
   }
 
+  .pause.resume {
+    grid-template-columns: 1fr;
+  }
+
   .pause.resume::before {
     background: transparent;
     border-color: transparent transparent transparent var(--tot-input-color, #1e293b);
     border-style: solid;
-    border-width: 9.5px 0 9.5px 16px;
+    border-width: .59375rem 0 .59375rem 1rem;
     height: 0;
     width: 0;
   }
@@ -254,8 +269,8 @@ export class TotAudioRecorder extends HTMLElement {
       <div class="recorder">
         <div class="controls">
           <button class="record" type="button" aria-label="Record"></button>
+          <button class="pause" type="button" aria-label="Pause" disabled hidden></button>
           <button class="stop" type="button" aria-label="Stop" disabled></button>
-          <button class="pause" type="button" aria-label="Pause" disabled></button>
           <div class="spacer"></div>
           <button class="clear-abort" type="button" disabled>Clear</button>
         </div>
@@ -407,9 +422,11 @@ export class TotAudioRecorder extends HTMLElement {
     })
     this._recorder.start()
     this._playback.style.display = 'none'
-    this._recordButton.disabled = true
-    this._stopButton.disabled = false
+    this._recordButton.hidden = true
+    this._recordButton.disabled = false
+    this._pauseButton.hidden = false
     this._pauseButton.disabled = false
+    this._stopButton.disabled = false
     this._pauseButton.classList.remove('resume')
     this._pauseButton.setAttribute('aria-label', 'Pause')
     this._clearAbortButton.textContent = 'Abort'
@@ -521,9 +538,11 @@ export class TotAudioRecorder extends HTMLElement {
     this._playback.style.display = ''
     this._playback.innerHTML = ''
     this._playback.append(player)
+    this._recordButton.hidden = false
     this._recordButton.disabled = false
-    this._stopButton.disabled = true
+    this._pauseButton.hidden = true
     this._pauseButton.disabled = true
+    this._stopButton.disabled = true
     this._pauseButton.classList.remove('resume')
     this._canvasContainer.classList.add('hidden')
     this._clearAbortButton.textContent = 'Clear'
@@ -555,9 +574,11 @@ export class TotAudioRecorder extends HTMLElement {
     cancelAnimationFrame(this._animation)
     this.stopTracks()
     this._isAbort = false
+    this._recordButton.hidden = false
     this._recordButton.disabled = false
-    this._stopButton.disabled = true
+    this._pauseButton.hidden = true
     this._pauseButton.disabled = true
+    this._stopButton.disabled = true
     this._pauseButton.classList.remove('resume')
     this._clearAbortButton.textContent = 'Clear'
 
@@ -620,6 +641,11 @@ export class TotAudioRecorder extends HTMLElement {
       URL.revokeObjectURL(player.src)
     }
     this._playback.innerHTML = ''
+    this._recordButton.hidden = false
+    this._recordButton.disabled = false
+    this._pauseButton.hidden = true
+    this._pauseButton.disabled = true
+    this._stopButton.disabled = true
     this._canvasContainer.classList.remove('hidden')
     this._clearAbortButton.disabled = true
     this._timeLabel.textContent = formatTime(0)

@@ -74,7 +74,7 @@ const navbarStyle = `
 
   button.tab:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: calc(var(--tot-focus-ring-offset, 1px) * -1);
+    outline-offset: -1px;
     z-index: 1;
   }
 

@@ -9,7 +9,9 @@ registerDemo({
     wrapper.innerHTML = `
       <div class="stack demo-group">
         <div class="demo-label">Single file dropzone</div>
-        <tot-file-input label="Upload one file" help-text="Drag a file onto the dashed area or click to choose one."></tot-file-input>
+        <tot-file-input label="Upload one file" help-text="Drag a file onto the dashed area or click to choose one.">
+          <span slot="icon" aria-hidden="true">↥</span>
+        </tot-file-input>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Multiple files</div>

@@ -30,8 +30,8 @@ const inputStyle = `
   }
 
   .input {
-    --input-height: var(--tot-input-height-medium, 2.5rem);
-    --input-spacing: var(--tot-input-spacing-medium, 1rem);
+    --input-height: var(--tot-input-height-medium, 2.25rem);
+    --input-spacing: var(--tot-input-spacing-medium, .75rem);
     --input-font-size: var(--tot-input-font-size-medium, .875rem);
 
     align-items: center;
@@ -43,7 +43,7 @@ const inputStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--input-font-size);
     font-weight: var(--tot-input-font-weight, 400);
-    gap: var(--tot-spacing-x-small, .5rem);
+    gap: var(--tot-spacing-2x-small, .25rem);
     letter-spacing: var(--tot-input-letter-spacing, normal);
     min-height: var(--input-height);
     max-width: 100%;
@@ -59,14 +59,14 @@ const inputStyle = `
   }
 
   .input--small {
-    --input-height: var(--tot-input-height-small, 1.875rem);
-    --input-spacing: var(--tot-input-spacing-small, .75rem);
+    --input-height: var(--tot-input-height-small, 1.75rem);
+    --input-spacing: var(--tot-input-spacing-small, .5rem);
     --input-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
   .input--large {
-    --input-height: var(--tot-input-height-large, 3.125rem);
-    --input-spacing: var(--tot-input-spacing-large, 1.25rem);
+    --input-height: var(--tot-input-height-large, 2.75rem);
+    --input-spacing: var(--tot-input-spacing-large, 1rem);
     --input-font-size: var(--tot-input-font-size-large, 1rem);
   }
 
@@ -101,7 +101,7 @@ const inputStyle = `
     color: inherit;
     flex: 1 1 auto;
     font: inherit;
-    height: calc(var(--input-height) - 2px);
+    height: 100%;
     letter-spacing: inherit;
     min-width: 0;
     outline: none;
@@ -146,7 +146,7 @@ const inputStyle = `
 
   .input__actions {
     gap: var(--tot-spacing-3x-small, .125rem);
-    margin-inline-end: calc(var(--tot-spacing-3x-small, .125rem) * -1);
+    margin-inline-end: 0;
   }
 
   .input__button {
