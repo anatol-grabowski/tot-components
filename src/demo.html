@@ -313,7 +313,7 @@ h2 {
   import './components/index.js'
 
   // Import demo orchestrator
-  import { renderDemos, setDemoLogger, logDemoEvent } from './components/demoCommon.js'
+  import { renderDemos, setDemoLogger } from './components/demoCommon.js'
 
   // Import individual demo files
   import './components/Button/Button.demo.js'
@@ -328,23 +328,6 @@ h2 {
   import './components/Input/Input.demo.js'
   import './components/FileInput/FileInput.demo.js'
   import './components/HorizontalSelect/HorizontalSelect.demo.js'
-
-  const componentEventNames = [
-    'change',
-    'input',
-    'select',
-    'play',
-    'pause',
-    'loaded',
-    'error',
-    'seek',
-    'recording-error',
-    'recording-start',
-    'recording-pause',
-    'recording-resume',
-    'recording-stop',
-    'clear',
-  ]
 
   const demoMain = document.getElementById('demoMain')
   const themeButton = document.getElementById('themeButton')
@@ -362,16 +345,6 @@ h2 {
   setDemoLogger((entry) => {
     appendEventLog(entry.source, entry.eventName, entry.detail, entry.time)
   })
-
-  for (let i = 0; i < componentEventNames.length; i++) {
-    demoMain.addEventListener(componentEventNames[i], (event) => {
-      if (!(event instanceof CustomEvent) || event.__totDemoLogged) {
-        return
-      }
-
-      logDemoEvent(getEventSource(event), event.type, event.detail || {})
-    })
-  }
 
   renderDemos(demoMain)
 
@@ -487,16 +460,6 @@ h2 {
     eventLog.prepend(row)
   }
 
-  function getEventSource(event) {
-    const path = event.composedPath()
-    for (let i = 0; i < path.length; i++) {
-      const node = path[i]
-      if (node instanceof HTMLElement && node.localName.startsWith('tot-')) {
-        return node
-      }
-    }
-    return event.target
-  }
 
   function formatSource(source) {
     if (source instanceof HTMLElement) {

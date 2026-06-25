@@ -49,15 +49,12 @@ registerDemo({
     for (let i = 0; i < inputs.length; i++) {
       const input = inputs[i]
       input.addEventListener('input', (event) => {
-        event.__totDemoLogged = true
         logEvent(input, 'input', event.detail)
       })
       input.addEventListener('change', (event) => {
-        event.__totDemoLogged = true
         logEvent(input, 'change', event.detail)
       })
       input.addEventListener('clear', (event) => {
-        event.__totDemoLogged = true
         logEvent(input, 'clear', event.detail)
       })
     }

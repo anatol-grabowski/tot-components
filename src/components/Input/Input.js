@@ -82,7 +82,7 @@ const inputStyle = `
     box-shadow: 0 0 0 var(--tot-input-focus-ring-offset, 0) var(--tot-input-focus-ring-color, hsl(198.6 88.7% 48.4% / 40%));
     color: var(--tot-input-color-focus, #0f172a);
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: var(--tot-focus-ring-offset, 1px);
+    outline-offset: 0;
   }
 
   .input--disabled {

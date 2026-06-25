@@ -75,7 +75,6 @@ registerDemo({
     const navbars = row.querySelectorAll('tot-navbar')
     for (let i = 0; i < navbars.length; i++) {
       navbars[i].addEventListener('change', (event) => {
-        event.__totDemoLogged = true
         logEvent(navbars[i], 'change', event.detail)
       })
     }

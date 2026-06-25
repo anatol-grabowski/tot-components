@@ -121,8 +121,8 @@ const horizontalSelectStyle = `
     color: var(--tot-color-neutral-0, #fff);
   }
 
-  .select--multiple .option--selected:not(:first-child) {
-    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--tot-color-neutral-0, #fff) 72%, transparent);
+  .select--multiple .option--selected + .option--selected {
+    border-left-color: color-mix(in srgb, var(--tot-color-neutral-0, #fff) 72%, var(--tot-color-primary-600, #0284c7));
   }
 
   .option--disabled {

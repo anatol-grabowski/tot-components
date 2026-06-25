@@ -66,11 +66,9 @@ registerDemo({
     for (let i = 0; i < selects.length; i++) {
       const select = selects[i]
       select.addEventListener('input', (event) => {
-        event.__totDemoLogged = true
         logEvent(select, 'input', getSelectEventDetail(event.detail))
       })
       select.addEventListener('change', (event) => {
-        event.__totDemoLogged = true
         logEvent(select, 'change', getSelectEventDetail(event.detail))
       })
     }

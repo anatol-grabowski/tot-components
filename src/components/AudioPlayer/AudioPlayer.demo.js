@@ -40,7 +40,7 @@ function writeString(view, offset, string) {
 registerDemo({
   id: 'tot-audio-player',
   title: 'AudioPlayer',
-  render: (container) => {
+  render: (container, { logEvent }) => {
     const row = document.createElement('div')
     row.className = 'stack'
     row.innerHTML = `
@@ -50,6 +50,13 @@ registerDemo({
     const demoAudio = row.querySelector('tot-audio-player')
     demoAudio.blob = makeDemoAudioBlob()
 
+    const eventNames = ['loaded', 'play', 'pause', 'seek', 'error']
+    for (let i = 0; i < eventNames.length; i++) {
+      demoAudio.addEventListener(eventNames[i], (event) => {
+        logEvent(demoAudio, eventNames[i], event.detail || {})
+      })
+    }
+
     container.appendChild(row)
-  }
+  },
 })

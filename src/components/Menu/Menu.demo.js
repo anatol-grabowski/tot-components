@@ -85,7 +85,6 @@ registerDemo({
     const menus = row.querySelectorAll('tot-menu')
     for (let i = 0; i < menus.length; i++) {
       menus[i].addEventListener('select', (event) => {
-        event.__totDemoLogged = true
         logEvent(menus[i], 'select', {
           value: event.detail.value,
           label: event.detail.label,

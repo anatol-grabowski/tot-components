@@ -86,7 +86,6 @@ registerDemo({
     const dropdowns = row.querySelectorAll('tot-dropdown')
     for (let i = 0; i < dropdowns.length; i++) {
       dropdowns[i].addEventListener('select', (event) => {
-        event.__totDemoLogged = true
         logEvent(dropdowns[i], 'select', {
           value: event.detail.value,
           label: event.detail.label,

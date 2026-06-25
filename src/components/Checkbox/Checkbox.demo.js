@@ -3,7 +3,7 @@ import { registerDemo } from '../demoCommon.js'
 registerDemo({
   id: 'tot-checkbox',
   title: 'Checkbox',
-  render: (container) => {
+  render: (container, { logEvent }) => {
     const row = document.createElement('div')
     row.className = 'stack'
 
@@ -29,6 +29,17 @@ registerDemo({
         <tot-checkbox label="Slot has priority">Slotted label wins</tot-checkbox>
       </div>
     `
+
+    const checkboxes = row.querySelectorAll('tot-checkbox')
+    for (let i = 0; i < checkboxes.length; i++) {
+      const checkbox = checkboxes[i]
+      checkbox.addEventListener('input', (event) => {
+        logEvent(checkbox, 'input', event.detail)
+      })
+      checkbox.addEventListener('change', (event) => {
+        logEvent(checkbox, 'change', event.detail)
+      })
+    }
 
     container.appendChild(row)
   },

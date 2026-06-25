@@ -78,7 +78,6 @@ registerDemo({
     const tabsElements = row.querySelectorAll('tot-tabs')
     for (let i = 0; i < tabsElements.length; i++) {
       tabsElements[i].addEventListener('change', (event) => {
-        event.__totDemoLogged = true
         logEvent(tabsElements[i], 'change', event.detail)
       })
     }

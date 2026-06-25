@@ -300,7 +300,7 @@ export class TotDropdown extends HTMLElement {
       return
     }
 
-    panel.style.minWidth = `${Math.ceil(triggerRect.width)}px`
+    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-dropdown-min-width, 12rem))`
 
     if (!this.hoist) {
       panel.style.left = '0px'

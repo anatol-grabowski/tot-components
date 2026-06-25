@@ -25,7 +25,6 @@ registerDemo({
     for (let i = 0; i < fileInputs.length; i++) {
       const fileInput = fileInputs[i]
       fileInput.addEventListener('change', (event) => {
-        event.__totDemoLogged = true
         logEvent(fileInput, 'change', {
           count: event.detail.count,
           multiple: event.detail.multiple,
@@ -34,7 +33,6 @@ registerDemo({
         })
       })
       fileInput.addEventListener('clear', (event) => {
-        event.__totDemoLogged = true
         logEvent(fileInput, 'clear', {
           count: event.detail.count,
           multiple: event.detail.multiple,
