@@ -178,7 +178,9 @@ const markdownStyle = `
   .markdown-output pre,
   .markdown-output table,
   .markdown-output ul,
-  .markdown-output ol {
+  .markdown-output ol,
+  .markdown-output dl,
+  .markdown-output .pandoc-line-block {
     margin: 0 0 var(--tot-spacing-x-small, .5rem);
   }
 
@@ -197,6 +199,84 @@ const markdownStyle = `
 
   .markdown-output li > :last-child {
     margin-bottom: 0;
+  }
+
+
+  .markdown-output dt {
+    font-weight: var(--tot-font-weight-semibold, 500);
+    margin: var(--tot-spacing-2x-small, .25rem) 0 var(--tot-spacing-3x-small, .125rem);
+  }
+
+  .markdown-output dd {
+    margin: 0 0 var(--tot-spacing-x-small, .5rem) var(--tot-spacing-large, 1.25rem);
+  }
+
+  .markdown-output dd > :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown-output .pandoc-line-block {
+    display: grid;
+    gap: var(--tot-spacing-3x-small, .125rem);
+  }
+
+  .markdown-output .pandoc-line {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .markdown-output .pandoc-div {
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    border-radius: var(--tot-border-radius-medium, 4px);
+    margin: 0 0 var(--tot-spacing-x-small, .5rem);
+    padding: var(--tot-spacing-x-small, .5rem);
+  }
+
+  .markdown-output .pandoc-div > :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown-output .smallcaps {
+    font-variant: small-caps;
+  }
+
+  .markdown-output .math {
+    font-family: var(--tot-font-mono, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace);
+    white-space: pre-wrap;
+  }
+
+  .markdown-output .math.display {
+    background: var(--tot-color-neutral-50, #f8fafc);
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    border-radius: var(--tot-border-radius-medium, 4px);
+    display: block;
+    margin: 0 0 var(--tot-spacing-x-small, .5rem);
+    overflow: auto;
+    padding: var(--tot-spacing-x-small, .5rem);
+    text-align: center;
+  }
+
+  .markdown-output .footnotes {
+    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    color: var(--tot-color-neutral-700, #334155);
+    font-size: .92em;
+    margin-top: var(--tot-spacing-small, .75rem);
+    padding-top: var(--tot-spacing-x-small, .5rem);
+  }
+
+  .markdown-output .footnotes ol {
+    margin-bottom: 0;
+    padding-inline-start: var(--tot-spacing-large, 1.25rem);
+  }
+
+  .markdown-output .footnotes li:target {
+    background: var(--tot-color-neutral-100, #f1f5f9);
+  }
+
+  .markdown-output .footnote-ref,
+  .markdown-output .footnote-backref {
+    font-size: .85em;
   }
 
   .markdown-output blockquote {
@@ -380,7 +460,7 @@ const markdownStyle = `
 
 export class TotMarkdown extends HTMLElement {
   static get observedAttributes() {
-    return ['value', 'markdown', 'streaming', 'label', 'help-text']
+    return ['value', 'markdown', 'streaming', 'label', 'help-text', 'pandoc']
   }
 
   constructor() {
@@ -436,6 +516,14 @@ export class TotMarkdown extends HTMLElement {
 
   set helpText(value) {
     setNullableAttribute(this, 'help-text', value)
+  }
+
+  get pandoc() {
+    return this.hasAttribute('pandoc')
+  }
+
+  set pandoc(value) {
+    setBooleanAttribute(this, 'pandoc', value)
   }
 
   get streaming() {
@@ -525,12 +613,13 @@ export class TotMarkdown extends HTMLElement {
 
   updateUi() {
     const root = this.shadowRoot
-    const html = renderMarkdown(this.value)
+    const html = renderMarkdown(this.value, { pandoc: this.pandoc })
     const streamingCaret = this.streaming ? '<span class="markdown__streaming-caret" aria-hidden="true"></span>' : ''
     const label = root.querySelector('.label')
     const helpText = root.querySelector('.help-text')
     const fullscreenTitle = root.querySelector('.fullscreen__title')
     const fullscreen = root.querySelector('.fullscreen')
+    const panel = root.querySelector('.markdown')
     const content = root.querySelector('.markdown__content')
     const fullscreenContent = root.querySelector('.fullscreen__body')
     const indicators = root.querySelectorAll('.markdown__streaming-indicator, .fullscreen__streaming-indicator')
@@ -539,7 +628,8 @@ export class TotMarkdown extends HTMLElement {
     label.hidden = this.label === ''
     helpText.textContent = this.helpText
     helpText.hidden = this.helpText === ''
-    fullscreenTitle.textContent = this.label || 'Markdown'
+    fullscreenTitle.textContent = this.label || (this.pandoc ? 'Pandoc markdown' : 'Markdown')
+    panel.classList.toggle('markdown--pandoc', this.pandoc)
     fullscreen.hidden = !this._fullscreen
     content.innerHTML = `${html}${streamingCaret}`
     fullscreenContent.innerHTML = `${html}${streamingCaret}`
@@ -645,23 +735,34 @@ export class TotMarkdown extends HTMLElement {
   getEventDetail() {
     return {
       fullscreen: this._fullscreen,
+      pandoc: this.pandoc,
       streaming: this.streaming,
       value: this.value,
     }
   }
 }
 
-function renderMarkdown(markdown) {
+function renderMarkdown(markdown, options = {}) {
   const normalizedMarkdown = String(markdown || '').replace(/\r\n?/g, '\n').replace(/\t/g, '    ')
   if (normalizedMarkdown.trim() === '') {
     return '<p class="markdown__empty">No markdown content.</p>'
   }
 
-  const lines = normalizedMarkdown.split('\n')
-  return parseBlocks(lines, 0).html
+  const state = {
+    footnoteOrder: [],
+    footnotes: {},
+  }
+  let lines = normalizedMarkdown.split('\n')
+  if (options.pandoc) {
+    lines = preparePandocLines(lines, state)
+  }
+
+  const html = parseBlocks(lines, 0, options, state).html
+  const footnotes = options.pandoc ? renderPandocFootnotes(state, options) : ''
+  return `${html}${footnotes}`
 }
 
-function parseBlocks(lines, startIndex) {
+function parseBlocks(lines, startIndex, options = {}, state = {}) {
   let html = ''
   let index = startIndex
 
@@ -673,7 +774,7 @@ function parseBlocks(lines, startIndex) {
 
     const fence = matchFence(lines[index])
     if (fence) {
-      const result = parseFencedCode(lines, index, fence)
+      const result = parseFencedCode(lines, index, fence, options, state)
       html += result.html
       index = result.index
       continue
@@ -682,14 +783,16 @@ function parseBlocks(lines, startIndex) {
     const heading = lines[index].match(/^ {0,3}(#{1,6})(?:\s+|$)(.*?)\s*#*\s*$/)
     if (heading) {
       const level = heading[1].length
-      html += `<h${level}>${parseInline(heading[2])}</h${level}>`
+      const parsedHeading = options.pandoc ? extractTrailingPandocAttributes(heading[2]) : { text: heading[2], attributes: null }
+      html += `<h${level}${renderPandocAttributes(parsedHeading.attributes)}>${parseInline(parsedHeading.text, options, state)}</h${level}>`
       index += 1
       continue
     }
 
     if (index + 1 < lines.length && isSetextHeading(lines[index], lines[index + 1])) {
       const level = lines[index + 1].trim().startsWith('=') ? 1 : 2
-      html += `<h${level}>${parseInline(lines[index].trim())}</h${level}>`
+      const parsedHeading = options.pandoc ? extractTrailingPandocAttributes(lines[index].trim()) : { text: lines[index].trim(), attributes: null }
+      html += `<h${level}${renderPandocAttributes(parsedHeading.attributes)}>${parseInline(parsedHeading.text, options, state)}</h${level}>`
       index += 2
       continue
     }
@@ -701,20 +804,29 @@ function parseBlocks(lines, startIndex) {
     }
 
     if (/^ {0,3}>/.test(lines[index])) {
-      const result = parseBlockquote(lines, index)
+      const result = parseBlockquote(lines, index, options, state)
       html += result.html
       index = result.index
       continue
+    }
+
+    if (options.pandoc) {
+      const pandocBlock = parsePandocBlock(lines, index, options, state)
+      if (pandocBlock) {
+        html += pandocBlock.html
+        index = pandocBlock.index
+        continue
+      }
     }
 
     if (matchListItem(lines[index])) {
-      const result = parseList(lines, index)
+      const result = parseList(lines, index, options, state)
       html += result.html
       index = result.index
       continue
     }
 
-    const table = parseTable(lines, index)
+    const table = parseTable(lines, index, options, state)
     if (table) {
       html += table.html
       index = table.index
@@ -722,13 +834,13 @@ function parseBlocks(lines, startIndex) {
     }
 
     if (getIndent(lines[index]) >= 4) {
-      const result = parseIndentedCode(lines, index)
+      const result = parseIndentedCode(lines, index, options, state)
       html += result.html
       index = result.index
       continue
     }
 
-    const result = parseParagraph(lines, index)
+    const result = parseParagraph(lines, index, options, state)
     html += result.html
     index = result.index
   }
@@ -736,7 +848,7 @@ function parseBlocks(lines, startIndex) {
   return { html, index }
 }
 
-function parseFencedCode(lines, startIndex, fence) {
+function parseFencedCode(lines, startIndex, fence, options = {}, state = {}) {
   const codeLines = []
   let index = startIndex + 1
   const fenceText = fence.marker[0]
@@ -754,15 +866,17 @@ function parseFencedCode(lines, startIndex, fence) {
     index += 1
   }
 
-  const language = getCodeLanguage(fence.info)
-  const classAttribute = language ? ` class="language-${escapeAttribute(language)}"` : ''
+  const pandocAttributes = options.pandoc ? parsePandocAttributes(fence.info) : null
+  const language = getPandocCodeLanguage(fence.info, pandocAttributes)
+  const classes = language ? [`language-${language}`] : []
+  const attributes = options.pandoc ? renderPandocAttributes(pandocAttributes, { extraClasses: classes }) : (language ? ` class="language-${escapeAttribute(language)}"` : '')
   return {
-    html: `<pre><code${classAttribute}>${escapeHtml(codeLines.join('\n'))}</code></pre>`,
+    html: `<pre><code${attributes}>${escapeHtml(codeLines.join('\n'))}</code></pre>`,
     index,
   }
 }
 
-function parseIndentedCode(lines, startIndex) {
+function parseIndentedCode(lines, startIndex, options = {}, state = {}) {
   const codeLines = []
   let index = startIndex
 
@@ -781,7 +895,7 @@ function parseIndentedCode(lines, startIndex) {
   }
 }
 
-function parseBlockquote(lines, startIndex) {
+function parseBlockquote(lines, startIndex, options = {}, state = {}) {
   const quoteLines = []
   let index = startIndex
 
@@ -805,12 +919,12 @@ function parseBlockquote(lines, startIndex) {
   }
 
   return {
-    html: `<blockquote>${parseBlocks(quoteLines, 0).html}</blockquote>`,
+    html: `<blockquote>${parseBlocks(quoteLines, 0, options, state).html}</blockquote>`,
     index,
   }
 }
 
-function parseList(lines, startIndex) {
+function parseList(lines, startIndex, options = {}, state = {}) {
   const first = matchListItem(lines[startIndex])
   const ordered = isOrderedMarker(first.marker)
   const listIndent = first.indent.length
@@ -857,7 +971,7 @@ function parseList(lines, startIndex) {
       index += 1
     }
 
-    const itemHtml = renderListItem(itemLines, taskHtml)
+    const itemHtml = renderListItem(itemLines, taskHtml, options, state)
     const classAttribute = taskHtml ? ' class="task-list-item"' : ''
     html += `<li${classAttribute}>${itemHtml}</li>`
   }
@@ -866,17 +980,17 @@ function parseList(lines, startIndex) {
   return { html, index }
 }
 
-function renderListItem(lines, taskHtml) {
+function renderListItem(lines, taskHtml, options = {}, state = {}) {
   const trimmedLines = trimTrailingBlankLines(lines)
   if (trimmedLines.length === 0) {
     return taskHtml
   }
 
   if (trimmedLines.length === 1 && !isBlockStart(trimmedLines, 0)) {
-    return `${taskHtml}${parseInline(trimmedLines[0].trim())}`
+    return `${taskHtml}${parseInline(trimmedLines[0].trim(), options, state)}`
   }
 
-  const html = parseBlocks(trimmedLines, 0).html
+  const html = parseBlocks(trimmedLines, 0, options, state).html
   if (!taskHtml) {
     return html
   }
@@ -888,7 +1002,7 @@ function renderListItem(lines, taskHtml) {
   return `${taskHtml}${html}`
 }
 
-function parseTable(lines, startIndex) {
+function parseTable(lines, startIndex, options = {}, state = {}) {
   if (startIndex + 1 >= lines.length || !lines[startIndex].includes('|')) {
     return null
   }
@@ -910,7 +1024,7 @@ function parseTable(lines, startIndex) {
   let html = '<table><thead><tr>'
   const cellCount = Math.max(headers.length, alignments.length)
   for (let i = 0; i < cellCount; i++) {
-    html += renderTableCell('th', headers[i] || '', alignments[i])
+    html += renderTableCell('th', headers[i] || '', alignments[i], options, state)
   }
   html += '</tr></thead>'
 
@@ -919,7 +1033,7 @@ function parseTable(lines, startIndex) {
     for (let i = 0; i < rows.length; i++) {
       html += '<tr>'
       for (let j = 0; j < cellCount; j++) {
-        html += renderTableCell('td', rows[i][j] || '', alignments[j])
+        html += renderTableCell('td', rows[i][j] || '', alignments[j], options, state)
       }
       html += '</tr>'
     }
@@ -930,12 +1044,12 @@ function parseTable(lines, startIndex) {
   return { html, index }
 }
 
-function renderTableCell(tag, value, alignment) {
+function renderTableCell(tag, value, alignment, options = {}, state = {}) {
   const styleAttribute = alignment ? ` style="text-align: ${alignment};"` : ''
-  return `<${tag}${styleAttribute}>${parseInline(value.trim())}</${tag}>`
+  return `<${tag}${styleAttribute}>${parseInline(value.trim(), options, state)}</${tag}>`
 }
 
-function parseParagraph(lines, startIndex) {
+function parseParagraph(lines, startIndex, options = {}, state = {}) {
   const paragraphLines = []
   let index = startIndex
 
@@ -953,12 +1067,12 @@ function parseParagraph(lines, startIndex) {
   }
 
   return {
-    html: `<p>${parseInline(paragraphLines.join('\n'))}</p>`,
+    html: `<p>${parseInline(paragraphLines.join('\n'), options, state)}</p>`,
     index,
   }
 }
 
-function parseInline(value, options = {}) {
+function parseInline(value, options = {}, state = {}) {
   const allowLinks = options.links !== false
   const placeholders = []
   let text = String(value || '')
@@ -969,28 +1083,44 @@ function parseInline(value, options = {}) {
     return token
   }
 
-  text = text.replace(/\\([\\`*{}\[\]()#+\-.!_|>~])/g, (match, character) => stash(escapeHtml(character)))
+  text = text.replace(/\\([\\`*{}\[\]()#+\-.!_|>~^$:])/g, (match, character) => stash(escapeHtml(character)))
   text = text.replace(/(`+)([\s\S]*?)\1/g, (match, tickMarks, code) => stash(`<code>${escapeHtml(code.trim())}</code>`))
 
+  if (options.pandoc) {
+    text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, math) => stash(`<span class="math display">${escapeHtml(math.trim())}</span>`))
+    text = text.replace(/(^|[^\\])\$([^$\n]+?)\$/g, (match, prefix, math) => `${prefix}${stash(`<span class="math inline">${escapeHtml(math.trim())}</span>`)}`)
+    text = text.replace(/\[\^([^\]\s]+)\]/g, (match, id) => {
+      const safeId = getSafeId(`fnref-${id}`)
+      const targetId = getSafeId(`fn-${id}`)
+      const escapedId = escapeHtml(id)
+      if (state.footnotes && state.footnotes[id] && state.footnoteOrder && !state.footnoteOrder.includes(id)) {
+        state.footnoteOrder.push(id)
+      }
+      return stash(`<sup class="footnote-ref" id="${safeId}"><a href="#${targetId}">${escapedId}</a></sup>`)
+    })
+  }
+
   if (allowLinks) {
-    text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)/g, (match, alt, url, title) => {
+    text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)(\{[^}\n]+\})?/g, (match, alt, url, title, attributes) => {
       const safeUrl = sanitizeImageUrl(url)
       if (!safeUrl) {
         return escapeHtml(match)
       }
 
       const titleAttribute = title ? ` title="${escapeAttribute(title)}"` : ''
-      return stash(`<img src="${escapeAttribute(safeUrl)}" alt="${escapeAttribute(alt)}"${titleAttribute}>`)
+      const pandocAttributes = options.pandoc && attributes ? parsePandocAttributes(attributes) : null
+      return stash(`<img src="${escapeAttribute(safeUrl)}" alt="${escapeAttribute(alt)}"${titleAttribute}${renderPandocAttributes(pandocAttributes, { allowedAttributes: ['id', 'class', 'style', 'width', 'height'] })}>`)
     })
 
-    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)/g, (match, label, url, title) => {
+    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+["']([^"']*)["'])?\)(\{[^}\n]+\})?/g, (match, label, url, title, attributes) => {
       const safeUrl = sanitizeLinkUrl(url)
       if (!safeUrl) {
         return escapeHtml(match)
       }
 
       const titleAttribute = title ? ` title="${escapeAttribute(title)}"` : ''
-      return stash(`<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer"${titleAttribute}>${parseInline(label, { links: false })}</a>`)
+      const pandocAttributes = options.pandoc && attributes ? parsePandocAttributes(attributes) : null
+      return stash(`<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer"${titleAttribute}${renderPandocAttributes(pandocAttributes, { allowedAttributes: ['id', 'class', 'style'] })}>${parseInline(label, { ...options, links: false }, state)}</a>`)
     })
 
     text = text.replace(/<((?:https?:\/\/|mailto:)[^>\s]+)>/gi, (match, url) => {
@@ -1012,6 +1142,15 @@ function parseInline(value, options = {}) {
     })
   }
 
+  if (options.pandoc) {
+    text = text.replace(/\[([^\]\n]+)\]\{([^}\n]+)\}/g, (match, content, attributes) => {
+      const parsedAttributes = parsePandocAttributes(attributes)
+      return stash(`<span${renderPandocAttributes(parsedAttributes, { defaultClass: 'pandoc-span' })}>${parseInline(content, options, state)}</span>`)
+    })
+
+    text = text.replace(/<\/?[a-z][^>]*>/gi, match => stash(sanitizePandocRawInlineHtmlTag(match)))
+  }
+
   text = escapeHtml(text)
   text = text.replace(/ {2,}\n/g, '<br>')
   text = text.replace(/~~(?=\S)([\s\S]*?\S)~~/g, '<del>$1</del>')
@@ -1019,7 +1158,548 @@ function parseInline(value, options = {}) {
   text = text.replace(/__(?=\S)([\s\S]*?\S)__/g, '<strong>$1</strong>')
   text = text.replace(/\*(?=\S)([\s\S]*?\S)\*/g, '<em>$1</em>')
   text = text.replace(/_(?=\S)([\s\S]*?\S)_/g, '<em>$1</em>')
+
+  if (options.pandoc) {
+    text = text.replace(/\^(?=\S)([\s\S]*?\S)\^/g, '<sup>$1</sup>')
+    text = text.replace(/~(?=\S)([^~\n]*?\S)~/g, '<sub>$1</sub>')
+    text = text.replace(/\[(@[-A-Za-z0-9_:.#; ]+)\]/g, '<cite>$1</cite>')
+  }
+
   text = text.replace(/\uE000(\d+)\uE001/g, (match, index) => placeholders[Number(index)] || '')
+
+  return text
+}
+
+
+function preparePandocLines(lines, state) {
+  const result = []
+  let index = 0
+
+  if (lines[index] && lines[index].trim() === '---') {
+    index += 1
+    while (index < lines.length && !/^(---|\.\.\.)\s*$/.test(lines[index].trim())) {
+      index += 1
+    }
+    if (index < lines.length) {
+      index += 1
+    }
+  }
+
+  while (index < lines.length) {
+    const footnote = lines[index].match(/^\[\^([^\]]+)\]:\s*(.*)$/)
+    if (!footnote) {
+      result.push(lines[index])
+      index += 1
+      continue
+    }
+
+    const id = footnote[1]
+    const definitionLines = [footnote[2]]
+    index += 1
+
+    while (index < lines.length) {
+      if (isBlank(lines[index])) {
+        if (index + 1 < lines.length && /^( {2,}|\t)/.test(lines[index + 1])) {
+          definitionLines.push('')
+          index += 1
+          continue
+        }
+        break
+      }
+
+      if (!/^( {2,}|\t)/.test(lines[index])) {
+        break
+      }
+
+      definitionLines.push(lines[index].replace(/^( {2,}|\t)/, ''))
+      index += 1
+    }
+
+    state.footnotes[id] = trimTrailingBlankLines(definitionLines)
+  }
+
+  return result
+}
+
+function parsePandocBlock(lines, index, options, state) {
+  return parsePandocDisplayMath(lines, index)
+    || parsePandocDiv(lines, index, options, state)
+    || parsePandocLineBlock(lines, index, options, state)
+    || parsePandocDefinitionList(lines, index, options, state)
+    || parsePandocRawHtmlBlock(lines, index)
+}
+
+function parsePandocDisplayMath(lines, startIndex) {
+  const startLine = lines[startIndex]
+  const inline = startLine.match(/^ {0,3}\$\$\s*([\s\S]*?)\s*\$\$\s*$/)
+  if (inline && inline[1]) {
+    return {
+      html: `<div class="math display">${escapeHtml(inline[1].trim())}</div>`,
+      index: startIndex + 1,
+    }
+  }
+
+  if (!/^ {0,3}\$\$\s*$/.test(startLine)) {
+    return null
+  }
+
+  const mathLines = []
+  let index = startIndex + 1
+  while (index < lines.length) {
+    if (/^ {0,3}\$\$\s*$/.test(lines[index])) {
+      index += 1
+      break
+    }
+
+    mathLines.push(lines[index])
+    index += 1
+  }
+
+  return {
+    html: `<div class="math display">${escapeHtml(mathLines.join('\n').trim())}</div>`,
+    index,
+  }
+}
+
+function parsePandocDiv(lines, startIndex, options, state) {
+  const start = lines[startIndex].match(/^ {0,3}:::\s+(.+)$/)
+  if (!start) {
+    return null
+  }
+
+  const contentLines = []
+  let index = startIndex + 1
+  while (index < lines.length) {
+    if (/^ {0,3}:::\s*$/.test(lines[index])) {
+      index += 1
+      break
+    }
+
+    contentLines.push(lines[index])
+    index += 1
+  }
+
+  const attributes = parsePandocAttributes(start[1])
+  return {
+    html: `<div${renderPandocAttributes(attributes, { defaultClass: 'pandoc-div' })}>${parseBlocks(contentLines, 0, options, state).html}</div>`,
+    index,
+  }
+}
+
+function parsePandocLineBlock(lines, startIndex, options, state) {
+  if (!/^ {0,3}\| ?/.test(lines[startIndex])) {
+    return null
+  }
+
+  let html = '<div class="pandoc-line-block">'
+  let index = startIndex
+  while (index < lines.length && /^ {0,3}\| ?/.test(lines[index])) {
+    html += `<div class="pandoc-line">${parseInline(lines[index].replace(/^ {0,3}\| ?/, ''), options, state)}</div>`
+    index += 1
+  }
+  html += '</div>'
+
+  return { html, index }
+}
+
+function parsePandocDefinitionList(lines, startIndex, options, state) {
+  if (startIndex + 1 >= lines.length || isBlank(lines[startIndex]) || !/^ {0,3}:\s+/.test(lines[startIndex + 1])) {
+    return null
+  }
+
+  let html = '<dl>'
+  let index = startIndex
+
+  while (index + 1 < lines.length && !isBlank(lines[index]) && /^ {0,3}:\s+/.test(lines[index + 1])) {
+    html += `<dt>${parseInline(lines[index].trim(), options, state)}</dt>`
+    index += 1
+
+    while (index < lines.length && /^ {0,3}:\s+/.test(lines[index])) {
+      const definitionLines = [lines[index].replace(/^ {0,3}:\s+/, '')]
+      index += 1
+
+      while (index < lines.length) {
+        if (isBlank(lines[index])) {
+          if (index + 1 < lines.length && getIndent(lines[index + 1]) >= 2 && !matchListItem(lines[index + 1])) {
+            definitionLines.push('')
+            index += 1
+            continue
+          }
+          break
+        }
+
+        if (matchListItem(lines[index]) || /^ {0,3}:\s+/.test(lines[index]) || getIndent(lines[index]) < 2) {
+          break
+        }
+
+        definitionLines.push(removeIndent(lines[index], 2))
+        index += 1
+      }
+
+      html += `<dd>${parseBlocks(definitionLines, 0, options, state).html}</dd>`
+    }
+
+    while (index < lines.length && isBlank(lines[index])) {
+      index += 1
+    }
+  }
+
+  html += '</dl>'
+  return { html, index }
+}
+
+function parsePandocRawHtmlBlock(lines, startIndex) {
+  if (!/^ {0,3}<([a-z][\w:-]*)(?:\s|>|\/>)/i.test(lines[startIndex])) {
+    return null
+  }
+
+  const htmlLines = []
+  let index = startIndex
+  while (index < lines.length && !isBlank(lines[index])) {
+    htmlLines.push(lines[index])
+    index += 1
+  }
+
+  return {
+    html: sanitizePandocRawHtml(htmlLines.join('\n')),
+    index,
+  }
+}
+
+function renderPandocFootnotes(state, options) {
+  if (!state.footnoteOrder || state.footnoteOrder.length === 0) {
+    return ''
+  }
+
+  let html = '<section class="footnotes"><ol>'
+  for (let i = 0; i < state.footnoteOrder.length; i++) {
+    const id = state.footnoteOrder[i]
+    const lines = state.footnotes[id] || ['']
+    const safeId = getSafeId(`fn-${id}`)
+    const safeRefId = getSafeId(`fnref-${id}`)
+    html += `<li id="${safeId}">${parseBlocks(lines, 0, options, state).html}<a class="footnote-backref" href="#${safeRefId}" aria-label="Back to reference">↩</a></li>`
+  }
+  html += '</ol></section>'
+  return html
+}
+
+function extractTrailingPandocAttributes(text) {
+  const match = String(text || '').match(/\s+\{([^{}]+)\}\s*$/)
+  if (!match) {
+    return { text, attributes: null }
+  }
+
+  return {
+    text: String(text).slice(0, match.index).trimEnd(),
+    attributes: parsePandocAttributes(match[1]),
+  }
+}
+
+function parsePandocAttributes(value) {
+  const source = String(value || '').trim().replace(/^\{/, '').replace(/\}$/, '')
+  const attributes = {
+    classes: [],
+    id: '',
+    keyValues: {},
+  }
+
+  const tokens = source.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    if (token.startsWith('#')) {
+      attributes.id = token.slice(1)
+      continue
+    }
+
+    if (token.startsWith('.')) {
+      attributes.classes.push(token.slice(1))
+      continue
+    }
+
+    const pair = token.match(/^([^=]+)=(.*)$/)
+    if (pair) {
+      attributes.keyValues[pair[1]] = unquoteAttributeValue(pair[2])
+      continue
+    }
+
+    if (!attributes.id && /^[A-Za-z][\w:.-]*$/.test(token)) {
+      attributes.id = token
+    }
+  }
+
+  return attributes
+}
+
+function renderPandocAttributes(attributes, options = {}) {
+  if (!attributes) {
+    return ''
+  }
+
+  const allowedAttributes = options.allowedAttributes || ['id', 'class', 'style']
+  const classes = []
+  if (options.defaultClass) {
+    classes.push(options.defaultClass)
+  }
+  if (Array.isArray(options.extraClasses)) {
+    for (let i = 0; i < options.extraClasses.length; i++) {
+      if (options.extraClasses[i]) {
+        classes.push(options.extraClasses[i])
+      }
+    }
+  }
+  for (let i = 0; i < attributes.classes.length; i++) {
+    if (isSafeClassName(attributes.classes[i])) {
+      classes.push(attributes.classes[i])
+    }
+  }
+
+  const parts = []
+  if (allowedAttributes.includes('id') && isSafeId(attributes.id)) {
+    parts.push(`id="${escapeAttribute(attributes.id)}"`)
+  }
+  if (allowedAttributes.includes('class') && classes.length > 0) {
+    parts.push(`class="${escapeAttribute(classes.join(' '))}"`)
+  }
+
+  const styles = []
+  if (attributes.keyValues.color) {
+    styles.push(`color: ${attributes.keyValues.color}`)
+  }
+  if (attributes.keyValues['background-color'] || attributes.keyValues.background) {
+    styles.push(`background-color: ${attributes.keyValues['background-color'] || attributes.keyValues.background}`)
+  }
+  if (attributes.keyValues.style) {
+    styles.push(attributes.keyValues.style)
+  }
+  const style = sanitizePandocStyle(styles.join('; '))
+  if (allowedAttributes.includes('style') && style) {
+    parts.push(`style="${escapeAttribute(style)}"`)
+  }
+
+  const passthroughAttributes = ['width', 'height', 'title', 'aria-label', 'data-label']
+  for (let i = 0; i < passthroughAttributes.length; i++) {
+    const name = passthroughAttributes[i]
+    if (!allowedAttributes.includes(name) || !attributes.keyValues[name]) {
+      continue
+    }
+
+    parts.push(`${name}="${escapeAttribute(attributes.keyValues[name])}"`)
+  }
+
+  return parts.length > 0 ? ` ${parts.join(' ')}` : ''
+}
+
+function getPandocCodeLanguage(info, attributes) {
+  if (attributes && attributes.classes.length > 0) {
+    return attributes.classes[0]
+  }
+
+  return getCodeLanguage(info)
+}
+
+function sanitizePandocStyle(style) {
+  const value = String(style || '')
+  if (/expression\s*\(|javascript\s*:|url\s*\(|@import|behavior\s*:/i.test(value)) {
+    return ''
+  }
+
+  const allowed = new Set([
+    'background',
+    'background-color',
+    'border',
+    'border-color',
+    'border-radius',
+    'border-style',
+    'border-width',
+    'color',
+    'display',
+    'font-style',
+    'font-variant',
+    'font-weight',
+    'height',
+    'margin',
+    'margin-inline',
+    'max-height',
+    'max-width',
+    'min-height',
+    'min-width',
+    'padding',
+    'padding-inline',
+    'text-align',
+    'text-decoration',
+    'width',
+  ])
+  const declarations = value.split(';')
+  const safeDeclarations = []
+
+  for (let i = 0; i < declarations.length; i++) {
+    const declaration = declarations[i].trim()
+    const separator = declaration.indexOf(':')
+    if (separator === -1) {
+      continue
+    }
+
+    const name = declaration.slice(0, separator).trim().toLowerCase()
+    const propertyValue = declaration.slice(separator + 1).trim()
+    if (!allowed.has(name) || propertyValue === '' || /[<>]/.test(propertyValue)) {
+      continue
+    }
+
+    safeDeclarations.push(`${name}: ${propertyValue}`)
+  }
+
+  return safeDeclarations.join('; ')
+}
+
+
+function sanitizePandocRawInlineHtmlTag(html) {
+  const value = String(html || '')
+  const closing = value.match(/^<\/\s*([a-z][\w:-]*)\s*>$/i)
+  const allowedTags = new Set(['A', 'ABBR', 'B', 'BR', 'CODE', 'DEL', 'EM', 'I', 'IMG', 'INS', 'KBD', 'MARK', 'SMALL', 'SPAN', 'STRONG', 'SUB', 'SUP', 'U'])
+
+  if (closing) {
+    const tagName = closing[1].toUpperCase()
+    return allowedTags.has(tagName) ? `</${tagName.toLowerCase()}>` : escapeHtml(value)
+  }
+
+  const opening = value.match(/^<\s*([a-z][\w:-]*)([\s\S]*?)(\/?)>$/i)
+  if (!opening) {
+    return escapeHtml(value)
+  }
+
+  const tagName = opening[1].toUpperCase()
+  if (!allowedTags.has(tagName)) {
+    return escapeHtml(value)
+  }
+
+  const attributes = []
+  const attributePattern = /([:\w-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+)))?/g
+  let match
+  while ((match = attributePattern.exec(opening[2]))) {
+    const name = match[1].toLowerCase()
+    const attributeValue = match[2] ?? match[3] ?? match[4] ?? ''
+
+    if (name.startsWith('on') || name === 'srcdoc') {
+      continue
+    }
+
+    if (name === 'style') {
+      const style = sanitizePandocStyle(attributeValue)
+      if (style) {
+        attributes.push(`style="${escapeAttribute(style)}"`)
+      }
+      continue
+    }
+
+    if (name === 'href') {
+      const safeUrl = sanitizeLinkUrl(attributeValue)
+      if (safeUrl) {
+        attributes.push(`href="${escapeAttribute(safeUrl)}"`)
+      }
+      continue
+    }
+
+    if (name === 'src') {
+      const safeUrl = sanitizeImageUrl(attributeValue)
+      if (safeUrl) {
+        attributes.push(`src="${escapeAttribute(safeUrl)}"`)
+      }
+      continue
+    }
+
+    if (/^(id|class|alt|title|width|height|aria-[\w-]+|data-[\w-]+)$/.test(name)) {
+      attributes.push(`${name}="${escapeAttribute(attributeValue)}"`)
+    }
+  }
+
+  if (tagName === 'A') {
+    attributes.push('target="_blank"')
+    attributes.push('rel="noopener noreferrer"')
+  }
+
+  const space = attributes.length > 0 ? ` ${attributes.join(' ')}` : ''
+  const slash = opening[3] || tagName === 'BR' || tagName === 'IMG' ? ' /' : ''
+  return `<${tagName.toLowerCase()}${space}${slash}>`
+}
+
+function sanitizePandocRawHtml(html) {
+  const value = String(html || '')
+  if (typeof document === 'undefined') {
+    return escapeHtml(value)
+  }
+
+  const template = document.createElement('template')
+  template.innerHTML = value
+  sanitizePandocNode(template.content)
+  return template.innerHTML
+}
+
+function sanitizePandocNode(node) {
+  const blockedTags = new Set(['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'META', 'LINK'])
+  const children = Array.from(node.childNodes)
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i]
+    if (child.nodeType !== Node.ELEMENT_NODE) {
+      continue
+    }
+
+    if (blockedTags.has(child.tagName)) {
+      child.remove()
+      continue
+    }
+
+    const attributes = Array.from(child.attributes)
+    for (let j = 0; j < attributes.length; j++) {
+      const attribute = attributes[j]
+      const name = attribute.name.toLowerCase()
+      const value = attribute.value
+      if (name.startsWith('on') || name === 'srcdoc') {
+        child.removeAttribute(attribute.name)
+        continue
+      }
+
+      if ((name === 'href' || name === 'src') && !sanitizeLinkUrl(value) && !sanitizeImageUrl(value)) {
+        child.removeAttribute(attribute.name)
+        continue
+      }
+
+      if (name === 'style') {
+        const style = sanitizePandocStyle(value)
+        if (style) {
+          child.setAttribute('style', style)
+        } else {
+          child.removeAttribute('style')
+        }
+      }
+    }
+
+    if (child.tagName === 'A') {
+      child.setAttribute('target', '_blank')
+      child.setAttribute('rel', 'noopener noreferrer')
+    }
+
+    sanitizePandocNode(child)
+  }
+}
+
+function isSafeId(value) {
+  return /^[A-Za-z][\w:.-]*$/.test(String(value || ''))
+}
+
+function getSafeId(value) {
+  return String(value || '').replace(/[^A-Za-z0-9:_.-]+/g, '-').replace(/^-+|-+$/g, '') || 'footnote'
+}
+
+function isSafeClassName(value) {
+  return /^[A-Za-z_-][\w:-]*$/.test(String(value || ''))
+}
+
+function unquoteAttributeValue(value) {
+  const text = String(value || '')
+  if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+    return text.slice(1, -1)
+  }
 
   return text
 }
@@ -1070,7 +1750,7 @@ function isBlockStart(lines, index) {
       || isHorizontalRule(line)
       || /^ {0,3}>/.test(line)
       || matchListItem(line)
-      || parseTable(lines, index)
+      || parseTable(lines, index, {}, {})
       || getIndent(line) >= 4
   )
 }
