@@ -22,12 +22,24 @@ export function logDemoEvent(source, eventName, detail) {
   })
 }
 
+export function getRegisteredDemos() {
+  const registered = []
+  for (let i = 0; i < sections.length; i++) {
+    registered.push({
+      id: sections[i].id,
+      title: sections[i].title,
+    })
+  }
+  return registered
+}
+
 export function renderDemos(mainElement) {
   const context = {
     logEvent: logDemoEvent,
   }
 
-  for (const { id, title, render } of sections) {
+  for (let i = 0; i < sections.length; i++) {
+    const { id, title, render } = sections[i]
     const section = document.createElement('section')
     section.className = 'section'
     section.dataset.section = id

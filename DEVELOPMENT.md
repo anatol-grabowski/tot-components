@@ -6,9 +6,9 @@
 
 ## File structure
 - `src/demo.html`
-  - main demo page
-  - renders demo of each component in a compact manner
+  - main demo page - renders demo of each component in a compact manner
   - also serves as a test page for development
+- `src/components/demoIndex.js`
   - imports `demoCommon.js` and individual component demo files (so that when a new component is added, only importing its demo file is necessary to have it show up in the demo page)
 - `src/demoCommon.js`
   - common code for demo pages

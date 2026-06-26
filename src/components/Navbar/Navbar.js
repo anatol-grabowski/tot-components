@@ -2,6 +2,7 @@ const navbarStyle = `
   :host {
     display: block;
     max-width: 100%;
+    overflow: visible;
   }
 
   *, *::before, *::after {
@@ -21,7 +22,7 @@ const navbarStyle = `
     gap: var(--tot-spacing-small, .5rem);
     min-height: var(--tot-navbar-height, 2.75rem);
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
     padding: 0 var(--tot-spacing-small, .5rem);
   }
 

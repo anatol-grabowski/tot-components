@@ -19,99 +19,90 @@ html, body {
 
 body {
   font-family: var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--tot-font-size-small, 13px);
+  line-height: var(--tot-line-height-normal, 1.4);
   background: var(--tot-color-neutral-0, #fff);
   color: var(--tot-color-neutral-900, #222);
 }
 
 .demo-app {
-  padding: 0 20px calc(var(--event-panel-space, 0px) + 20px);
+  padding: 0 var(--tot-spacing-large, 20px) calc(var(--event-panel-space, 0px) + var(--tot-spacing-large, 20px));
 }
 
 .demo-header {
-  background: color-mix(in srgb, var(--tot-color-neutral-0, #fff) 94%, transparent);
-  border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #ddd);
-  box-shadow: var(--tot-shadow-small, 0 1px 2px rgb(15 23 42 / 8%));
-  margin: 0 -20px;
-  padding: 8px 20px;
+  margin: 0 calc(-1 * var(--tot-spacing-large, 20px));
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: var(--tot-z-index-toast, 950);
 }
 
-.demo-shell,
-.demo-topbar {
-  max-width: 1220px;
-  margin: 0 auto;
+.demo-header tot-navbar {
+  display: block;
+  width: 100%;
+}
+
+.demo-title {
+  color: var(--tot-input-color, #222);
+  font-size: var(--tot-font-size-large, 1.125rem);
+  font-weight: var(--tot-font-weight-semibold, 600);
+  white-space: nowrap;
+}
+
+.demo-nav-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--tot-spacing-x-small, .5rem);
 }
 
 .demo-shell {
   display: grid;
-  gap: 14px;
-  padding-top: 14px;
-}
-
-.demo-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.demo-topbar h1 {
-  font-size: 20px;
-  margin: 0;
-}
-
-.demo-topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: var(--tot-spacing-small, 14px);
+  margin: 0 auto;
+  max-width: 1220px;
+  padding-top: var(--tot-spacing-small, 14px);
 }
 
 .demo-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--tot-spacing-medium, 16px);
 }
 
 .section {
   border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #ccc);
   border-radius: var(--tot-border-radius-large, 6px);
   background: var(--tot-panel-background-color, #fafafa);
-  padding: 16px;
+  padding: var(--tot-spacing-medium, 16px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--tot-spacing-small, 12px);
   min-width: 0;
+  scroll-margin-top: calc(var(--tot-navbar-height, 2.75rem) + var(--tot-spacing-small, 12px));
 }
 
 h2 {
-  font-size: 16px;
+  font-size: var(--tot-font-size-medium, 16px);
   margin: 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--tot-color-neutral-200, #ddd);
+  padding-bottom: var(--tot-spacing-x-small, 8px);
+  border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-200, #ddd);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--tot-spacing-x-small, 10px);
   flex-wrap: wrap;
 }
 
 .stack {
   display: grid;
-  gap: 10px;
+  gap: var(--tot-spacing-x-small, 10px);
   max-width: 100%;
   min-width: 0;
 }
 
 .demo-group {
-  gap: 6px;
+  gap: var(--tot-spacing-2x-small, 6px);
   max-width: 100%;
   min-width: 0;
 }
@@ -131,30 +122,27 @@ h2 {
 
 .demo-label {
   color: var(--tot-color-neutral-600, #666);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--tot-font-size-x-small, 12px);
+  font-weight: var(--tot-font-weight-semibold, 600);
 }
 
-.demo-native-button,
-.event-clear-button {
+.demo-native-button {
   border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #ccc);
   border-radius: var(--tot-input-border-radius-medium, 4px);
   background: var(--tot-input-background-color, #fff);
   color: var(--tot-input-color, #222);
   cursor: pointer;
   font: inherit;
-  min-height: 30px;
-  padding: 4px 10px;
+  min-height: var(--tot-input-height-small, 30px);
+  padding: 0 var(--tot-input-spacing-small, 10px);
 }
 
-.demo-native-button:hover,
-.event-clear-button:hover {
+.demo-native-button:hover {
   background: var(--tot-input-background-color-hover, #f3f4f6);
   border-color: var(--tot-input-border-color-hover, #999);
 }
 
-.demo-native-button:focus-visible,
-.event-clear-button:focus-visible {
+.demo-native-button:focus-visible {
   outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
   outline-offset: var(--tot-focus-ring-offset, 1px);
 }
@@ -164,21 +152,21 @@ h2 {
   border-radius: var(--tot-border-radius-large, 6px);
   background: var(--tot-panel-background-color, #fafafa);
   box-shadow: var(--tot-shadow-large, 0 10px 30px rgb(15 23 42 / 18%));
-  bottom: max(10px, env(safe-area-inset-bottom));
+  bottom: max(var(--tot-spacing-x-small, 10px), env(safe-area-inset-bottom));
   display: grid;
-  gap: 8px;
+  gap: var(--tot-spacing-x-small, 8px);
   grid-template-rows: auto auto minmax(0, 1fr);
   height: min(34vh, 320px);
-  left: max(10px, env(safe-area-inset-left));
+  left: max(var(--tot-spacing-x-small, 10px), env(safe-area-inset-left));
   margin: 0 auto;
   max-height: min(70vh, 520px);
   max-width: 1220px;
   min-height: 160px;
   overflow: hidden;
-  padding: 10px;
+  padding: var(--tot-spacing-x-small, 10px);
   position: fixed;
-  right: max(10px, env(safe-area-inset-right));
-  z-index: 100;
+  right: max(var(--tot-spacing-x-small, 10px), env(safe-area-inset-right));
+  z-index: var(--tot-z-index-dropdown, 900);
 }
 
 .event-panel[hidden] {
@@ -187,8 +175,8 @@ h2 {
 
 .event-resize-handle {
   cursor: ns-resize;
-  height: 8px;
-  margin: -10px -10px 0;
+  height: var(--tot-spacing-x-small, 8px);
+  margin: calc(-1 * var(--tot-spacing-x-small, 10px)) calc(-1 * var(--tot-spacing-x-small, 10px)) 0;
   touch-action: none;
 }
 
@@ -205,40 +193,40 @@ h2 {
 .event-panel-header {
   align-items: center;
   display: flex;
-  gap: 10px;
+  gap: var(--tot-spacing-x-small, 10px);
   justify-content: space-between;
 }
 
 .event-panel-title {
   align-items: center;
   display: inline-flex;
-  gap: 6px;
+  gap: var(--tot-spacing-2x-small, 6px);
   min-width: 0;
 }
 
 .event-log {
   align-content: start;
   display: grid;
-  gap: 6px;
+  gap: var(--tot-spacing-2x-small, 6px);
   min-height: 0;
   overflow: auto;
   padding: 0;
 }
 
 .event-log-entry {
-  border: 1px solid var(--tot-color-neutral-200, #ddd);
+  border: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-200, #ddd);
   border-radius: var(--tot-border-radius-medium, 4px);
   background: var(--tot-input-background-color, #fff);
   color: var(--tot-input-color, #222);
   display: grid;
-  gap: 2px;
-  padding: 6px 8px;
+  gap: var(--tot-spacing-3x-small, 2px);
+  padding: var(--tot-spacing-2x-small, 6px) var(--tot-spacing-x-small, 8px);
 }
 
 .event-log-main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--tot-spacing-x-small, 8px);
   flex-wrap: wrap;
 }
 
@@ -251,31 +239,29 @@ h2 {
 .event-log-detail {
   color: var(--tot-color-neutral-700, #444);
   font-family: var(--tot-font-mono, monospace);
-  font-size: 12px;
+  font-size: var(--tot-font-size-x-small, 12px);
   overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
   .demo-app {
-    padding: 0 12px calc(var(--event-panel-space, 0px) + 12px);
+    padding: 0 var(--tot-spacing-small, 12px) calc(var(--event-panel-space, 0px) + var(--tot-spacing-small, 12px));
   }
 
   .demo-header {
-    margin: 0 -12px;
-    padding: 8px 12px;
+    margin: 0 calc(-1 * var(--tot-spacing-small, 12px));
   }
 
   .demo-grid {
     grid-template-columns: 1fr;
   }
 
-  .demo-topbar {
-    align-items: flex-start;
-    flex-direction: column;
+  .demo-title {
+    font-size: var(--tot-font-size-medium, 1rem);
   }
 
-  .demo-topbar-actions {
-    justify-content: flex-start;
+  .demo-nav-actions {
+    gap: var(--tot-spacing-2x-small, .25rem);
   }
 }
 </style>
@@ -283,13 +269,13 @@ h2 {
 <body class="tot-theme-light">
 <div class="demo-app">
   <header class="demo-header">
-    <div class="demo-topbar">
-      <h1>Web component library demo</h1>
-      <div class="demo-topbar-actions">
-        <button class="demo-native-button" id="logsButton" type="button" aria-pressed="true">Hide logs</button>
+    <tot-navbar id="demoNavbar" aria-label="Demo sections">
+      <span class="demo-title" slot="left">tot-components</span>
+      <span class="demo-nav-actions" slot="right">
+        <tot-button id="logsButton" label="Show logs"></tot-button>
         <tot-theme-selector id="themeSelector" themes="light,dark"></tot-theme-selector>
-      </div>
-    </div>
+      </span>
+    </tot-navbar>
   </header>
 
   <div class="demo-shell">
@@ -297,11 +283,11 @@ h2 {
   </div>
 </div>
 
-<section class="event-panel" id="eventPanel" aria-label="Component event log">
+<section class="event-panel" id="eventPanel" aria-label="Component event log" hidden>
   <span class="event-resize-handle" id="eventResizeHandle" aria-hidden="true"></span>
   <div class="event-panel-header">
     <strong class="event-panel-title">Component event log <span id="eventCount">0</span></strong>
-    <button class="event-clear-button" id="clearEventsButton" type="button">Clear</button>
+    <tot-button id="clearEventsButton" size="small" label="Clear"></tot-button>
   </div>
   <div class="event-log" id="eventLog">
     <div class="event-empty">No events yet.</div>
@@ -309,33 +295,12 @@ h2 {
 </section>
 
 <script type="module">
-  // Import components themselves so they are registered
   import './components/index.js'
-
-  // Import demo orchestrator
-  import { renderDemos, setDemoLogger } from './components/demoCommon.js'
-
-  // Import individual demo files
-  import './components/Button/Button.demo.js'
-  import './components/Checkbox/Checkbox.demo.js'
-  import './components/Navbar/Navbar.demo.js'
-  import './components/Tabs/Tabs.demo.js'
-  import './components/AudioPlayer/AudioPlayer.demo.js'
-  import './components/AudioRecorder/AudioRecorder.demo.js'
-  import './components/Dropdown/Dropdown.demo.js'
-  import './components/ThemeSelector/ThemeSelector.demo.js'
-  import './components/Divider/Divider.demo.js'
-  import './components/Menu/Menu.demo.js'
-  import './components/Input/Input.demo.js'
-  import './components/FileInput/FileInput.demo.js'
-  import './components/HorizontalSelect/HorizontalSelect.demo.js'
-  import './components/Select/Select.demo.js'
-  import './components/Modal/Modal.demo.js'
-  import './components/Textarea/Textarea.demo.js'
-  import './components/Markdown/Markdown.demo.js'
-  import './components/Html/Html.demo.js'
+  import './components/demoIndex.js'
+  import { getRegisteredDemos, renderDemos, setDemoLogger } from './components/demoCommon.js'
 
   const demoMain = document.getElementById('demoMain')
+  const demoNavbar = document.getElementById('demoNavbar')
   const logsButton = document.getElementById('logsButton')
   const eventCount = document.getElementById('eventCount')
   const eventLog = document.getElementById('eventLog')
@@ -343,19 +308,19 @@ h2 {
   const eventPanel = document.getElementById('eventPanel')
   const eventResizeHandle = document.getElementById('eventResizeHandle')
   let eventsLogged = 0
-  let logsVisible = true
+  let logsVisible = false
 
   setDemoLogger((entry) => {
     appendEventLog(entry.source, entry.eventName, entry.detail, entry.time)
   })
 
   renderDemos(demoMain)
-
+  setupDemoNavbar()
 
   logsButton.addEventListener('click', () => {
     logsVisible = !logsVisible
     eventPanel.hidden = !logsVisible
-    logsButton.textContent = logsVisible ? 'Hide logs' : 'Show logs'
+    logsButton.setAttribute('label', logsVisible ? 'Hide logs' : 'Show logs')
     logsButton.setAttribute('aria-pressed', String(logsVisible))
     updateEventPanelSpace()
   })
@@ -402,6 +367,45 @@ h2 {
     eventResizeHandle.addEventListener('pointerup', handlePointerUp)
     eventResizeHandle.addEventListener('pointercancel', handlePointerUp)
   })
+
+  function setupDemoNavbar() {
+    const sections = getRegisteredDemos()
+    const tabs = []
+
+    for (let i = 0; i < sections.length; i++) {
+      tabs.push({
+        value: sections[i].id,
+        label: sections[i].title,
+      })
+    }
+
+    demoNavbar.tabs = tabs
+    if (tabs.length > 0) {
+      demoNavbar.value = tabs[0].value
+    }
+
+    demoNavbar.addEventListener('change', (event) => {
+      const target = getDemoSection(event.detail.value)
+      if (!target) {
+        return
+      }
+
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  function getDemoSection(id) {
+    const sections = demoMain.querySelectorAll('.section')
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].dataset.section === id) {
+        return sections[i]
+      }
+    }
+    return null
+  }
 
   function updateEventPanelSpace() {
     if (eventPanel.hidden) {
@@ -451,7 +455,6 @@ h2 {
     row.appendChild(detailNode)
     eventLog.prepend(row)
   }
-
 
   function formatSource(source) {
     if (source instanceof HTMLElement) {

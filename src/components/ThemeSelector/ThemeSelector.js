@@ -93,7 +93,7 @@ export class TotThemeSelector extends HTMLElement {
 
     root.innerHTML = `<style>${themeSelectorStyle}</style>
       <span class="selector" part="base">
-        <tot-dropdown hoist></tot-dropdown>
+        <tot-dropdown></tot-dropdown>
       </span>
     `
 
