@@ -498,7 +498,7 @@
    * Overlays
    */
 
-  --tot-overlay-background-color: hsl(0 0% 0% / 43%);
+  --tot-overlay-background-color: hsl(0 0% 0% / 32%);
 
   /*
    * Panels
@@ -507,6 +507,15 @@
   --tot-panel-background-color: var(--tot-color-neutral-50);
   --tot-panel-border-color: var(--tot-color-neutral-200);
   --tot-panel-border-width: 1px;
+
+  /* Navbars */
+  --tot-navbar-height: 2.75rem;
+  --tot-navbar-background-color: var(--tot-color-neutral-100);
+  --tot-navbar-border-color: var(--tot-color-neutral-200);
+
+  /* Modals */
+  --tot-modal-width: 34rem;
+  --tot-modal-max-height: 90dvh;
 
   /* Dropdowns */
   --tot-dropdown-min-width: 12rem;
@@ -528,6 +537,9 @@
   --tot-menu-submenu-min-width: 12rem;
 
   /* File inputs */
+  --tot-file-input-background-color: var(--tot-navbar-background-color);
+  --tot-file-input-background-color-hover: var(--tot-color-neutral-200);
+  --tot-file-input-background-color-disabled: var(--tot-input-background-color-disabled);
   --tot-file-input-border-width: 2px;
   --tot-file-input-dash-size: .625rem;
   --tot-file-input-dash-repeat: 1.375rem;

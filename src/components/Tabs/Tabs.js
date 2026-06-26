@@ -9,17 +9,30 @@ const tabsStyle = `
   }
 
   .tabs {
-    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     color: var(--tot-input-color, #1e293b);
     display: flex;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
+    border-bottom: 0;
     gap: 2px;
     height: var(--tot-tabs-height, 2.25rem);
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
+    position: relative;
     scrollbar-width: thin;
+  }
+
+  .tabs::after {
+    background: var(--tot-panel-border-color, #e2e8f0);
+    bottom: 0;
+    content: '';
+    height: var(--tot-panel-border-width, 1px);
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    z-index: 0;
   }
 
   button {
@@ -36,11 +49,13 @@ const tabsStyle = `
     font: inherit;
     height: 100%;
     justify-content: center;
+    margin-bottom: -1px;
     max-width: 16rem;
     min-width: 0;
     padding: 0 var(--tot-spacing-medium, 1rem);
     position: relative;
     white-space: nowrap;
+    z-index: 1;
   }
 
   button::after {
@@ -69,7 +84,7 @@ const tabsStyle = `
     border-bottom-color: var(--tot-panel-background-color, #fff);
     color: var(--tot-color-primary-700, #0369a1);
     font-weight: var(--tot-font-weight-semibold, 600);
-    z-index: 1;
+    z-index: 2;
   }
 
   button:disabled {
@@ -140,6 +155,7 @@ export class TotTabs extends HTMLElement {
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    const previousScrollLeft = root.querySelector('.tabs')?.scrollLeft || 0
     const tabs = this.tabs
     const value = this.getResolvedValue(tabs)
     const disabled = this.disabled
@@ -147,6 +163,7 @@ export class TotTabs extends HTMLElement {
     root.innerHTML = `<style>${tabsStyle}</style><div class="tabs" part="base" role="tablist"></div>`
 
     const holder = root.querySelector('.tabs')
+
     for (let i = 0; i < tabs.length; i++) {
       const item = tabs[i]
       const btn = document.createElement('button')
@@ -168,6 +185,11 @@ export class TotTabs extends HTMLElement {
       })
       holder.append(btn)
     }
+
+    holder.scrollLeft = previousScrollLeft
+    requestAnimationFrame(() => {
+      holder.scrollLeft = previousScrollLeft
+    })
   }
 
   getResolvedValue(tabs) {

@@ -292,6 +292,7 @@ export class TotHorizontalSelect extends HTMLElement {
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    const previousScrollLeft = root.querySelector('.scroller')?.scrollLeft || 0
     const size = this.size
     const multiple = this.multiple
     const disabled = this.disabled
@@ -345,7 +346,13 @@ export class TotHorizontalSelect extends HTMLElement {
       </div>
     `
 
+    const scroller = root.querySelector('.scroller')
     const options = root.querySelector('.options')
+    scroller.scrollLeft = previousScrollLeft
+    requestAnimationFrame(() => {
+      scroller.scrollLeft = previousScrollLeft
+    })
+
     options.addEventListener('click', (event) => this.handleClick(event))
     options.addEventListener('keydown', (event) => this.handleKeyDown(event))
   }

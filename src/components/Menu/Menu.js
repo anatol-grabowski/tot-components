@@ -58,6 +58,7 @@ const menuItemStyle = `
     border-radius: var(--tot-border-radius-small, 3px);
     color: var(--tot-input-color, #1e293b);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
@@ -74,9 +75,15 @@ const menuItemStyle = `
   }
 
   .item:hover:not(.item--disabled),
+  .item:active:not(.item--disabled),
   .item:focus-visible:not(.item--disabled) {
     background: var(--tot-color-neutral-100, #f1f5f9);
     color: var(--tot-input-color-hover, #0f172a);
+  }
+
+  .item:focus:not(:focus-visible):not(.item--disabled) {
+    background: transparent;
+    color: var(--tot-input-color, #1e293b);
   }
 
   .item:focus-visible {
@@ -162,10 +169,10 @@ const menuItemStyle = `
 
   @media (max-width: 640px) {
     .submenu {
-      left: var(--tot-spacing-small, .75rem);
+      left: 100%;
       max-width: 100vw;
-      position: relative;
-      top: auto;
+      position: absolute;
+      top: 0;
     }
   }
 `
@@ -597,11 +604,11 @@ export class TotMenuItem extends HTMLElement {
         ${checked ? 'aria-checked="true"' : ''}
       >
         <span class="item__check" aria-hidden="true">✓</span>
-        <span class="item__loader" aria-hidden="true">⌛</span>
+        <span class="item__loader" aria-hidden="true">⏳</span>
         <span class="item__label"><slot></slot></span>
         <span class="item__submenu-caret" aria-hidden="true">❯</span>
-        <span class="submenu"><slot name="submenu"></slot></span>
       </div>
+      <span class="submenu"><slot name="submenu"></slot></span>
     `
 
     const base = root.querySelector('.item')
@@ -614,7 +621,11 @@ export class TotMenuItem extends HTMLElement {
         return
       }
 
-      base.focus()
+      if (event.detail === 0) {
+        base.focus()
+      } else {
+        requestAnimationFrame(() => base.blur())
+      }
     })
 
     submenuSlot.addEventListener('slotchange', () => {

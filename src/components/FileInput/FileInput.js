@@ -36,7 +36,7 @@ const fileInputStyle = `
     --dropzone-dash-size: var(--tot-file-input-dash-size, .625rem);
     --dropzone-dash-repeat: var(--tot-file-input-dash-repeat, 1.375rem);
 
-    background: var(--tot-input-background-color, #fff);
+    background: var(--tot-file-input-background-color, var(--tot-navbar-background-color, var(--tot-input-background-color, #fff)));
     border: 0;
     border-radius: var(--tot-border-radius-large, 8px);
     color: var(--tot-input-color, #1e293b);
@@ -79,7 +79,7 @@ const fileInputStyle = `
 
   .dropzone:hover:not(.dropzone--disabled),
   .dropzone--drag-active:not(.dropzone--disabled) {
-    background: var(--tot-input-background-color-hover, #f8fafc);
+    background: var(--tot-file-input-background-color-hover, var(--tot-navbar-background-color, var(--tot-input-background-color-hover, #f8fafc)));
     --dropzone-border-color: var(--tot-color-primary-600, #0284c7);
   }
 
@@ -89,7 +89,7 @@ const fileInputStyle = `
   }
 
   .dropzone--disabled {
-    background: var(--tot-input-background-color-disabled, #f1f5f9);
+    background: var(--tot-file-input-background-color-disabled, var(--tot-input-background-color-disabled, #f1f5f9));
     --dropzone-border-color: var(--tot-input-border-color-disabled, #cbd5e1);
     color: var(--tot-input-color-disabled, #64748b);
     cursor: not-allowed;

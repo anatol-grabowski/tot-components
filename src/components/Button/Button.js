@@ -279,7 +279,7 @@ export class TotButton extends HTMLElement {
           <span class="button__fallback">${escapeHtml(label)}</span>
           <span class="button__caret" part="caret" aria-hidden="true">⌵</span>
         </span>
-        <span class="button__loader" aria-hidden="true">⌛</span>
+        <span class="button__loader" aria-hidden="true">⏳</span>
       </${tag}>
     `
 

@@ -168,6 +168,10 @@ const audioRecorderStyle = `
     position: relative;
   }
 
+  .display {
+    min-height: var(--tot-audio-recorder-display-height, 72px);
+  }
+
   .canvas-container.hidden {
     display: none;
   }
@@ -202,13 +206,17 @@ const audioRecorderStyle = `
     background: var(--tot-color-neutral-50, #f8fafc);
     border-radius: var(--tot-border-radius-medium, 4px);
     display: block;
-    height: 68px;
+    height: var(--tot-audio-recorder-display-height, 72px);
     min-width: 0;
     width: 100%;
   }
 
   .playback {
-    min-height: 0;
+    min-height: var(--tot-audio-recorder-display-height, 72px);
+  }
+
+  .playback > tot-audio-player {
+    display: block;
   }
 
   .playback:empty {

@@ -13,6 +13,11 @@ import { TotDropdown } from './Dropdown/Dropdown.js'
 import { TotInput } from './Input/Input.js'
 import { TotFileInput } from './FileInput/FileInput.js'
 import { TotHorizontalSelect } from './HorizontalSelect/HorizontalSelect.js'
+import { TotSelect } from './Select/Select.js'
+import { TotModal } from './Modal/Modal.js'
+import { TotTextarea } from './Textarea/Textarea.js'
+import { TotMarkdown } from './Markdown/Markdown.js'
+import { TotHtml } from './Html/Html.js'
 import { TotThemeSelector } from './ThemeSelector/ThemeSelector.js'
 
 export function defineElement(name, klass) {
@@ -39,6 +44,11 @@ defineElement('tot-dropdown', TotDropdown)
 defineElement('tot-input', TotInput)
 defineElement('tot-file-input', TotFileInput)
 defineElement('tot-horizontal-select', TotHorizontalSelect)
+defineElement('tot-select', TotSelect)
+defineElement('tot-modal', TotModal)
+defineElement('tot-textarea', TotTextarea)
+defineElement('tot-markdown', TotMarkdown)
+defineElement('tot-html', TotHtml)
 defineElement('tot-theme-selector', TotThemeSelector)
 
 export {
@@ -56,5 +66,10 @@ export {
   TotInput,
   TotFileInput,
   TotHorizontalSelect,
+  TotSelect,
+  TotModal,
+  TotTextarea,
+  TotMarkdown,
+  TotHtml,
   TotThemeSelector,
 }
