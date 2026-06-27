@@ -51,7 +51,7 @@ const markdownStyle = `
   .markdown__content {
     max-width: 100%;
     min-width: 0;
-    overflow: visible;
+    overflow: auto;
     padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
     width: 100%;
   }

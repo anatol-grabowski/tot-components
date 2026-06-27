@@ -150,9 +150,10 @@ const menuItemStyle = `
 
   .submenu {
     display: none;
-    left: 100%;
-    min-width: 12rem;
-    position: absolute;
+    left: 0;
+    max-width: calc(100vw - 1rem);
+    min-width: var(--tot-menu-submenu-min-width, 12rem);
+    position: fixed;
     top: 0;
     z-index: var(--tot-z-index-dropdown, 1000);
   }
@@ -164,16 +165,9 @@ const menuItemStyle = `
   }
 
   ::slotted(tot-menu) {
+    --tot-menu-max-height: var(--tot-menu-submenu-max-height, none);
+    --tot-menu-overflow: var(--tot-menu-submenu-overflow, auto);
     min-width: var(--tot-menu-submenu-min-width, 12rem);
-  }
-
-  @media (max-width: 640px) {
-    .submenu {
-      left: 100%;
-      max-width: 100vw;
-      position: absolute;
-      top: 0;
-    }
   }
 `
 
@@ -480,6 +474,10 @@ export class TotMenuItem extends HTMLElement {
   constructor() {
     super()
     this._hasSubmenu = false
+    this._positionFrame = 0
+    this._visualViewport = null
+    this._handleSubmenuOpen = () => this.scheduleSubmenuPosition()
+    this._handleWindowChange = () => this.scheduleSubmenuPosition()
   }
 
   get disabled() {
@@ -545,10 +543,33 @@ export class TotMenuItem extends HTMLElement {
 
   connectedCallback() {
     this.render()
+    this.addEventListener('pointerenter', this._handleSubmenuOpen)
+    this.addEventListener('focusin', this._handleSubmenuOpen)
+    window.addEventListener('resize', this._handleWindowChange)
+    document.addEventListener('scroll', this._handleWindowChange, true)
+    this._visualViewport = window.visualViewport || null
+    if (this._visualViewport) {
+      this._visualViewport.addEventListener('resize', this._handleWindowChange)
+      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
+    }
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('pointerenter', this._handleSubmenuOpen)
+    this.removeEventListener('focusin', this._handleSubmenuOpen)
+    window.removeEventListener('resize', this._handleWindowChange)
+    document.removeEventListener('scroll', this._handleWindowChange, true)
+    if (this._visualViewport) {
+      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
+      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
+      this._visualViewport = null
+    }
+    cancelAnimationFrame(this._positionFrame)
   }
 
   attributeChangedCallback() {
     this.render()
+    this.scheduleSubmenuPosition()
   }
 
   click() {
@@ -632,8 +653,76 @@ export class TotMenuItem extends HTMLElement {
       const nextHasSubmenu = this.hasSubmenuContent()
       if (nextHasSubmenu !== this._hasSubmenu) {
         this.render()
+        return
       }
+      this.scheduleSubmenuPosition()
     })
+
+    this.scheduleSubmenuPosition()
+  }
+
+  scheduleSubmenuPosition() {
+    if (!this.hasSubmenuContent()) {
+      return
+    }
+
+    cancelAnimationFrame(this._positionFrame)
+    this._positionFrame = requestAnimationFrame(() => this.updateSubmenuPosition())
+  }
+
+  updateSubmenuPosition() {
+    if (!this.hasSubmenuContent() || !this.shadowRoot) {
+      return
+    }
+
+    const submenu = this.shadowRoot.querySelector('.submenu')
+    if (!submenu) {
+      return
+    }
+
+    const viewport = getViewportRect()
+    const margin = 8
+    const baseRect = this.getBoundingClientRect()
+    const previousDisplay = submenu.style.display
+    const previousVisibility = submenu.style.visibility
+    const submenuSlot = this.shadowRoot.querySelector('slot[name="submenu"]')
+    const submenuMenus = getSubmenuMenus(submenuSlot)
+
+    for (let i = 0; i < submenuMenus.length; i++) {
+      submenuMenus[i].style.setProperty('--tot-menu-max-height', 'none')
+    }
+
+    submenu.style.display = 'block'
+    submenu.style.visibility = 'hidden'
+    submenu.style.maxWidth = `${Math.floor(Math.max(0, viewport.width - margin * 2))}px`
+
+    const submenuRect = submenu.getBoundingClientRect()
+    const submenuWidth = Math.min(submenuRect.width, Math.max(0, viewport.width - margin * 2))
+    const submenuHeight = submenuRect.height
+    const rightSpace = viewport.right - baseRect.right - margin
+    const leftSpace = baseRect.left - viewport.left - margin
+    const maxHeight = Math.max(0, viewport.height - margin * 2)
+    let left = baseRect.right
+    let top = baseRect.top
+
+    if (submenuWidth > rightSpace && leftSpace > rightSpace) {
+      left = baseRect.left - submenuWidth
+    }
+
+    left = clamp(left, viewport.left + margin, viewport.right - submenuWidth - margin)
+    top = clamp(top, viewport.top + margin, viewport.bottom - Math.min(submenuHeight, maxHeight) - margin)
+
+    submenu.style.left = `${Math.round(left)}px`
+    submenu.style.top = `${Math.round(top)}px`
+    submenu.style.maxWidth = `${Math.floor(Math.max(0, viewport.width - margin * 2))}px`
+
+    for (let i = 0; i < submenuMenus.length; i++) {
+      submenuMenus[i].style.setProperty('--tot-menu-max-height', `${Math.floor(maxHeight)}px`)
+      submenuMenus[i].style.setProperty('--tot-menu-overflow', 'auto')
+    }
+
+    submenu.style.visibility = previousVisibility
+    submenu.style.display = previousDisplay
   }
 
   getBase() {
@@ -659,6 +748,50 @@ export class TotMenuLabel extends HTMLElement {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${menuLabelStyle}</style><div class="label" part="base"><slot></slot></div>`
   }
+}
+
+function getSubmenuMenus(submenuSlot) {
+  const menus = []
+  const assigned = submenuSlot ? submenuSlot.assignedElements({ flatten: true }) : []
+
+  for (let i = 0; i < assigned.length; i++) {
+    if (assigned[i].localName === 'tot-menu') {
+      menus.push(assigned[i])
+    }
+  }
+
+  return menus
+}
+
+function getViewportRect() {
+  const viewport = window.visualViewport
+  if (!viewport) {
+    return {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
+  }
+
+  return {
+    left: viewport.offsetLeft,
+    top: viewport.offsetTop,
+    right: viewport.offsetLeft + viewport.width,
+    bottom: viewport.offsetTop + viewport.height,
+    width: viewport.width,
+    height: viewport.height,
+  }
+}
+
+function clamp(value, min, max) {
+  if (max < min) {
+    return min
+  }
+
+  return Math.min(Math.max(value, min), max)
 }
 
 function parseItems(value) {

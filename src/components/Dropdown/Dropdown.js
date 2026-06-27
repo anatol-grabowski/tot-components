@@ -27,21 +27,16 @@ const dropdownStyle = `
 
   .panel {
     left: 0;
+    margin-top: 0;
+    max-width: min(var(--tot-dropdown-max-width, 28rem), calc(100vw - 1rem));
     min-width: var(--tot-dropdown-min-width, 12rem);
-    max-width: min(var(--tot-dropdown-max-width, 28rem), 100vw);
-    position: absolute;
-    margin-top: var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem));
-    top: 100%;
+    position: fixed;
+    top: 0;
     z-index: var(--tot-z-index-dropdown, 900);
   }
 
   .panel[hidden] {
     display: none;
-  }
-
-  .dropdown--hoist .panel {
-    margin-top: 0;
-    position: fixed;
   }
 
   .panel__surface {
@@ -52,14 +47,17 @@ const dropdownStyle = `
     color: var(--tot-input-color, #1e293b);
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
+    max-height: var(--tot-dropdown-panel-max-height, none);
     max-width: 100%;
-    overflow: visible;
+    overflow: auto;
     padding: var(--tot-dropdown-padding, 0);
   }
 
   .panel__content {
     max-width: 100%;
     min-width: 0;
+    --tot-menu-max-height: var(--tot-dropdown-menu-max-height, none);
+    --tot-menu-overflow: auto;
   }
 
   ::slotted(tot-menu),
@@ -88,6 +86,7 @@ export class TotDropdown extends HTMLElement {
     this._menuItems = null
     this._hasDefaultSlotContent = false
     this._positionFrame = 0
+    this._visualViewport = null
     this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
     this._handleWindowChange = () => this.schedulePanelPosition()
   }
@@ -146,12 +145,22 @@ export class TotDropdown extends HTMLElement {
     document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.addEventListener('resize', this._handleWindowChange)
     document.addEventListener('scroll', this._handleWindowChange, true)
+    this._visualViewport = window.visualViewport || null
+    if (this._visualViewport) {
+      this._visualViewport.addEventListener('resize', this._handleWindowChange)
+      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
+    }
   }
 
   disconnectedCallback() {
     document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.removeEventListener('resize', this._handleWindowChange)
     document.removeEventListener('scroll', this._handleWindowChange, true)
+    if (this._visualViewport) {
+      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
+      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
+      this._visualViewport = null
+    }
     cancelAnimationFrame(this._positionFrame)
   }
 
@@ -315,31 +324,38 @@ export class TotDropdown extends HTMLElement {
       return
     }
 
-    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-dropdown-min-width, 12rem))`
-
-    if (!this.hoist) {
-      panel.style.left = '0px'
-      panel.style.marginTop = 'var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem))'
-      panel.style.top = '100%'
-      return
-    }
-
+    const viewport = getViewportRect()
     const margin = 8
-    const gap = 4
-    const panelRect = panel.getBoundingClientRect()
-    const maxLeft = Math.max(margin, window.innerWidth - panelRect.width - margin)
-    let left = Math.min(Math.max(margin, triggerRect.left), maxLeft)
-    let top = triggerRect.bottom + gap
+    const gap = getCssLength(this, '--tot-dropdown-panel-gap', 4)
+    const viewportWidth = Math.max(0, viewport.width - margin * 2)
 
-    if (top + panelRect.height > window.innerHeight - margin && triggerRect.top - panelRect.height - gap >= margin) {
-      top = triggerRect.top - panelRect.height - gap
+    panel.style.maxWidth = `min(var(--tot-dropdown-max-width, 28rem), ${Math.floor(viewportWidth)}px)`
+    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-dropdown-min-width, 12rem))`
+    panel.style.setProperty('--tot-dropdown-panel-max-height', 'none')
+    panel.style.setProperty('--tot-dropdown-menu-max-height', 'none')
+
+    const panelRect = panel.getBoundingClientRect()
+    const panelWidth = Math.min(panelRect.width, viewportWidth)
+    const belowSpace = Math.max(0, viewport.bottom - triggerRect.bottom - gap - margin)
+    const aboveSpace = Math.max(0, triggerRect.top - viewport.top - gap - margin)
+    const placeAbove = panelRect.height > belowSpace && aboveSpace > belowSpace
+    const availableHeight = Math.max(0, placeAbove ? aboveSpace : belowSpace)
+    const panelHeight = Math.min(panelRect.height, availableHeight)
+    let left = triggerRect.left
+    let top = placeAbove ? triggerRect.top - panelHeight - gap : triggerRect.bottom + gap
+
+    if (left + panelWidth > viewport.right - margin) {
+      left = triggerRect.right - panelWidth
     }
 
-    left = Math.round(left)
-    top = Math.round(Math.max(margin, Math.min(top, window.innerHeight - panelRect.height - margin)))
-    panel.style.left = `${left}px`
+    left = clamp(left, viewport.left + margin, viewport.right - panelWidth - margin)
+    top = clamp(top, viewport.top + margin, viewport.bottom - panelHeight - margin)
+
+    panel.style.left = `${Math.round(left)}px`
     panel.style.marginTop = '0'
-    panel.style.top = `${top}px`
+    panel.style.top = `${Math.round(top)}px`
+    panel.style.setProperty('--tot-dropdown-panel-max-height', `${Math.floor(availableHeight)}px`)
+    panel.style.setProperty('--tot-dropdown-menu-max-height', `${Math.floor(availableHeight)}px`)
   }
 
   focusTrigger() {
@@ -406,6 +422,65 @@ export class TotDropdown extends HTMLElement {
     }
     return false
   }
+}
+
+function getViewportRect() {
+  const viewport = window.visualViewport
+  if (!viewport) {
+    return {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
+  }
+
+  return {
+    left: viewport.offsetLeft,
+    top: viewport.offsetTop,
+    right: viewport.offsetLeft + viewport.width,
+    bottom: viewport.offsetTop + viewport.height,
+    width: viewport.width,
+    height: viewport.height,
+  }
+}
+
+function getCssLength(element, property, fallback) {
+  const rawValue = getComputedStyle(element).getPropertyValue(property).trim()
+  if (!rawValue) {
+    return fallback
+  }
+
+  const numericValue = Number.parseFloat(rawValue)
+  if (!Number.isFinite(numericValue)) {
+    return fallback
+  }
+
+  if (rawValue.endsWith('rem')) {
+    const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
+    return Number.isFinite(rootFontSize) ? numericValue * rootFontSize : fallback
+  }
+
+  if (rawValue.endsWith('em')) {
+    const fontSize = Number.parseFloat(getComputedStyle(element).fontSize)
+    return Number.isFinite(fontSize) ? numericValue * fontSize : fallback
+  }
+
+  if (rawValue.endsWith('px')) {
+    return numericValue
+  }
+
+  return fallback
+}
+
+function clamp(value, min, max) {
+  if (max < min) {
+    return min
+  }
+
+  return Math.min(Math.max(value, min), max)
 }
 
 function parseItems(value) {
