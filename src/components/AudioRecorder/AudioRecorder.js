@@ -428,6 +428,7 @@ export class TotAudioRecorder extends HTMLElement {
         this.finishRecording()
       }
     })
+    this._isAbort = false
     this._recorder.start()
     this._playback.style.display = 'none'
     this._recordButton.hidden = true
@@ -508,8 +509,9 @@ export class TotAudioRecorder extends HTMLElement {
       return
     }
     if (this._recorder.state === 'recording') {
+      this.captureActiveElapsed()
       this._recorder.pause()
-      this._elapsedBeforePause += performance.now() - this._startedAt
+      this.updateElapsed()
       this.setStatus('Paused')
       this._pauseButton.setAttribute('aria-label', 'Resume')
       this._pauseButton.classList.add('resume')
@@ -530,6 +532,8 @@ export class TotAudioRecorder extends HTMLElement {
 
   stopRecording() {
     if (this._recorder && this._recorder.state !== 'inactive') {
+      this.captureActiveElapsed()
+      this.updateElapsed()
       this._recorder.stop()
     }
   }
@@ -537,6 +541,7 @@ export class TotAudioRecorder extends HTMLElement {
   finishRecording() {
     clearInterval(this._timer)
     cancelAnimationFrame(this._animation)
+    this.captureActiveElapsed(true)
     const duration = this.getElapsedSeconds()
     const type = this._recorder && this._recorder.mimeType ? this._recorder.mimeType : 'audio/webm'
     const blob = new Blob(this._chunks, { type })
@@ -581,6 +586,8 @@ export class TotAudioRecorder extends HTMLElement {
     clearInterval(this._timer)
     cancelAnimationFrame(this._animation)
     this.stopTracks()
+    this._startedAt = 0
+    this._elapsedBeforePause = 0
     this._isAbort = false
     this._recordButton.hidden = false
     this._recordButton.disabled = false
@@ -608,9 +615,23 @@ export class TotAudioRecorder extends HTMLElement {
     this._timeLabel.textContent = formatTime(this.getElapsedSeconds())
   }
 
+  captureActiveElapsed(force) {
+    if (!this._startedAt) {
+      return
+    }
+
+    const isRecording = this._recorder && this._recorder.state === 'recording'
+    if (!force && !isRecording) {
+      return
+    }
+
+    this._elapsedBeforePause += performance.now() - this._startedAt
+    this._startedAt = 0
+  }
+
   getElapsedSeconds() {
     let elapsed = this._elapsedBeforePause
-    if (this._recorder && this._recorder.state === 'recording') {
+    if (this._startedAt) {
       elapsed += performance.now() - this._startedAt
     }
     return elapsed / 1000
@@ -644,6 +665,8 @@ export class TotAudioRecorder extends HTMLElement {
   }
 
   clearRecording() {
+    this._startedAt = 0
+    this._elapsedBeforePause = 0
     const player = this._playback.querySelector('tot-audio-player')
     if (player && player.src && player.src.startsWith('blob:')) {
       URL.revokeObjectURL(player.src)
