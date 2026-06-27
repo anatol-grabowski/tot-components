@@ -101,7 +101,6 @@ const textareaStyle = `
     min-width: 0;
     outline: none;
     overflow: auto;
-    overscroll-behavior: contain;
     padding: var(--tot-spacing-x-small, .5rem) var(--textarea-spacing);
     resize: both;
     width: 100%;
