@@ -2,6 +2,7 @@ const inputStyle = `
   :host {
     display: block;
     max-width: 100%;
+    vertical-align: top;
   }
 
   *, *::before, *::after {
@@ -45,6 +46,8 @@ const inputStyle = `
     font-weight: var(--tot-input-font-weight, 400);
     gap: var(--tot-spacing-2x-small, .25rem);
     letter-spacing: var(--tot-input-letter-spacing, normal);
+    height: var(--input-height);
+    line-height: var(--tot-input-line-height, 1.25);
     min-height: var(--input-height);
     max-width: 100%;
     min-width: 0;
@@ -102,6 +105,7 @@ const inputStyle = `
     flex: 1 1 auto;
     font: inherit;
     height: 100%;
+    line-height: inherit;
     letter-spacing: inherit;
     min-width: 0;
     outline: none;

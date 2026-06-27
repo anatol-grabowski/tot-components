@@ -27,6 +27,7 @@ registerDemo({
         logEvent(selectors[i], 'theme-change', {
           theme: event.detail.theme,
           label: event.detail.label,
+          effectiveTheme: event.detail.effectiveTheme,
           href: event.detail.href,
         })
       })

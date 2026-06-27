@@ -2,6 +2,7 @@ const selectStyle = `
   :host {
     display: block;
     max-width: 100%;
+    vertical-align: top;
   }
 
   *, *::before, *::after {
@@ -53,6 +54,8 @@ const selectStyle = `
     font-weight: var(--tot-input-font-weight, 400);
     gap: var(--tot-spacing-2x-small, .25rem);
     letter-spacing: var(--tot-input-letter-spacing, normal);
+    height: var(--select-height);
+    line-height: var(--tot-input-line-height, 1.25);
     min-height: var(--select-height);
     max-width: 100%;
     min-width: 0;
@@ -129,6 +132,7 @@ const selectStyle = `
     display: flex;
     flex: 1 1 auto;
     gap: var(--tot-spacing-2x-small, .25rem);
+    line-height: inherit;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

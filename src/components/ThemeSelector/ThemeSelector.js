@@ -19,9 +19,14 @@ const themeSelectorStyle = `
   }
 `
 
+const systemThemeName = 'system'
+const lightThemeName = 'light'
+const darkThemeName = 'dark'
+
 const defaultThemes = [
-  { name: 'light', label: 'Light', href: '' },
-  { name: 'dark', label: 'Dark', href: '' },
+  { name: lightThemeName, label: 'Light', href: '' },
+  { name: darkThemeName, label: 'Dark', href: '' },
+  { name: systemThemeName, label: 'System', href: '' },
 ]
 
 export class TotThemeSelector extends HTMLElement {
@@ -38,7 +43,9 @@ export class TotThemeSelector extends HTMLElement {
   constructor() {
     super()
     this._themes = null
+    this._systemMediaQuery = null
     this._handleDocumentThemeChange = event => this.handleDocumentThemeChange(event)
+    this._handleSystemThemeChange = () => this.handleSystemThemeChange()
   }
 
   get themes() {
@@ -72,11 +79,13 @@ export class TotThemeSelector extends HTMLElement {
 
   connectedCallback() {
     document.addEventListener('tot-theme-change', this._handleDocumentThemeChange)
+    this.addSystemThemeListener()
     this.render()
   }
 
   disconnectedCallback() {
     document.removeEventListener('tot-theme-change', this._handleDocumentThemeChange)
+    this.removeSystemThemeListener()
   }
 
   attributeChangedCallback(name) {
@@ -119,13 +128,29 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   getButtonLabel(currentTheme) {
-    const prefix = this.getAttribute('label') || 'Theme'
     const theme = this.getThemeByName(currentTheme) || this.themes[0]
-    if (!theme) {
-      return prefix
+    const icon = theme ? this.getThemeIcon(theme.name) : ''
+    const prefix = this.getAttribute('label')
+
+    if (prefix) {
+      return icon ? `${prefix}: ${icon}` : prefix
     }
 
-    return `${prefix}: ${theme.label}`
+    return icon || (theme ? theme.label : '')
+  }
+
+  getThemeIcon(themeName) {
+    const effectiveThemeName = themeName === systemThemeName ? this.getSystemThemeName() : themeName
+
+    if (effectiveThemeName === darkThemeName) {
+      return '🌙'
+    }
+
+    if (effectiveThemeName === lightThemeName) {
+      return '☀️'
+    }
+
+    return '◐'
   }
 
   handleSelect(event) {
@@ -151,20 +176,37 @@ export class TotThemeSelector extends HTMLElement {
     this.render()
   }
 
+  handleSystemThemeChange() {
+    if (this.value !== systemThemeName) {
+      return
+    }
+
+    const systemTheme = this.getThemeByName(systemThemeName)
+    if (systemTheme) {
+      this.applyTheme(systemTheme)
+    }
+  }
+
   applyTheme(theme) {
-    const href = this.getThemeHref(theme)
+    const effectiveTheme = this.getEffectiveTheme(theme)
+    const href = effectiveTheme ? this.getThemeHref(effectiveTheme) : ''
     const link = this.getThemeLink(true)
 
     if (link && href) {
       link.setAttribute('href', href)
     }
 
-    this.applyThemeClasses(theme.name)
+    if (effectiveTheme) {
+      this.applyThemeClasses(effectiveTheme.name)
+    }
+
     this.setAttribute('value', theme.name)
 
     const detail = {
       theme: theme.name,
       label: theme.label,
+      effectiveTheme: effectiveTheme ? effectiveTheme.name : theme.name,
+      effectiveLabel: effectiveTheme ? effectiveTheme.label : theme.label,
       href,
       source: this,
     }
@@ -189,6 +231,67 @@ export class TotThemeSelector extends HTMLElement {
       for (let i = 0; i < themes.length; i++) {
         target.classList.toggle(`tot-theme-${toClassName(themes[i].name)}`, themes[i].name === themeName)
       }
+    }
+  }
+
+  getEffectiveTheme(theme) {
+    if (!theme) {
+      return null
+    }
+
+    if (theme.name !== systemThemeName) {
+      return theme
+    }
+
+    return this.getThemeByName(this.getSystemThemeName()) || this.getThemeByName(lightThemeName) || this.getThemeByName(darkThemeName)
+  }
+
+  getSystemThemeName() {
+    const mediaQuery = this.getSystemMediaQuery()
+    return mediaQuery && mediaQuery.matches ? darkThemeName : lightThemeName
+  }
+
+  getSystemMediaQuery() {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return null
+    }
+
+    if (!this._systemMediaQuery) {
+      this._systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    }
+
+    return this._systemMediaQuery
+  }
+
+  addSystemThemeListener() {
+    const mediaQuery = this.getSystemMediaQuery()
+    if (!mediaQuery) {
+      return
+    }
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', this._handleSystemThemeChange)
+      return
+    }
+
+    if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(this._handleSystemThemeChange)
+    }
+  }
+
+  removeSystemThemeListener() {
+    const mediaQuery = this._systemMediaQuery
+    if (!mediaQuery) {
+      return
+    }
+
+    if (typeof mediaQuery.removeEventListener === 'function') {
+      mediaQuery.removeEventListener('change', this._handleSystemThemeChange)
+      return
+    }
+
+    if (typeof mediaQuery.removeListener === 'function') {
+      mediaQuery.removeListener(this._handleSystemThemeChange)
     }
   }
 
@@ -298,7 +401,7 @@ function parseThemes(value) {
     }
   }
 
-  return themes.length > 0 ? themes : cloneThemes(defaultThemes)
+  return normalizeThemeList(themes.length > 0 ? themes : cloneThemes(defaultThemes))
 }
 
 function normalizeTheme(value) {
@@ -332,6 +435,28 @@ function normalizeTheme(value) {
     label: String(value.label ?? value.text ?? toLabel(name)),
     href,
   }
+}
+
+function normalizeThemeList(themes) {
+  let hasLight = false
+  let hasDark = false
+  let hasSystem = false
+
+  for (let i = 0; i < themes.length; i++) {
+    hasLight = hasLight || themes[i].name === lightThemeName
+    hasDark = hasDark || themes[i].name === darkThemeName
+    hasSystem = hasSystem || themes[i].name === systemThemeName
+  }
+
+  if (hasLight && hasDark && !hasSystem) {
+    themes.push({
+      name: systemThemeName,
+      label: 'System',
+      href: '',
+    })
+  }
+
+  return themes
 }
 
 function cloneThemes(themes) {
