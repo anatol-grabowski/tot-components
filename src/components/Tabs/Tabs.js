@@ -58,6 +58,19 @@ const tabsStyle = `
     z-index: 1;
   }
 
+  button[data-sticky] {
+    position: sticky;
+    z-index: 3;
+  }
+
+  button[data-sticky='start'] {
+    left: var(--tot-tab-sticky-offset, 0px);
+  }
+
+  button[data-sticky='end'] {
+    right: var(--tot-tab-sticky-offset, 0px);
+  }
+
   button::after {
     content: attr(data-text);
     display: block;
@@ -76,7 +89,7 @@ const tabsStyle = `
   button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: -1px;
-    z-index: 2;
+    z-index: 4;
   }
 
   button[aria-selected='true'] {
@@ -85,6 +98,10 @@ const tabsStyle = `
     color: var(--tot-color-primary-700, #0369a1);
     font-weight: var(--tot-font-weight-semibold, 600);
     z-index: 2;
+  }
+
+  button[data-sticky][aria-selected='true'] {
+    z-index: 4;
   }
 
   button:disabled {
@@ -146,6 +163,10 @@ export class TotTabs extends HTMLElement {
     this.render()
   }
 
+  disconnectedCallback() {
+    this.disconnectResizeObserver()
+  }
+
   attributeChangedCallback(name) {
     if (name === 'tabs' || name === 'options') {
       this._tabs = null
@@ -168,12 +189,15 @@ export class TotTabs extends HTMLElement {
       const item = tabs[i]
       const btn = document.createElement('button')
       btn.type = 'button'
-      btn.part = 'tab'
+      btn.part = item.sticky ? `tab sticky-${item.sticky}` : 'tab'
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', String(item.value === value))
       btn.disabled = disabled || item.disabled
       btn.dataset.value = item.value
       btn.dataset.text = item.label
+      if (item.sticky) {
+        btn.dataset.sticky = item.sticky
+      }
       btn.textContent = item.label
       btn.addEventListener('click', () => {
         if (btn.disabled) {
@@ -187,8 +211,11 @@ export class TotTabs extends HTMLElement {
     }
 
     holder.scrollLeft = previousScrollLeft
+    this.connectResizeObserver(holder)
+    this.updateStickyOffsets(holder)
     requestAnimationFrame(() => {
       holder.scrollLeft = previousScrollLeft
+      this.updateStickyOffsets(holder)
     })
   }
 
@@ -200,6 +227,55 @@ export class TotTabs extends HTMLElement {
       }
     }
     return tabs[0] ? tabs[0].value : ''
+  }
+
+  connectResizeObserver(holder) {
+    this.disconnectResizeObserver()
+
+    if (typeof ResizeObserver !== 'function') {
+      return
+    }
+
+    this._resizeObserver = new ResizeObserver(() => {
+      this.updateStickyOffsets(holder)
+    })
+    this._resizeObserver.observe(holder)
+  }
+
+  disconnectResizeObserver() {
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect()
+      this._resizeObserver = null
+    }
+  }
+
+  updateStickyOffsets(holder = this.shadowRoot?.querySelector('.tabs')) {
+    if (!holder) {
+      return
+    }
+
+    const buttons = Array.from(holder.querySelectorAll('button[data-sticky]'))
+    const gap = parsePixels(getComputedStyle(holder).columnGap || getComputedStyle(holder).gap)
+    let startOffset = 0
+
+    for (let i = 0; i < buttons.length; i++) {
+      if (buttons[i].dataset.sticky !== 'start') {
+        continue
+      }
+
+      buttons[i].style.setProperty('--tot-tab-sticky-offset', `${startOffset}px`)
+      startOffset += buttons[i].offsetWidth + gap
+    }
+
+    let endOffset = 0
+    for (let i = buttons.length - 1; i >= 0; i--) {
+      if (buttons[i].dataset.sticky !== 'end') {
+        continue
+      }
+
+      buttons[i].style.setProperty('--tot-tab-sticky-offset', `${endOffset}px`)
+      endOffset += buttons[i].offsetWidth + gap
+    }
   }
 }
 
@@ -243,6 +319,7 @@ function parseOptions(value) {
         value: item,
         label: item,
         disabled: false,
+        sticky: '',
       })
     } else if (item && typeof item === 'object') {
       const optionValue = item.value ?? item.id ?? item.label ?? ''
@@ -251,10 +328,40 @@ function parseOptions(value) {
         value: String(optionValue),
         label: String(optionLabel),
         disabled: Boolean(item.disabled),
+        sticky: getStickyValue(item),
       })
     }
   }
   return options
+}
+
+function getStickyValue(item) {
+  if (item.sticky === true || item.stickyStart === true || item.stickyLeft === true) {
+    return 'start'
+  }
+
+  if (item.stickyEnd === true || item.stickyRight === true) {
+    return 'end'
+  }
+
+  const sticky = String(item.sticky ?? '').toLowerCase()
+  if (sticky === 'start' || sticky === 'left') {
+    return 'start'
+  }
+
+  if (sticky === 'end' || sticky === 'right') {
+    return 'end'
+  }
+
+  return ''
+}
+
+function parsePixels(value) {
+  const number = Number.parseFloat(value)
+  if (Number.isFinite(number)) {
+    return number
+  }
+  return 0
 }
 
 function parseJson(value, fallback) {

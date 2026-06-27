@@ -7,6 +7,26 @@ const initialTabs = [
   { value: 'docs', label: 'Docs' },
 ]
 
+
+const stickyTabs = [
+  { value: 'home', label: 'Home', sticky: 'start' },
+  { value: 'overview', label: 'Overview' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'calendar', label: 'Calendar' },
+  { value: 'tasks', label: 'Tasks' },
+  { value: 'files', label: 'Files' },
+  { value: 'members', label: 'Members' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'automation', label: 'Automation' },
+  { value: 'integrations', label: 'Integrations' },
+  { value: 'notifications', label: 'Notifications' },
+  { value: 'permissions', label: 'Permissions' },
+  { value: 'audit', label: 'Audit Log' },
+  { value: 'exports', label: 'Exports' },
+  { value: 'settings', label: 'Settings' },
+  { value: 'add', label: '➕', sticky: 'end' },
+]
+
 const manyTabs = [
   { value: 'overview', label: 'Overview' },
   { value: 'activity', label: 'Activity' },
@@ -62,6 +82,12 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Sticky start/end tabs</div>
+        <div class="demo-scroll-host">
+          <tot-tabs id="stickyTabs"></tot-tabs>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Dynamic tabs property</div>
         <div class="demo-scroll-host">
           <tot-tabs id="dynamicTabs"></tot-tabs>
@@ -85,6 +111,10 @@ registerDemo({
     const manyTabsElement = row.querySelector('#manyTabs')
     manyTabsElement.tabs = manyTabs
     manyTabsElement.value = 'activity'
+
+    const stickyTabsElement = row.querySelector('#stickyTabs')
+    stickyTabsElement.tabs = stickyTabs
+    stickyTabsElement.value = 'activity'
 
     const dynamicTabs = row.querySelector('#dynamicTabs')
     dynamicTabs.tabs = initialTabs
