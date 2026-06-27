@@ -16,6 +16,7 @@ import { TotHorizontalSelect } from './HorizontalSelect/HorizontalSelect.js'
 import { TotSelect } from './Select/Select.js'
 import { TotModal } from './Modal/Modal.js'
 import { TotTextarea } from './Textarea/Textarea.js'
+import { TotTable } from './Table/Table.js'
 import { TotMarkdown } from './Markdown/Markdown.js'
 import { TotHtml } from './Html/Html.js'
 import { TotThemeSelector } from './ThemeSelector/ThemeSelector.js'
@@ -47,6 +48,7 @@ defineElement('tot-horizontal-select', TotHorizontalSelect)
 defineElement('tot-select', TotSelect)
 defineElement('tot-modal', TotModal)
 defineElement('tot-textarea', TotTextarea)
+defineElement('tot-table', TotTable)
 defineElement('tot-markdown', TotMarkdown)
 defineElement('tot-html', TotHtml)
 defineElement('tot-theme-selector', TotThemeSelector)
@@ -69,6 +71,7 @@ export {
   TotSelect,
   TotModal,
   TotTextarea,
+  TotTable,
   TotMarkdown,
   TotHtml,
   TotThemeSelector,
