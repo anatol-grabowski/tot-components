@@ -3,6 +3,8 @@ const navbarStyle = `
     display: block;
     max-width: 100%;
     overflow: visible;
+    position: relative;
+    z-index: var(--tot-z-index-navbar, 700);
   }
 
   *, *::before, *::after {

@@ -411,7 +411,7 @@ const markdownStyle = `
     overscroll-behavior: contain;
     padding: 0;
     position: fixed;
-    z-index: var(--tot-z-index-dialog, 800);
+    z-index: var(--tot-z-index-fullscreen, 1300);
   }
 
   .fullscreen[hidden] {
@@ -469,7 +469,11 @@ export class TotMarkdown extends HTMLElement {
     this._fullscreen = false
     this._slotMarkdown = ''
     this._mutationObserver = null
+    this._historyPushed = false
+    this._historyToken = ''
+    this._skipHistoryOnClose = false
     this._handleKeyDown = event => this.handleKeyDown(event)
+    this._handlePopState = event => this.handlePopState(event)
     this._touchStartY = 0
   }
 
@@ -541,7 +545,7 @@ export class TotMarkdown extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.closeFullscreen(false)
+    this.closeFullscreen(false, true)
     if (this._mutationObserver) {
       this._mutationObserver.disconnect()
       this._mutationObserver = null
@@ -647,18 +651,29 @@ export class TotMarkdown extends HTMLElement {
     this._fullscreen = true
     lockPageScroll()
     window.addEventListener('keydown', this._handleKeyDown)
+    window.addEventListener('popstate', this._handlePopState)
+    this.pushFullscreenHistoryState()
     this.render()
     emit(this, 'fullscreen-change', this.getEventDetail())
   }
 
-  closeFullscreen(shouldRender = true) {
+  closeFullscreen(shouldRender = true, skipHistory = false) {
     if (!this._fullscreen) {
       return
     }
 
+    const shouldSkipHistory = skipHistory || this._skipHistoryOnClose
+    this._skipHistoryOnClose = false
     this._fullscreen = false
     window.removeEventListener('keydown', this._handleKeyDown)
+    window.removeEventListener('popstate', this._handlePopState)
     unlockPageScroll()
+
+    if (shouldSkipHistory) {
+      this.clearFullscreenHistoryState()
+    } else {
+      this.removeFullscreenHistoryState()
+    }
 
     if (shouldRender) {
       this.render()
@@ -667,12 +682,57 @@ export class TotMarkdown extends HTMLElement {
   }
 
   handleKeyDown(event) {
-    if (event.key !== 'Escape') {
+    if (event.key !== 'Escape' || !this._fullscreen) {
       return
     }
 
     event.preventDefault()
     this.closeFullscreen()
+  }
+
+  handlePopState() {
+    if (!this._fullscreen || !this._historyPushed) {
+      return
+    }
+
+    this._skipHistoryOnClose = true
+    this.closeFullscreen()
+  }
+
+  pushFullscreenHistoryState() {
+    if (this._historyPushed || typeof history === 'undefined') {
+      return
+    }
+
+    this._historyToken = `tot-fullscreen-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+    try {
+      const currentState = history.state && typeof history.state === 'object' ? history.state : {}
+      history.pushState({ ...currentState, totFullscreenToken: this._historyToken }, '')
+      this._historyPushed = true
+    } catch (error) {
+      this.clearFullscreenHistoryState()
+    }
+  }
+
+  removeFullscreenHistoryState() {
+    if (!this._historyPushed || typeof history === 'undefined') {
+      this.clearFullscreenHistoryState()
+      return
+    }
+
+    const state = history.state
+    const isCurrentFullscreenState = state && state.totFullscreenToken === this._historyToken
+    this.clearFullscreenHistoryState()
+
+    if (isCurrentFullscreenState) {
+      history.back()
+    }
+  }
+
+  clearFullscreenHistoryState() {
+    this._historyPushed = false
+    this._historyToken = ''
   }
 
   handleFullscreenWheel(event) {

@@ -19,6 +19,14 @@ registerDemo({
           <tot-theme-selector id="namedThemeSelector" label="Color scheme" themes="light,dark"></tot-theme-selector>
         </div>
       </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Sizes</div>
+        <div class="row">
+          <tot-theme-selector size="small"></tot-theme-selector>
+          <tot-theme-selector size="medium"></tot-theme-selector>
+          <tot-theme-selector size="large"></tot-theme-selector>
+        </div>
+      </div>
     `
 
     const selectors = wrapper.querySelectorAll('tot-theme-selector')

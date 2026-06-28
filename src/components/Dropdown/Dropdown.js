@@ -32,7 +32,7 @@ const dropdownStyle = `
     min-width: var(--tot-dropdown-min-width, 12rem);
     position: fixed;
     top: 0;
-    z-index: var(--tot-z-index-dropdown, 900);
+    z-index: var(--tot-z-index-dropdown, 1000);
   }
 
   .panel[hidden] {

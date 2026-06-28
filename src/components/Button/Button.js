@@ -89,6 +89,16 @@ const buttonStyle = `
     --button-color-hover: var(--tot-color-neutral-0, #fff);
   }
 
+  .button--create {
+    --button-background-color: var(--tot-color-success-600, #16a34a);
+    --button-background-color-hover: var(--tot-color-success-500, #22c55e);
+    --button-background-color-active: var(--tot-color-success-700, #15803d);
+    --button-border-color: var(--tot-color-success-600, #16a34a);
+    --button-border-color-hover: var(--tot-color-success-500, #22c55e);
+    --button-color: var(--tot-color-neutral-0, #fff);
+    --button-color-hover: var(--tot-color-neutral-0, #fff);
+  }
+
   .button--outline:not(.button--default) {
     background: transparent;
     color: var(--button-border-color);
@@ -182,7 +192,7 @@ const buttonStyle = `
   }
 `
 
-const variants = ['default', 'primary', 'danger']
+const variants = ['default', 'primary', 'danger', 'create']
 const sizes = ['small', 'medium', 'large']
 
 export class TotButton extends HTMLElement {

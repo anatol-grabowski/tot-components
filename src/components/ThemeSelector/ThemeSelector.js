@@ -14,14 +14,146 @@ const themeSelectorStyle = `
     max-width: 100%;
   }
 
-  tot-dropdown {
+  .trigger {
+    -webkit-appearance: none;
+    align-items: center;
+    appearance: none;
+    background: var(--tot-input-background-color, #fff);
+    border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
+    border-radius: var(--tot-input-border-radius-medium, var(--tot-border-radius-medium, 4px));
+    color: var(--tot-input-color, #1e293b);
+    cursor: pointer;
+    display: inline-flex;
+    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
+    font-size: var(--tot-button-font-size-medium, var(--tot-input-font-size-medium, .875rem));
+    font-weight: var(--tot-font-weight-semibold, 500);
+    gap: var(--tot-spacing-2x-small, .25rem);
+    justify-content: center;
+    line-height: 1;
     max-width: 100%;
+    min-height: var(--tot-input-height-medium, 2.25rem);
+    min-width: var(--tot-input-height-medium, 2.25rem);
+    padding: 0 var(--tot-input-spacing-medium, .75rem);
+    transition:
+      var(--tot-transition-fast, 150ms) background-color,
+      var(--tot-transition-fast, 150ms) border-color,
+      var(--tot-transition-fast, 150ms) color;
+    white-space: nowrap;
+  }
+
+  .trigger:hover {
+    background: var(--tot-input-background-color-hover, #f8fafc);
+    border-color: var(--tot-input-border-color-hover, #94a3b8);
+    color: var(--tot-input-color-hover, #0f172a);
+  }
+
+  .trigger:active {
+    background: var(--tot-color-neutral-100, #f1f5f9);
+  }
+
+  .trigger:focus-visible {
+    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+    outline-offset: var(--tot-focus-ring-offset, 1px);
+  }
+
+  .trigger--small {
+    font-size: var(--tot-button-font-size-small, var(--tot-input-font-size-small, .75rem));
+    min-height: var(--tot-input-height-small, 1.75rem);
+    min-width: var(--tot-input-height-small, 1.75rem);
+    padding: 0 var(--tot-input-spacing-small, .5rem);
+  }
+
+  .trigger--large {
+    font-size: var(--tot-button-font-size-large, var(--tot-input-font-size-large, 1rem));
+    min-height: var(--tot-input-height-large, 2.75rem);
+    min-width: var(--tot-input-height-large, 2.75rem);
+    padding: 0 var(--tot-input-spacing-large, 1rem);
+  }
+
+  .trigger__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .trigger__caret {
+    color: currentColor;
+    font-size: 1.1em;
+    line-height: 1;
+    position: relative;
+    top: -.15em;
+  }
+
+  .panel {
+    left: 0;
+    max-width: min(var(--tot-theme-selector-panel-max-width, 16rem), calc(100vw - 1rem));
+    min-width: var(--tot-theme-selector-panel-min-width, 9rem);
+    position: fixed;
+    top: 0;
+    z-index: var(--tot-z-index-dropdown, 1000);
+  }
+
+  .panel[hidden] {
+    display: none;
+  }
+
+  .menu {
+    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
+    border-radius: var(--tot-border-radius-medium, 4px);
+    box-shadow: var(--tot-shadow-medium, var(--tot-shadow-small, 0 1px 2px rgb(15 23 42 / 8%)));
+    color: var(--tot-input-color, #1e293b);
+    display: grid;
+    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
+    font-size: var(--tot-input-font-size-medium, .875rem);
+    max-height: var(--tot-theme-selector-panel-max-height, none);
+    overflow: auto;
+    padding: var(--tot-spacing-2x-small, .25rem);
+  }
+
+  .item {
+    -webkit-appearance: none;
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: var(--tot-border-radius-small, 3px);
+    color: inherit;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: var(--tot-spacing-2x-small, .25rem);
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    line-height: var(--tot-line-height-normal, 1.4);
+    min-height: var(--tot-input-height-small, 1.75rem);
+    padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-x-small, .5rem);
+    text-align: left;
+    width: 100%;
+  }
+
+  .item:hover,
+  .item:focus-visible {
+    background: var(--tot-color-neutral-100, #f1f5f9);
+    outline: 0;
+  }
+
+  .item__check {
+    color: var(--tot-color-primary-600, #0284c7);
+    text-align: center;
+  }
+
+  .item__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `
 
 const systemThemeName = 'system'
 const lightThemeName = 'light'
 const darkThemeName = 'dark'
+
+const sizes = ['small', 'medium', 'large']
 
 const defaultThemes = [
   { name: lightThemeName, label: 'Light', href: '' },
@@ -37,6 +169,7 @@ export class TotThemeSelector extends HTMLElement {
       'label',
       'base-path',
       'link-id',
+      'size',
     ]
   }
 
@@ -44,8 +177,13 @@ export class TotThemeSelector extends HTMLElement {
     super()
     this._themes = null
     this._systemMediaQuery = null
+    this._open = false
+    this._positionFrame = 0
+    this._visualViewport = null
     this._handleDocumentThemeChange = event => this.handleDocumentThemeChange(event)
     this._handleSystemThemeChange = () => this.handleSystemThemeChange()
+    this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
+    this._handleWindowChange = () => this.schedulePanelPosition()
   }
 
   get themes() {
@@ -77,14 +215,39 @@ export class TotThemeSelector extends HTMLElement {
     return this.getAttribute('link-id') || 'themeStylesheet'
   }
 
+  get size() {
+    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
+  }
+
+  set size(value) {
+    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
+  }
+
   connectedCallback() {
     document.addEventListener('tot-theme-change', this._handleDocumentThemeChange)
+    document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    window.addEventListener('resize', this._handleWindowChange)
+    document.addEventListener('scroll', this._handleWindowChange, true)
+    this._visualViewport = window.visualViewport || null
+    if (this._visualViewport) {
+      this._visualViewport.addEventListener('resize', this._handleWindowChange)
+      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
+    }
     this.addSystemThemeListener()
     this.render()
   }
 
   disconnectedCallback() {
     document.removeEventListener('tot-theme-change', this._handleDocumentThemeChange)
+    document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    window.removeEventListener('resize', this._handleWindowChange)
+    document.removeEventListener('scroll', this._handleWindowChange, true)
+    if (this._visualViewport) {
+      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
+      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
+      this._visualViewport = null
+    }
+    cancelAnimationFrame(this._positionFrame)
     this.removeSystemThemeListener()
   }
 
@@ -99,17 +262,52 @@ export class TotThemeSelector extends HTMLElement {
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const currentTheme = this.value
+    const buttonLabel = this.getButtonLabel(currentTheme)
+    const size = this.size
+    const items = this.getMenuItems(currentTheme)
+    const itemsHtml = this.renderItems(items)
 
     root.innerHTML = `<style>${themeSelectorStyle}</style>
       <span class="selector" part="base">
-        <tot-dropdown></tot-dropdown>
+        <button class="trigger trigger--${escapeAttribute(size)}" type="button" aria-haspopup="listbox" aria-expanded="${this._open ? 'true' : 'false'}" aria-label="Theme">
+          <span class="trigger__label">${escapeHtml(buttonLabel)}</span>
+          <span class="trigger__caret" aria-hidden="true">⌵</span>
+        </button>
+        <div class="panel" part="panel" ${this._open ? '' : 'hidden'}>
+          <div class="menu" role="listbox" aria-label="Theme options">
+            ${itemsHtml}
+          </div>
+        </div>
       </span>
     `
 
-    const dropdown = root.querySelector('tot-dropdown')
-    dropdown.label = this.getButtonLabel(currentTheme)
-    dropdown.menuItems = this.getMenuItems(currentTheme)
-    dropdown.addEventListener('select', event => this.handleSelect(event))
+    const trigger = root.querySelector('.trigger')
+    const panel = root.querySelector('.panel')
+    const menu = root.querySelector('.menu')
+
+    trigger.addEventListener('click', event => this.handleTriggerClick(event))
+    trigger.addEventListener('keydown', event => this.handleTriggerKeyDown(event))
+    panel.addEventListener('keydown', event => this.handlePanelKeyDown(event))
+    menu.addEventListener('click', event => this.handleMenuClick(event))
+
+    if (this._open) {
+      this.schedulePanelPosition()
+    }
+  }
+
+  renderItems(items) {
+    let html = ''
+    for (let i = 0; i < items.length; i++) {
+      html += this.renderItem(items[i])
+    }
+    return html
+  }
+
+  renderItem(item) {
+    return `<button class="item" type="button" role="option" aria-selected="${item.checked ? 'true' : 'false'}" data-value="${escapeAttribute(item.value)}">
+      <span class="item__check" aria-hidden="true">${item.checked ? '✓' : ''}</span>
+      <span class="item__label">${escapeHtml(item.label)}</span>
+    </button>`
   }
 
   getMenuItems(currentTheme) {
@@ -153,13 +351,139 @@ export class TotThemeSelector extends HTMLElement {
     return '◐'
   }
 
-  handleSelect(event) {
-    const theme = this.getThemeByName(event.detail.value)
+  handleTriggerClick(event) {
+    event.preventDefault()
+    this.setOpen(!this._open)
+  }
+
+  handleTriggerKeyDown(event) {
+    if (event.key === 'ArrowDown') {
+      this.setOpen(true)
+      this.focusFirstItem()
+      event.preventDefault()
+      return
+    }
+
+    if (event.key === 'Escape' && this._open) {
+      this.setOpen(false)
+      event.preventDefault()
+    }
+  }
+
+  handlePanelKeyDown(event) {
+    if (event.key !== 'Escape') {
+      return
+    }
+
+    this.setOpen(false)
+    this.focusTrigger()
+    event.preventDefault()
+  }
+
+  handleMenuClick(event) {
+    const target = event.target instanceof Element ? event.target : null
+    const item = target ? target.closest('.item') : null
+    if (!item) {
+      return
+    }
+
+    const theme = this.getThemeByName(item.dataset.value)
     if (!theme) {
       return
     }
 
     this.applyTheme(theme)
+    this.setOpen(false)
+    this.focusTrigger()
+  }
+
+  handleDocumentPointerDown(event) {
+    if (!this._open) {
+      return
+    }
+
+    const path = event.composedPath()
+    for (let i = 0; i < path.length; i++) {
+      if (path[i] === this) {
+        return
+      }
+    }
+
+    this.setOpen(false)
+  }
+
+  setOpen(open) {
+    if (this._open === open) {
+      if (open) {
+        this.schedulePanelPosition()
+      }
+      return
+    }
+
+    this._open = open
+    this.render()
+  }
+
+  schedulePanelPosition() {
+    cancelAnimationFrame(this._positionFrame)
+    this._positionFrame = requestAnimationFrame(() => this.updatePanelPosition())
+  }
+
+  updatePanelPosition() {
+    if (!this._open || !this.shadowRoot) {
+      return
+    }
+
+    const trigger = this.shadowRoot.querySelector('.trigger')
+    const panel = this.shadowRoot.querySelector('.panel')
+    if (!trigger || !panel) {
+      return
+    }
+
+    const triggerRect = trigger.getBoundingClientRect()
+    if (!triggerRect.width && !triggerRect.height) {
+      return
+    }
+
+    const viewport = getViewportRect()
+    const margin = 8
+    const gap = getCssLength(this, '--tot-dropdown-panel-gap', 4)
+    const viewportWidth = Math.max(0, viewport.width - margin * 2)
+
+    panel.style.maxWidth = `min(var(--tot-theme-selector-panel-max-width, 16rem), ${Math.floor(viewportWidth)}px)`
+    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-theme-selector-panel-min-width, 9rem))`
+    panel.style.setProperty('--tot-theme-selector-panel-max-height', 'none')
+
+    const panelRect = panel.getBoundingClientRect()
+    const panelWidth = Math.min(panelRect.width, viewportWidth)
+    const belowSpace = Math.max(0, viewport.bottom - triggerRect.bottom - gap - margin)
+    const aboveSpace = Math.max(0, triggerRect.top - viewport.top - gap - margin)
+    const placeAbove = panelRect.height > belowSpace && aboveSpace > belowSpace
+    const availableHeight = Math.max(0, placeAbove ? aboveSpace : belowSpace)
+    const panelHeight = Math.min(panelRect.height, availableHeight)
+    let left = triggerRect.left
+    let top = placeAbove ? triggerRect.top - panelHeight - gap : triggerRect.bottom + gap
+
+    if (left + panelWidth > viewport.right - margin) {
+      left = triggerRect.right - panelWidth
+    }
+
+    left = clamp(left, viewport.left + margin, viewport.right - panelWidth - margin)
+    top = clamp(top, viewport.top + margin, viewport.bottom - panelHeight - margin)
+
+    panel.style.left = `${Math.round(left)}px`
+    panel.style.top = `${Math.round(top)}px`
+    panel.style.setProperty('--tot-theme-selector-panel-max-height', `${Math.floor(availableHeight)}px`)
+  }
+
+  focusTrigger() {
+    this.shadowRoot?.querySelector('.trigger')?.focus()
+  }
+
+  focusFirstItem() {
+    requestAnimationFrame(() => {
+      this.shadowRoot?.querySelector('.item:not([disabled])')?.focus()
+    })
   }
 
   handleDocumentThemeChange(event) {
@@ -495,6 +819,65 @@ function getNameFromHref(href) {
   return fileName.replace(/\.css$/i, '')
 }
 
+function getViewportRect() {
+  const viewport = window.visualViewport
+  if (!viewport) {
+    return {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
+  }
+
+  return {
+    left: viewport.offsetLeft,
+    top: viewport.offsetTop,
+    right: viewport.offsetLeft + viewport.width,
+    bottom: viewport.offsetTop + viewport.height,
+    width: viewport.width,
+    height: viewport.height,
+  }
+}
+
+function getCssLength(element, property, fallback) {
+  const rawValue = getComputedStyle(element).getPropertyValue(property).trim()
+  if (!rawValue) {
+    return fallback
+  }
+
+  const numericValue = Number.parseFloat(rawValue)
+  if (!Number.isFinite(numericValue)) {
+    return fallback
+  }
+
+  if (rawValue.endsWith('rem')) {
+    const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
+    return Number.isFinite(rootFontSize) ? numericValue * rootFontSize : fallback
+  }
+
+  if (rawValue.endsWith('em')) {
+    const fontSize = Number.parseFloat(getComputedStyle(element).fontSize)
+    return Number.isFinite(fontSize) ? numericValue * fontSize : fallback
+  }
+
+  if (rawValue.endsWith('px')) {
+    return numericValue
+  }
+
+  return fallback
+}
+
+function clamp(value, min, max) {
+  if (max < min) {
+    return min
+  }
+
+  return Math.min(Math.max(value, min), max)
+}
+
 function toLabel(value) {
   const words = String(value).replace(/[-_]+/g, ' ').trim()
   if (!words) {
@@ -516,10 +899,47 @@ function parseJson(value, fallback) {
   }
 }
 
+function getSupportedValue(value, supportedValues, fallback) {
+  const normalizedValue = value || fallback
+  for (let i = 0; i < supportedValues.length; i++) {
+    if (supportedValues[i] === normalizedValue) {
+      return normalizedValue
+    }
+  }
+  return fallback
+}
+
 function emit(element, name, detail) {
   element.dispatchEvent(new CustomEvent(name, {
     bubbles: true,
     composed: true,
     detail: detail || {},
   }))
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (match) => {
+    const replacements = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }
+    return replacements[match]
+  })
+}
+
+function escapeAttribute(value) {
+  return String(value).replace(/[&<>"'`]/g, (match) => {
+    const replacements = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '`': '&#96;',
+    }
+    return replacements[match]
+  })
 }

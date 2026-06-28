@@ -9,13 +9,17 @@ const tabsStyle = `
   }
 
   .tabs {
+    --tot-tabs-gap: 2px;
+
+    background: var(--tot-panel-background-color, #fff);
     color: var(--tot-input-color, #1e293b);
     display: flex;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
     border-bottom: 0;
-    gap: 2px;
+    gap: var(--tot-tabs-gap);
     height: var(--tot-tabs-height, 2.25rem);
+    isolation: isolate;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -59,8 +63,18 @@ const tabsStyle = `
   }
 
   button[data-sticky] {
+    box-shadow: 0 0 0 var(--tot-tabs-gap) var(--tot-panel-background-color, #fff);
     position: sticky;
     z-index: 3;
+  }
+
+  button[data-sticky]::before {
+    background: var(--tot-panel-background-color, #fff);
+    content: '';
+    inset: calc(-1 * var(--tot-tabs-gap));
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
   }
 
   button[data-sticky='start'] {

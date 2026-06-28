@@ -221,7 +221,7 @@ const selectStyle = `
     min-width: 100%;
     position: absolute;
     top: 100%;
-    z-index: var(--tot-z-index-dropdown, 900);
+    z-index: var(--tot-z-index-dropdown, 1000);
   }
 
   .panel[hidden] {

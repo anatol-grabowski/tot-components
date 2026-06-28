@@ -10,6 +10,7 @@ registerDemo({
         html: `
           <tot-button variant="default">Default</tot-button>
           <tot-button variant="primary">Primary</tot-button>
+          <tot-button variant="create">Create</tot-button>
           <tot-button variant="danger">Danger</tot-button>
         `,
       },
@@ -18,6 +19,7 @@ registerDemo({
         html: `
           <tot-button variant="default" outline>Default outline</tot-button>
           <tot-button variant="primary" outline>Primary outline</tot-button>
+          <tot-button variant="create" outline>Create outline</tot-button>
           <tot-button variant="danger" outline>Danger outline</tot-button>
         `,
       },
@@ -27,6 +29,7 @@ registerDemo({
         html: `
           <tot-button caret>Default caret</tot-button>
           <tot-button variant="primary" caret>Primary caret</tot-button>
+          <tot-button variant="create" caret>Create caret</tot-button>
           <tot-button variant="danger" outline caret>Danger outline caret</tot-button>
         `,
       },
@@ -43,6 +46,7 @@ registerDemo({
         html: `
           <tot-button size="small" variant="default" outline>Default</tot-button>
           <tot-button size="small" variant="primary" outline>Primary</tot-button>
+          <tot-button size="small" variant="create" outline>Create</tot-button>
           <tot-button size="small" variant="danger" outline>Danger</tot-button>
         `,
       },

@@ -16,7 +16,7 @@ const modalStyle = `
     overscroll-behavior: contain;
     padding: var(--tot-spacing-medium, 1rem);
     position: fixed;
-    z-index: var(--tot-z-index-dialog, 800);
+    z-index: var(--tot-z-index-dialog, 1200);
   }
 
   .overlay[hidden] {

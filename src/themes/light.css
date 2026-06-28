@@ -567,9 +567,12 @@
    * Z-indexes
    */
 
-  --tot-z-index-drawer: 700;
-  --tot-z-index-dialog: 800;
-  --tot-z-index-dropdown: 900;
-  --tot-z-index-toast: 950;
-  --tot-z-index-tooltip: 1000;
+  --tot-z-index-navbar: 700;
+  --tot-z-index-drawer: 900;
+  --tot-z-index-dropdown: 1000;
+  --tot-z-index-overlay: 1100;
+  --tot-z-index-dialog: 1200;
+  --tot-z-index-fullscreen: 1300;
+  --tot-z-index-toast: 1400;
+  --tot-z-index-tooltip: 1500;
 }

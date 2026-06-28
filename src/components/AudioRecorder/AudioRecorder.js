@@ -70,13 +70,20 @@ const audioRecorderStyle = `
 
   .record,
   .pause {
-    border: 2px solid var(--tot-color-danger-600, #dc2626);
     border-radius: var(--tot-border-radius-circle, 50%);
     display: inline-grid;
     height: var(--tot-audio-recorder-main-control-size, 2.625rem);
     padding: 0;
     place-items: center;
     width: var(--tot-audio-recorder-main-control-size, 2.625rem);
+  }
+
+  .record {
+    border: 2px solid var(--tot-color-danger-600, #dc2626);
+  }
+
+  .pause {
+    border: 2px solid var(--tot-input-border-color, #cbd5e1);
   }
 
   .record::before {
@@ -112,6 +119,10 @@ const audioRecorderStyle = `
   .pause {
     gap: .3125rem;
     grid-template-columns: .3125rem .3125rem;
+  }
+
+  .pause:hover:not(:disabled) {
+    border-color: var(--tot-input-border-color-hover, #94a3b8);
   }
 
   .pause::before,

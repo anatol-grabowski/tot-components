@@ -33,7 +33,7 @@ body {
   margin: 0 calc(-1 * var(--tot-spacing-large, 20px));
   position: sticky;
   top: 0;
-  z-index: var(--tot-z-index-toast, 950);
+  z-index: calc(var(--tot-z-index-navbar, 700) + 1); /* ensure navbars in Navbar.demo.js are below the main demo navbar */
 }
 
 .demo-header tot-navbar {
@@ -166,7 +166,7 @@ h2 {
   padding: var(--tot-spacing-x-small, 10px);
   position: fixed;
   right: max(var(--tot-spacing-x-small, 10px), env(safe-area-inset-right));
-  z-index: var(--tot-z-index-dropdown, 900);
+  z-index: var(--tot-z-index-overlay, 1100);
 }
 
 .event-panel[hidden] {
@@ -272,8 +272,8 @@ h2 {
     <tot-navbar id="demoNavbar" aria-label="Demo sections">
       <span class="demo-title" slot="left">tot-components</span>
       <span class="demo-nav-actions" slot="right">
-        <tot-button id="logsButton" label="Show logs"></tot-button>
-        <tot-theme-selector id="themeSelector" themes="light,dark"></tot-theme-selector>
+        <tot-button id="logsButton" size="small" label="Show logs"></tot-button>
+        <tot-theme-selector id="themeSelector" size="small"></tot-theme-selector>
       </span>
     </tot-navbar>
   </header>

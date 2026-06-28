@@ -23,7 +23,7 @@ const stickyTabs = [
   { value: 'permissions', label: 'Permissions' },
   { value: 'audit', label: 'Audit Log' },
   { value: 'exports', label: 'Exports' },
-  { value: 'settings', label: 'Settings' },
+  { value: 'settings', label: 'Settings', sticky: 'end' },
   { value: 'add', label: '➕', sticky: 'end' },
 ]
 
