@@ -43,7 +43,7 @@ const buttonStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-button-font-size-medium, var(--tot-input-font-size-medium, .875rem));
     font-weight: var(--tot-font-weight-semibold, 500);
-    line-height: 1;
+    line-height: 1.25;
     letter-spacing: var(--tot-input-letter-spacing, normal);
     transition:
       var(--tot-transition-fast, 150ms) background-color,
@@ -143,6 +143,7 @@ const buttonStyle = `
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.25;
   }
 
   .button--loading .button__content {
@@ -154,6 +155,7 @@ const buttonStyle = `
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.25;
   }
 
   .button:not(.button--has-default-slot) .button__slot,

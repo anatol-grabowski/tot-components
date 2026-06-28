@@ -21,17 +21,20 @@ const messageStyle = `
 
     background: var(--message-background-color);
     border: var(--tot-panel-border-width, 1px) solid var(--message-border-color);
-    border-inline-start: .375rem solid var(--message-accent-color);
-    border-radius: var(--tot-border-radius-large, 8px);
+    border-inline-start: .25rem solid var(--message-accent-color);
+    border-radius: var(--tot-border-radius-medium, 4px);
     color: var(--message-color);
     display: block;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
-    line-height: var(--tot-line-height-normal, 1.6);
-    min-height: 3.5rem;
+    line-height: var(--tot-line-height-dense, 1.45);
     min-width: 0;
     overflow: visible;
-    padding: var(--tot-spacing-medium, 1rem) var(--tot-spacing-large, 1.25rem) var(--tot-spacing-medium, 1rem) calc(var(--tot-spacing-large, 1.25rem) + 1.5rem);
+    padding-inline-start: var(--tot-spacing-medium, 1rem);
+    padding-inline-end: var(--tot-spacing-medium, 1rem);
+    padding-block-start: var(--tot-spacing-2x-small, .625rem);
+    padding-block-end: var(--tot-spacing-2x-small, .625rem);
+    // padding: 0 var(--tot-spacing-medium, 1rem) var(--tot-spacing-small, .625rem) calc(var(--tot-spacing-medium, 1rem) + 1.25rem);
     position: relative;
   }
 
@@ -57,10 +60,10 @@ const messageStyle = `
   }
 
   .message--error {
-    --message-accent-color: var(--tot-message-error-accent-color, var(--tot-color-red-700, #b91c1c));
+    --message-accent-color: var(--tot-message-error-accent-color, var(--tot-color-red-600, #dc2626));
     --message-background-color: var(--tot-message-error-background-color, var(--tot-color-red-50, #fef2f2));
-    --message-border-color: var(--tot-message-error-border-color, var(--tot-color-red-200, #fecaca));
-    --message-color: var(--tot-message-error-color, var(--tot-color-red-950, #450a0a));
+    --message-border-color: var(--tot-message-error-border-color, var(--tot-color-red-300, #fca5a5));
+    --message-color: var(--tot-message-error-color, var(--tot-color-red-800, #991b1b));
   }
 
   .message__symbol {
@@ -69,16 +72,16 @@ const messageStyle = `
     border-radius: var(--tot-border-radius-circle, 50%);
     color: var(--tot-color-neutral-0, #fff);
     display: inline-flex;
-    font-size: 1rem;
+    font-size: .8125rem;
     font-weight: var(--tot-font-weight-bold, 700);
-    height: 2.25rem;
+    height: 1.3rem;
     justify-content: center;
     left: 0;
     line-height: 1;
     position: absolute;
     top: 50%;
-    transform: translate(-50%, -50%);
-    width: 2.25rem;
+    transform: translate(calc(-50% - 0.125rem), -50%);
+    width: 1.3rem;
   }
 
   .message__symbol[hidden] {
@@ -86,7 +89,7 @@ const messageStyle = `
   }
 
   .message--no-symbol {
-    padding-inline-start: var(--tot-spacing-medium, 1rem);
+    padding-inline-start: var(--tot-spacing-x-small, 1rem);
   }
 
   .message__content {
