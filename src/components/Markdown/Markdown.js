@@ -649,6 +649,7 @@ export class TotMarkdown extends HTMLElement {
     }
 
     this._fullscreen = true
+    markFullscreenOpen()
     lockPageScroll()
     window.addEventListener('keydown', this._handleKeyDown)
     window.addEventListener('popstate', this._handlePopState)
@@ -665,6 +666,7 @@ export class TotMarkdown extends HTMLElement {
     const shouldSkipHistory = skipHistory || this._skipHistoryOnClose
     this._skipHistoryOnClose = false
     this._fullscreen = false
+    markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
     window.removeEventListener('popstate', this._handlePopState)
     unlockPageScroll()
@@ -687,6 +689,10 @@ export class TotMarkdown extends HTMLElement {
     }
 
     event.preventDefault()
+    event.stopPropagation()
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation()
+    }
     this.closeFullscreen()
   }
 
@@ -1944,6 +1950,26 @@ function sanitizeImageUrl(url) {
   }
 
   return ''
+}
+
+function markFullscreenOpen() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  window.__totFullscreenOpenCount = (window.__totFullscreenOpenCount || 0) + 1
+  document.documentElement.setAttribute('data-tot-fullscreen-open', '')
+}
+
+function markFullscreenClosed() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  window.__totFullscreenOpenCount = Math.max(0, (window.__totFullscreenOpenCount || 0) - 1)
+  if (window.__totFullscreenOpenCount === 0) {
+    document.documentElement.removeAttribute('data-tot-fullscreen-open')
+  }
 }
 
 function lockPageScroll() {

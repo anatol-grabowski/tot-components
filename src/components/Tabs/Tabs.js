@@ -16,7 +16,6 @@ const tabsStyle = `
     display: flex;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
-    border-bottom: 0;
     gap: var(--tot-tabs-gap);
     height: var(--tot-tabs-height, 2.25rem);
     isolation: isolate;
@@ -41,10 +40,9 @@ const tabsStyle = `
 
   button {
     appearance: none;
-    align-items: center;
-    background: var(--tot-color-neutral-50, #f8fafc);
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
-    border-radius: var(--tot-border-radius-medium, 4px) var(--tot-border-radius-medium, 4px) 0 0;
+    align-items: stretch;
+    background: transparent;
+    border: 0;
     color: var(--tot-input-color, #1e293b);
     cursor: pointer;
     display: flex;
@@ -52,29 +50,68 @@ const tabsStyle = `
     flex-direction: column;
     font: inherit;
     height: 100%;
-    justify-content: center;
-    margin-bottom: -1px;
+    margin: 0 0 -1px;
     max-width: 16rem;
     min-width: 0;
-    padding: 0 var(--tot-spacing-medium, 1rem);
+    padding: 0;
     position: relative;
     white-space: nowrap;
     z-index: 1;
   }
 
+  .tab-inner {
+    align-items: center;
+    background: var(--tot-color-neutral-50, #f8fafc);
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    border-radius: var(--tot-border-radius-medium, 4px) var(--tot-border-radius-medium, 4px) 0 0;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 var(--tot-spacing-medium, 1rem);
+    position: relative;
+    z-index: 1;
+  }
+
+  .tab-inner::after {
+    content: attr(data-text);
+    display: block;
+    font-weight: var(--tot-font-weight-semibold, 600);
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .tab-text {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   button[data-sticky] {
-    box-shadow: 0 0 0 var(--tot-tabs-gap) var(--tot-panel-background-color, #fff);
+    background: var(--tot-panel-background-color, #fff);
+    box-shadow:
+      calc(-1 * var(--tot-tabs-gap)) 0 0 0 var(--tot-panel-background-color, #fff),
+      var(--tot-tabs-gap) 0 0 0 var(--tot-panel-background-color, #fff);
     position: sticky;
     z-index: 3;
   }
 
   button[data-sticky]::before {
     background: var(--tot-panel-background-color, #fff);
+    bottom: 0;
     content: '';
-    inset: calc(-1 * var(--tot-tabs-gap));
+    left: calc(-1 * var(--tot-tabs-gap));
     pointer-events: none;
     position: absolute;
-    z-index: -1;
+    right: calc(-1 * var(--tot-tabs-gap));
+    top: 0;
+    z-index: 0;
   }
 
   button[data-sticky='start'] {
@@ -85,33 +122,30 @@ const tabsStyle = `
     right: var(--tot-tab-sticky-offset, 0px);
   }
 
-  button::after {
-    content: attr(data-text);
-    display: block;
-    font-weight: var(--tot-font-weight-semibold, 600);
-    height: 0;
-    overflow: hidden;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  button:hover:not(:disabled) {
+  button:hover:not(:disabled) .tab-inner {
     background: var(--tot-color-neutral-100, #f1f5f9);
     color: var(--tot-input-color-hover, #0f172a);
   }
 
   button:focus-visible {
-    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: -1px;
+    outline: none;
     z-index: 4;
   }
 
+  button:focus-visible .tab-inner {
+    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+    outline-offset: -1px;
+  }
+
   button[aria-selected='true'] {
-    background: var(--tot-panel-background-color, #fff);
-    border-bottom-color: var(--tot-panel-background-color, #fff);
     color: var(--tot-color-primary-700, #0369a1);
     font-weight: var(--tot-font-weight-semibold, 600);
     z-index: 2;
+  }
+
+  button[aria-selected='true'] .tab-inner {
+    background: var(--tot-panel-background-color, #fff);
+    border-bottom-color: var(--tot-panel-background-color, #fff);
   }
 
   button[data-sticky][aria-selected='true'] {
@@ -212,7 +246,17 @@ export class TotTabs extends HTMLElement {
       if (item.sticky) {
         btn.dataset.sticky = item.sticky
       }
-      btn.textContent = item.label
+
+      const inner = document.createElement('span')
+      inner.className = 'tab-inner'
+      inner.dataset.text = item.label
+
+      const text = document.createElement('span')
+      text.className = 'tab-text'
+      text.textContent = item.label
+      inner.append(text)
+      btn.append(inner)
+
       btn.addEventListener('click', () => {
         if (btn.disabled) {
           return

@@ -294,6 +294,10 @@ export class TotModal extends HTMLElement {
       return
     }
 
+    if (event.defaultPrevented || hasActiveFullscreenLayer()) {
+      return
+    }
+
     event.preventDefault()
     this.hide()
   }
@@ -327,13 +331,18 @@ export class TotModal extends HTMLElement {
     }
   }
 
-  handlePopState() {
+  handlePopState(event) {
     if (this._ignoreNextPopState) {
       this._ignoreNextPopState = false
       return
     }
 
     if (!this.open || !this._historyPushed) {
+      return
+    }
+
+    const state = event && event.state
+    if (state && state.totModalToken === this._historyToken) {
       return
     }
 
@@ -383,6 +392,14 @@ export class TotModal extends HTMLElement {
       header: this.header,
     }
   }
+}
+
+function hasActiveFullscreenLayer() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return false
+  }
+
+  return (window.__totFullscreenOpenCount || 0) > 0 || document.documentElement.hasAttribute('data-tot-fullscreen-open')
 }
 
 function emit(element, name, detail) {
