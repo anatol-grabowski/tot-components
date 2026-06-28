@@ -11,6 +11,8 @@ import { TotDivider } from './Divider/Divider.js'
 import { TotMenu, TotMenuItem, TotMenuLabel } from './Menu/Menu.js'
 import { TotDropdown } from './Dropdown/Dropdown.js'
 import { TotDialog } from './Dialog/Dialog.js'
+import { TotDrawer } from './Drawer/Drawer.js'
+import { TotList } from './List/List.js'
 import { TotHint } from './Hint/Hint.js'
 import { TotTooltip } from './Tooltip/Tooltip.js'
 import { TotToast } from './Toast/Toast.js'
@@ -48,6 +50,8 @@ defineElement('tot-menu-item', TotMenuItem)
 defineElement('tot-menu-label', TotMenuLabel)
 defineElement('tot-dropdown', TotDropdown)
 defineElement('tot-dialog', TotDialog)
+defineElement('tot-drawer', TotDrawer)
+defineElement('tot-list', TotList)
 defineElement('tot-hint', TotHint)
 defineElement('tot-tooltip', TotTooltip)
 defineElement('tot-toast', TotToast)
@@ -76,6 +80,8 @@ export {
   TotMenuLabel,
   TotDropdown,
   TotDialog,
+  TotDrawer,
+  TotList,
   TotHint,
   TotTooltip,
   TotToast,
