@@ -18,6 +18,7 @@ import { TotTooltip } from './Tooltip/Tooltip.js'
 import { TotToast } from './Toast/Toast.js'
 import { TotMessage } from './Message/Message.js'
 import { TotInput } from './Input/Input.js'
+import { TotCalendar } from './Calendar/Calendar.js'
 import { TotFileInput } from './FileInput/FileInput.js'
 import { TotHorizontalSelect } from './HorizontalSelect/HorizontalSelect.js'
 import { TotSelect } from './Select/Select.js'
@@ -57,6 +58,7 @@ defineElement('tot-tooltip', TotTooltip)
 defineElement('tot-toast', TotToast)
 defineElement('tot-message', TotMessage)
 defineElement('tot-input', TotInput)
+defineElement('tot-calendar', TotCalendar)
 defineElement('tot-file-input', TotFileInput)
 defineElement('tot-horizontal-select', TotHorizontalSelect)
 defineElement('tot-select', TotSelect)
@@ -87,6 +89,7 @@ export {
   TotToast,
   TotMessage,
   TotInput,
+  TotCalendar,
   TotFileInput,
   TotHorizontalSelect,
   TotSelect,
