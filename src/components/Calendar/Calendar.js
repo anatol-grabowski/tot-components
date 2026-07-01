@@ -15,6 +15,10 @@ const calendarStyle = `
   }
 
   .calendar {
+    --_tot-calendar-day-font-size: inherit;
+    --_tot-calendar-month-font-size: var(--tot-font-size-x-small, .75rem);
+    --_tot-calendar-month-label-width: var(--tot-calendar-month-label-width, 2rem);
+    --_tot-calendar-week-height: var(--tot-calendar-week-height, 2rem);
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
     border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: 0;
@@ -28,6 +32,7 @@ const calendarStyle = `
     min-width: 0;
     overflow: hidden;
     padding: var(--tot-spacing-2x-small, .25rem);
+    touch-action: pan-x pan-y;
     width: 100%;
   }
 
@@ -51,6 +56,7 @@ const calendarStyle = `
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior: contain;
+    touch-action: pan-x;
     scrollbar-width: none;
     -ms-overflow-style: none;
     width: 100%;
@@ -137,6 +143,7 @@ const calendarStyle = `
     min-width: 0;
     overflow: auto;
     overflow-anchor: none;
+    touch-action: pan-y;
     overscroll-behavior: contain;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -151,6 +158,14 @@ const calendarStyle = `
   .scroller:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
+  }
+
+  .calendar--pinching,
+  .calendar--pinching .scroller,
+  .calendar--pinching .year-scroller,
+  .calendar--pinching .date,
+  .calendar--pinching .year-cell {
+    touch-action: none;
   }
 
   .table {
@@ -176,7 +191,7 @@ const calendarStyle = `
     border-block-start: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-inline-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     color: var(--tot-color-neutral-600, #64748b);
-    font-size: var(--tot-font-size-x-small, .75rem);
+    font-size: var(--_tot-calendar-month-font-size, var(--tot-font-size-x-small, .75rem));
     font-weight: var(--tot-font-weight-semibold, 600);
     height: var(--tot-calendar-header-height, 1.75rem);
     padding: 0 var(--tot-spacing-3x-small, .125rem);
@@ -202,10 +217,10 @@ const calendarStyle = `
 
   .month-head,
   .month {
-    inline-size: var(--tot-calendar-month-label-width, 2rem);
-    max-inline-size: var(--tot-calendar-month-label-width, 2rem);
-    min-inline-size: var(--tot-calendar-month-label-width, 2rem);
-    width: var(--tot-calendar-month-label-width, 2rem);
+    inline-size: var(--_tot-calendar-month-label-width, var(--tot-calendar-month-label-width, 2rem));
+    max-inline-size: var(--_tot-calendar-month-label-width, var(--tot-calendar-month-label-width, 2rem));
+    min-inline-size: var(--_tot-calendar-month-label-width, var(--tot-calendar-month-label-width, 2rem));
+    width: var(--_tot-calendar-month-label-width, var(--tot-calendar-month-label-width, 2rem));
   }
 
   .spacer-cell {
@@ -215,18 +230,18 @@ const calendarStyle = `
   }
 
   .week-row {
-    height: var(--tot-calendar-week-height, 2rem);
+    height: var(--_tot-calendar-week-height, var(--tot-calendar-week-height, 2rem));
   }
 
   .month {
     background: var(--tot-calendar-month-background, var(--tot-color-neutral-50, #f8fafc));
     border: 0;
-    border-block-end: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px)) solid var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
+    border-block-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-block-start: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-inline-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-inline-start: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     color: var(--tot-color-neutral-600, #64748b);
-    font-size: var(--tot-font-size-x-small, .75rem);
+    font-size: var(--_tot-calendar-month-font-size, var(--tot-font-size-x-small, .75rem));
     font-weight: var(--tot-font-weight-semibold, 600);
     overflow: hidden;
     padding: 0;
@@ -244,6 +259,17 @@ const calendarStyle = `
     transform: translate(-50%, -50%) rotate(-90deg);
     transform-origin: center;
     white-space: nowrap;
+    z-index: 2;
+  }
+
+  .month::before,
+  .date-cell::before {
+    border: 0 solid transparent;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
   }
 
   .date-cell {
@@ -251,58 +277,39 @@ const calendarStyle = `
     border: 0;
     border-block-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-inline-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
-    height: var(--tot-calendar-week-height, 2rem);
+    height: var(--_tot-calendar-week-height, var(--tot-calendar-week-height, 2rem));
     overflow: hidden;
     padding: 0;
+    position: relative;
     text-align: center;
     vertical-align: middle;
   }
 
-  .month--year-top {
-    border-block-start: var(--tot-calendar-year-border-width, 2px) solid var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
-  }
-
-  .month--year-bottom {
-    border-block-end-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
-    border-block-end-width: var(--tot-calendar-year-border-width, 2px);
-  }
-
-  .date-cell--month-top {
-    border-block-start: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px)) solid var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
-  }
-
-  .date-cell--month-bottom {
-    border-block-end-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
-    border-block-end-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
-  }
-
-  .date-cell--month-start {
-    border-inline-start: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px)) solid var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
-  }
-
-  .date-cell--month-end {
-    border-inline-end-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
-    border-inline-end-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
+  .month--month-top::before,
+  .date-cell--month-top::before {
+    border-block-start-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
+    border-block-start-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
   }
 
 
-  .date-cell--year-top {
-    border-block-start: var(--tot-calendar-year-border-width, 2px) solid var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
+  .date-cell--month-start::before {
+    border-inline-start-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
+    border-inline-start-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
   }
 
-  .date-cell--year-bottom {
-    border-block-end-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
-    border-block-end-width: var(--tot-calendar-year-border-width, 2px);
+
+  .month--year-top::before,
+  .date-cell--year-top::before {
+    border-block-start-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
+    border-block-start-width: var(--tot-calendar-year-border-width, 2px);
   }
 
-  .date-cell--year-start {
-    border-inline-start: var(--tot-calendar-year-border-width, 2px) solid var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
+
+  .date-cell--year-start::before {
+    border-inline-start-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
+    border-inline-start-width: var(--tot-calendar-year-border-width, 2px);
   }
 
-  .date-cell--year-end {
-    border-inline-end-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
-    border-inline-end-width: var(--tot-calendar-year-border-width, 2px);
-  }
 
   .date-cell--weekend {
     background: var(--tot-calendar-weekend-background, var(--tot-color-sky-50, #f0f9ff));
@@ -323,6 +330,7 @@ const calendarStyle = `
     cursor: pointer;
     display: inline-flex;
     font: inherit;
+    font-size: var(--_tot-calendar-day-font-size, inherit);
     height: 100%;
     justify-content: center;
     line-height: 1;
@@ -330,6 +338,7 @@ const calendarStyle = `
     padding: 0 var(--tot-spacing-2x-small, .25rem);
     position: relative;
     width: 100%;
+    z-index: 2;
   }
 
   .date:hover {
@@ -370,8 +379,17 @@ const calendarStyle = `
     font-weight: var(--tot-font-weight-semibold, 600);
   }
 
+  .calendar--compact .date {
+    padding: 0;
+  }
+
+  .calendar--compact .weekday,
+  .calendar--compact .month {
+    font-size: var(--_tot-calendar-month-font-size, var(--tot-font-size-x-small, .75rem));
+  }
+
   .measure-week {
-    height: var(--tot-calendar-week-height, 2rem);
+    height: var(--_tot-calendar-week-height, var(--tot-calendar-week-height, 2rem));
     left: -9999px;
     pointer-events: none;
     position: fixed;
@@ -401,6 +419,20 @@ const monthNames = [
   'November',
   'December',
 ]
+const shortMonthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
 
 export class TotCalendar extends HTMLElement {
   static get observedAttributes() {
@@ -418,6 +450,12 @@ export class TotCalendar extends HTMLElement {
     this._templateObserver = null
     this._baseWeekStartDay = 0
     this._rowHeight = 32
+    this._unzoomedRowHeight = 32
+    this._weeksPerRow = 1
+    this._zoom = 1
+    this._pinch = null
+    this._zoomFrame = 0
+    this._pendingZoom = null
     this._yearCellWidth = 96
     this._baseYear = getDateParts(getTodayDay()).year
     this._visibleFirst = 0
@@ -428,10 +466,6 @@ export class TotCalendar extends HTMLElement {
     this._needsRender = false
     this._needsYearRender = true
     this._scrollFrame = 0
-    this._yearScrollFrame = 0
-    this._yearSyncClearTimer = 0
-    this._ignoreYearScrollUntil = 0
-    this._userYearScrollUntil = 0
     this._yearPointer = null
     this._resizeObserver = null
     this._dateUpdateSource = ''
@@ -439,10 +473,15 @@ export class TotCalendar extends HTMLElement {
     this._isSettingYearScroll = false
     this._isSyncingFromYearScroller = false
     this._handleScroll = () => this.handleScroll()
+    this._handleWheel = event => this.handleWheel(event)
+    this._handleTouchStart = event => this.handleTouchStart(event)
+    this._handleTouchMove = event => this.handleTouchMove(event)
+    this._handleTouchEnd = event => this.handleTouchEnd(event)
+    this._handleDocumentTouchMove = event => this.handleTouchMove(event)
+    this._handleDocumentTouchEnd = event => this.handleTouchEnd(event)
     this._handleYearScroll = () => this.handleYearScroll()
     this._handleYearWheel = event => this.handleYearWheel(event)
     this._handleYearPointerDown = event => this.handleYearPointerDown(event)
-    this._handleYearPointerMove = event => this.handleYearPointerMove(event)
     this._handleYearPointerUp = event => this.handleYearPointerUp(event)
     this._handleYearPointerCancel = event => this.handleYearPointerCancel(event)
     this._handleInput = event => this.handleInput(event)
@@ -493,29 +532,6 @@ export class TotCalendar extends HTMLElement {
     this.scheduleRender(true)
   }
 
-  get dayClasses() {
-    return this._getDayClasses
-  }
-
-  set dayClasses(value) {
-    this.getDayClasses = value
-  }
-
-  get dateClassProvider() {
-    return this._getDayClasses
-  }
-
-  set dateClassProvider(value) {
-    this.getDayClasses = value
-  }
-
-  get dateClasses() {
-    return this._getDayClasses
-  }
-
-  set dateClasses(value) {
-    this.getDayClasses = value
-  }
 
   get getMonthClasses() {
     return this._getMonthClasses
@@ -526,13 +542,6 @@ export class TotCalendar extends HTMLElement {
     this.scheduleRender(true)
   }
 
-  get monthClasses() {
-    return this._getMonthClasses
-  }
-
-  set monthClasses(value) {
-    this.getMonthClasses = value
-  }
 
   connectedCallback() {
     this.render()
@@ -554,8 +563,8 @@ export class TotCalendar extends HTMLElement {
 
   disconnectedCallback() {
     this.cancelScrollFrame()
-    this.cancelYearScrollFrame()
-    this.clearYearSyncTimer()
+    this.cancelZoomFrame()
+    this.endPinch()
     this.teardownResizeObserver()
     this.teardownTemplateObserver()
   }
@@ -631,15 +640,17 @@ export class TotCalendar extends HTMLElement {
     const roundedTargetDay = Math.floor(targetDay)
     const targetWeekStartDay = getWeekStartDay(roundedTargetDay, this.weekStart)
     let weekOffset = Math.round((targetWeekStartDay - this._baseWeekStartDay) / 7)
+    let rowOffset = Math.floor(weekOffset / this._weeksPerRow)
 
-    if (centerRow + weekOffset < 1000 || centerRow + weekOffset > totalRows - 1000) {
+    if (centerRow + rowOffset < 1000 || centerRow + rowOffset > totalRows - 1000) {
       this._baseWeekStartDay = targetWeekStartDay
       this._needsRender = true
       weekOffset = 0
+      rowOffset = 0
     }
 
     const align = normalizeAlign(options)
-    const targetAbsoluteRow = clamp(centerRow + weekOffset, 0, totalRows - 1)
+    const targetAbsoluteRow = clamp(centerRow + rowOffset, 0, totalRows - 1)
     this.renderRowsNearAbsoluteRow(targetAbsoluteRow)
 
     const rowTop = targetAbsoluteRow * this._rowHeight
@@ -663,9 +674,7 @@ export class TotCalendar extends HTMLElement {
       nextScrollTop = Math.abs(rowTop - currentTop) < Math.abs(rowBottom - currentBottom) ? rowTop : rowBottom - scroller.clientHeight
     }
 
-    this._isSettingScroll = true
-    scroller.scrollTop = clamp(nextScrollTop, 0, Math.max(0, totalRows * this._rowHeight - scroller.clientHeight))
-    this._isSettingScroll = false
+    this.setScrollTop(scroller, clamp(nextScrollTop, 0, Math.max(0, totalRows * this._rowHeight - scroller.clientHeight)))
     this.updateVisibleWeeks()
 
     if (!options?.skipYearSync) {
@@ -691,16 +700,18 @@ export class TotCalendar extends HTMLElement {
 
     const targetWeekStartDay = getWeekStartDay(Math.floor(targetDay), this.weekStart)
     let weekOffset = Math.round((targetWeekStartDay - this._baseWeekStartDay) / 7)
+    let rowOffset = Math.floor(weekOffset / this._weeksPerRow)
 
-    if (centerRow + weekOffset < 1000 || centerRow + weekOffset > totalRows - 1000) {
+    if (centerRow + rowOffset < 1000 || centerRow + rowOffset > totalRows - 1000) {
       this._baseWeekStartDay = targetWeekStartDay
       this._needsRender = true
       weekOffset = 0
+      rowOffset = 0
     }
 
-    const visibleDayCount = (scroller.clientHeight / Math.max(1, this._rowHeight)) * 7
-    const targetRow = centerRow + (targetDay - this._baseWeekStartDay - visibleDayCount / 2) / 7
-    const targetAbsoluteRow = clamp(Math.floor(centerRow + weekOffset), 0, totalRows - 1)
+    const visibleDayCount = (scroller.clientHeight / Math.max(1, this._rowHeight)) * 7 * this._weeksPerRow
+    const targetRow = centerRow + (targetDay - this._baseWeekStartDay - visibleDayCount / 2) / (7 * this._weeksPerRow)
+    const targetAbsoluteRow = clamp(Math.floor(centerRow + rowOffset), 0, totalRows - 1)
     this.renderRowsNearAbsoluteRow(targetAbsoluteRow)
 
     const nextScrollTop = clamp(
@@ -709,9 +720,7 @@ export class TotCalendar extends HTMLElement {
       Math.max(0, totalRows * this._rowHeight - scroller.clientHeight),
     )
 
-    this._isSettingScroll = true
-    scroller.scrollTop = nextScrollTop
-    this._isSettingScroll = false
+    this.setScrollTop(scroller, nextScrollTop)
     this.updateVisibleWeeks()
 
     if (!options?.skipYearSync) {
@@ -764,6 +773,7 @@ export class TotCalendar extends HTMLElement {
     this._rendered = true
     this.updateInputVisibility()
     this.updateInputValue()
+    this.updateZoomLayout()
     this.updateWeekdayHeader()
     this.updateRowHeight()
     this.updateYearCellWidth()
@@ -779,8 +789,20 @@ export class TotCalendar extends HTMLElement {
       input.addEventListener('change', this._handleInputChange)
     }
 
+    root.addEventListener('touchstart', this._handleTouchStart, {
+      capture: true,
+      passive: false,
+    })
+    root.addEventListener('touchmove', this._handleTouchMove, {
+      capture: true,
+      passive: false,
+    })
+    root.addEventListener('touchend', this._handleTouchEnd, { capture: true })
+    root.addEventListener('touchcancel', this._handleTouchEnd, { capture: true })
+
     if (scroller) {
       scroller.addEventListener('scroll', this._handleScroll, { passive: true })
+      scroller.addEventListener('wheel', this._handleWheel, { passive: false })
       scroller.addEventListener('click', this._handleClick)
     }
 
@@ -789,7 +811,6 @@ export class TotCalendar extends HTMLElement {
       yearScroller.addEventListener('scroll', this._handleYearScroll, { passive: true })
       yearScroller.addEventListener('wheel', this._handleYearWheel, { passive: false })
       yearScroller.addEventListener('pointerdown', this._handleYearPointerDown)
-      yearScroller.addEventListener('pointermove', this._handleYearPointerMove)
       yearScroller.addEventListener('pointerup', this._handleYearPointerUp)
       yearScroller.addEventListener('pointercancel', this._handleYearPointerCancel)
       this.syncYearScrollerToDays(true)
@@ -860,11 +881,193 @@ export class TotCalendar extends HTMLElement {
     this.scheduleRender()
   }
 
+  handleWheel(event) {
+    if (!event.ctrlKey) {
+      return
+    }
+
+    this.zoomFromWheel(event)
+  }
+
+  handleTouchStart(event) {
+    if (event.touches.length === 2) {
+      this.startPinch(event)
+      return
+    }
+
+    this.endPinch()
+  }
+
+  startPinch(event) {
+    const distance = getTouchDistance(event.touches)
+    if (distance <= 0) {
+      return
+    }
+
+    this.endPinch()
+    this._pinch = {
+      centerDay: this.getVisibleDayRange().centerDay,
+      distance,
+      zoom: this._zoom,
+    }
+    this.setPinching(true)
+    document.addEventListener('touchmove', this._handleDocumentTouchMove, { passive: false })
+    document.addEventListener('touchend', this._handleDocumentTouchEnd)
+    document.addEventListener('touchcancel', this._handleDocumentTouchEnd)
+    event.preventDefault()
+  }
+
+  handleTouchMove(event) {
+    if (!this._pinch || event.touches.length !== 2) {
+      return
+    }
+
+    const distance = getTouchDistance(event.touches)
+    if (distance <= 0 || this._pinch.distance <= 0) {
+      return
+    }
+
+    event.preventDefault()
+    this.queueZoom(this._pinch.zoom * distance / this._pinch.distance, this._pinch.centerDay)
+  }
+
+  handleTouchEnd(event) {
+    if (event.touches && event.touches.length >= 2) {
+      return
+    }
+
+    this.endPinch()
+  }
+
+  endPinch() {
+    if (!this._pinch) {
+      return
+    }
+
+    this._pinch = null
+    this.setPinching(false)
+    document.removeEventListener('touchmove', this._handleDocumentTouchMove)
+    document.removeEventListener('touchend', this._handleDocumentTouchEnd)
+    document.removeEventListener('touchcancel', this._handleDocumentTouchEnd)
+  }
+
+  setPinching(value) {
+    const calendar = this.shadowRoot?.querySelector('.calendar')
+    if (calendar) {
+      calendar.classList.toggle('calendar--pinching', Boolean(value))
+    }
+  }
+
+  zoomFromWheel(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (event.deltaY === 0) {
+      return
+    }
+
+    const factor = Math.exp(-event.deltaY * .0015)
+    const baseZoom = this._pendingZoom ? this._pendingZoom.value : this._zoom
+    this.queueZoom(baseZoom * factor, this.getVisibleDayRange().centerDay)
+  }
+
+  queueZoom(value, centerDay) {
+    this._pendingZoom = {
+      value,
+      centerDay,
+    }
+
+    if (this._zoomFrame) {
+      return
+    }
+
+    this._zoomFrame = requestAnimationFrame(() => {
+      const next = this._pendingZoom
+      this._zoomFrame = 0
+      this._pendingZoom = null
+
+      if (next) {
+        this.setZoom(next.value, next.centerDay)
+      }
+    })
+  }
+
+  cancelZoomFrame() {
+    if (!this._zoomFrame) {
+      return
+    }
+
+    cancelAnimationFrame(this._zoomFrame)
+    this._zoomFrame = 0
+    this._pendingZoom = null
+  }
+
+  setZoom(value, centerDay) {
+    const nextZoom = clamp(value, .45, 1.35)
+    if (Math.abs(nextZoom - this._zoom) < .001) {
+      return
+    }
+
+    const targetDay = Number.isFinite(centerDay) ? centerDay : this.getVisibleDayRange().centerDay
+    const previousWeeksPerRow = this._weeksPerRow
+    this._zoom = nextZoom
+    this.updateZoomLayout()
+    this.updateRowHeight()
+
+    if (previousWeeksPerRow !== this._weeksPerRow) {
+      this.updateWeekdayHeader()
+      this._visibleFirst = 0
+      this._visibleLast = -1
+    }
+
+    this._needsRender = true
+    this.scrollToTimelineDay(targetDay)
+  }
+
+  updateZoomLayout() {
+    const calendar = this.shadowRoot?.querySelector('.calendar')
+    const nextWeeksPerRow = this._zoom < .64 ? 2 : 1
+    const compactScale = clamp(this._zoom / .64, .7, 1)
+    const baseRowHeight = Math.max(16, this._unzoomedRowHeight || this._rowHeight || 32)
+    const rowHeight = Math.round(nextWeeksPerRow === 1
+      ? clamp(baseRowHeight * this._zoom, 20, baseRowHeight * 1.35)
+      : clamp(baseRowHeight * .7 * compactScale, 16, baseRowHeight * .7))
+
+    this._weeksPerRow = nextWeeksPerRow
+
+    if (!calendar) {
+      return
+    }
+
+    calendar.classList.toggle('calendar--compact', nextWeeksPerRow > 1)
+
+    if (Math.abs(this._zoom - 1) < .001 && nextWeeksPerRow === 1) {
+      calendar.style.removeProperty('--_tot-calendar-week-height')
+      calendar.style.removeProperty('--_tot-calendar-day-font-size')
+      calendar.style.removeProperty('--_tot-calendar-month-font-size')
+      calendar.style.removeProperty('--_tot-calendar-month-label-width')
+      return
+    }
+
+    calendar.style.setProperty('--_tot-calendar-week-height', `${rowHeight}px`)
+
+    if (nextWeeksPerRow === 1) {
+      calendar.style.removeProperty('--_tot-calendar-day-font-size')
+      calendar.style.removeProperty('--_tot-calendar-month-font-size')
+      calendar.style.removeProperty('--_tot-calendar-month-label-width')
+      return
+    }
+
+    calendar.style.setProperty('--_tot-calendar-day-font-size', `${clamp(11 * compactScale, 9, 11)}px`)
+    calendar.style.setProperty('--_tot-calendar-month-font-size', `${clamp(10 * compactScale, 8, 10)}px`)
+    calendar.style.setProperty('--_tot-calendar-month-label-width', '1.5rem')
+  }
+
   handleYearScroll() {
     this.updateVisibleYears()
     this.updateYearHighlightsFromDays()
 
-    if (this._isSettingYearScroll || Date.now() < this._ignoreYearScrollUntil) {
+    if (this._isSettingYearScroll) {
       return
     }
 
@@ -872,6 +1075,11 @@ export class TotCalendar extends HTMLElement {
   }
 
   handleYearWheel(event) {
+    if (event.ctrlKey) {
+      this.zoomFromWheel(event)
+      return
+    }
+
     const scroller = this.getYearScroller()
     if (!scroller) {
       return
@@ -883,7 +1091,6 @@ export class TotCalendar extends HTMLElement {
     }
 
     event.preventDefault()
-    this.markUserYearScroll()
     scroller.scrollLeft += delta
     this.updateVisibleYears()
     this.scrollDaysToYearScroller()
@@ -895,7 +1102,6 @@ export class TotCalendar extends HTMLElement {
       return
     }
 
-    this.markUserYearScroll(600)
     this._yearPointer = {
       id: event.pointerId,
       x: event.clientX,
@@ -904,13 +1110,6 @@ export class TotCalendar extends HTMLElement {
     }
   }
 
-  handleYearPointerMove(event) {
-    if (!this._yearPointer || this._yearPointer.id !== event.pointerId) {
-      return
-    }
-
-    this.markUserYearScroll(300)
-  }
 
   handleYearPointerUp(event) {
     const state = this._yearPointer
@@ -923,7 +1122,6 @@ export class TotCalendar extends HTMLElement {
 
     const moved = Math.hypot(event.clientX - state.x, event.clientY - state.y)
     const scrolled = Math.abs(scroller.scrollLeft - state.scrollLeft)
-    this.markUserYearScroll(150)
 
     if (moved > 6 || scrolled > 3) {
       return
@@ -951,9 +1149,7 @@ export class TotCalendar extends HTMLElement {
     this._needsYearRender = true
 
     if (Math.abs(oldRowHeight - this._rowHeight) > .5) {
-      this._isSettingScroll = true
-      scroller.scrollTop = (centerRow + oldWeekOffset) * this._rowHeight
-      this._isSettingScroll = false
+      this.setScrollTop(scroller, (centerRow + oldWeekOffset) * this._rowHeight)
       this._needsRender = true
     }
 
@@ -1021,8 +1217,6 @@ export class TotCalendar extends HTMLElement {
     const lastAbsoluteRow = clamp(Math.ceil((scrollTop + viewportHeight) / this._rowHeight) + bufferRows, firstAbsoluteRow, totalRows - 1)
     const isYearDriven = this.isYearDrivingDays()
 
-    this.updateStickyMonthHeader()
-
     if (firstAbsoluteRow === this._visibleFirst && lastAbsoluteRow === this._visibleLast && !this._needsRender) {
       if (isYearDriven) {
         this.updateVisibleYears()
@@ -1037,8 +1231,6 @@ export class TotCalendar extends HTMLElement {
     this._visibleLast = lastAbsoluteRow
     this._needsRender = false
     this.renderRows(firstAbsoluteRow, lastAbsoluteRow)
-    this.updateStickyMonthHeader()
-
     if (isYearDriven) {
       this.updateVisibleYears()
       this.updateYearHighlightsFromDays()
@@ -1055,7 +1247,8 @@ export class TotCalendar extends HTMLElement {
 
     const targetWeekStartDay = getWeekStartDay(targetDay, this.weekStart)
     const weekOffset = Math.round((targetWeekStartDay - this._baseWeekStartDay) / 7)
-    this.renderRowsNearAbsoluteRow(clamp(centerRow + weekOffset, 0, totalRows - 1))
+    const rowOffset = Math.floor(weekOffset / this._weeksPerRow)
+    this.renderRowsNearAbsoluteRow(clamp(centerRow + rowOffset, 0, totalRows - 1))
   }
 
   renderRowsNearAbsoluteRow(absoluteRow) {
@@ -1076,8 +1269,6 @@ export class TotCalendar extends HTMLElement {
     this._visibleLast = lastAbsoluteRow
     this._needsRender = false
     this.renderRows(firstAbsoluteRow, lastAbsoluteRow)
-    this.updateStickyMonthHeader()
-
     if (this.isYearDrivingDays()) {
       this.updateVisibleYears()
       this.updateYearHighlightsFromDays()
@@ -1094,20 +1285,21 @@ export class TotCalendar extends HTMLElement {
 
     const topSpacerHeight = Math.max(0, firstAbsoluteRow * this._rowHeight)
     const bottomSpacerHeight = Math.max(0, (totalRows - lastAbsoluteRow - 1) * this._rowHeight)
-    const firstWeekOffset = firstAbsoluteRow - centerRow
-    const weekCount = lastAbsoluteRow - firstAbsoluteRow + 1
-    const groups = getMonthGroups(this._baseWeekStartDay, firstWeekOffset, weekCount, this.weekStart)
+    const firstWeekOffset = (firstAbsoluteRow - centerRow) * this._weeksPerRow
+    const rowCount = lastAbsoluteRow - firstAbsoluteRow + 1
+    const columnCount = 7 * this._weeksPerRow
+    const groups = getMonthGroups(this._baseWeekStartDay, firstWeekOffset, rowCount, this.weekStart, this._weeksPerRow)
     const selectedDay = parseDate(this.date)
     const todayDay = getTodayDay()
     const templates = getCellTemplates(this)
     const fragment = document.createDocumentFragment()
 
     body.innerHTML = ''
-    fragment.append(createSpacerRow('top', topSpacerHeight))
+    fragment.append(createSpacerRow('top', topSpacerHeight, columnCount + 1))
 
-    for (let rowIndex = 0; rowIndex < weekCount; rowIndex++) {
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
       const absoluteRow = firstAbsoluteRow + rowIndex
-      const weekStartDay = this._baseWeekStartDay + (absoluteRow - centerRow) * 7
+      const weekStartDay = this._baseWeekStartDay + (absoluteRow - centerRow) * 7 * this._weeksPerRow
       const monthGroup = groups.get(rowIndex)
       const rowElement = document.createElement('tr')
 
@@ -1118,22 +1310,22 @@ export class TotCalendar extends HTMLElement {
         rowElement.append(this.getMonthCellElement(monthGroup, templates))
       }
 
-      for (let column = 0; column < 7; column++) {
+      for (let column = 0; column < columnCount; column++) {
         const day = weekStartDay + column
-        rowElement.append(this.getDayCellElement(day, selectedDay, todayDay, column, templates))
+        rowElement.append(this.getDayCellElement(day, selectedDay, todayDay, column, columnCount, templates))
       }
 
       fragment.append(rowElement)
     }
 
-    fragment.append(createSpacerRow('bottom', bottomSpacerHeight))
+    fragment.append(createSpacerRow('bottom', bottomSpacerHeight, columnCount + 1))
     body.append(fragment)
   }
 
-  getDayCellElement(day, selectedDay, todayDay, column, templates) {
+  getDayCellElement(day, selectedDay, todayDay, column, columnCount, templates) {
     const dateParts = getDateParts(day)
     const dayData = getDayData(day, dateParts)
-    const features = getDayFeatures(day, dateParts, selectedDay, todayDay, this.weekStart, column)
+    const features = getDayFeatures(day, dateParts, selectedDay, todayDay, this.weekStart, column, columnCount)
     Object.assign(dayData, features)
     const customClasses = normalizeClassList(this._getDayClasses ? this._getDayClasses(dayData, features) : [])
     const cellClasses = ['date-cell']
@@ -1142,74 +1334,21 @@ export class TotCalendar extends HTMLElement {
     const contentParts = ['date']
     const template = templates.get('cell-day')
 
-    if (features.bordersMonthTop) {
-      cellClasses.push('date-cell--month-top')
-      cellParts.push('month-top-date-cell')
-    }
-
-    if (features.bordersMonthBottom) {
-      cellClasses.push('date-cell--month-bottom')
-      cellParts.push('month-bottom-date-cell')
-    }
-
-    if (features.bordersMonthLeft) {
-      cellClasses.push('date-cell--month-start')
-      cellParts.push('month-start-date-cell')
-    }
-
-    if (features.bordersMonthRight) {
-      cellClasses.push('date-cell--month-end')
-      cellParts.push('month-end-date-cell')
-    }
-
-    if (features.bordersYearTop) {
-      cellClasses.push('date-cell--year-top')
-      cellParts.push('year-top-date-cell')
-    }
-
-    if (features.bordersYearBottom) {
-      cellClasses.push('date-cell--year-bottom')
-      cellParts.push('year-bottom-date-cell')
-    }
-
-    if (features.bordersYearLeft) {
-      cellClasses.push('date-cell--year-start')
-      cellParts.push('year-start-date-cell')
-    }
-
-    if (features.bordersYearRight) {
-      cellClasses.push('date-cell--year-end')
-      cellParts.push('year-end-date-cell')
-    }
-
-    if (features.isMonthStart) {
-      contentClasses.push('date--month-start')
-      contentParts.push('month-start-date')
-    }
-
-    if (features.isWeekend) {
-      cellClasses.push('date-cell--weekend')
-      cellParts.push('weekend-date-cell')
-      contentClasses.push('date--weekend')
-      contentParts.push('weekend-date')
-    }
-
-    if (features.isToday) {
-      contentClasses.push('date--today')
-      contentParts.push('today-date')
-    }
-
-    if (features.isSelected) {
-      cellClasses.push('date-cell--selected')
-      cellParts.push('selected-date-cell')
-      contentClasses.push('date--selected')
-      contentParts.push('selected-date')
-    }
-
-    for (let i = 0; i < customClasses.length; i++) {
-      contentClasses.push(customClasses[i])
-      contentParts.push(customClasses[i])
-    }
+    addClassPart(cellClasses, cellParts, features.bordersMonthTop, 'date-cell--month-top', 'month-top-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersMonthBottom, 'date-cell--month-bottom', 'month-bottom-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersMonthLeft, 'date-cell--month-start', 'month-start-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersMonthRight, 'date-cell--month-end', 'month-end-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersYearTop, 'date-cell--year-top', 'year-top-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersYearBottom, 'date-cell--year-bottom', 'year-bottom-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersYearLeft, 'date-cell--year-start', 'year-start-date-cell')
+    addClassPart(cellClasses, cellParts, features.bordersYearRight, 'date-cell--year-end', 'year-end-date-cell')
+    addClassPart(contentClasses, contentParts, features.isMonthStart, 'date--month-start', 'month-start-date')
+    addClassPart(cellClasses, cellParts, features.isWeekend, 'date-cell--weekend', 'weekend-date-cell')
+    addClassPart(contentClasses, contentParts, features.isWeekend, 'date--weekend', 'weekend-date')
+    addClassPart(contentClasses, contentParts, features.isToday, 'date--today', 'today-date')
+    addClassPart(cellClasses, cellParts, features.isSelected, 'date-cell--selected', 'selected-date-cell')
+    addClassPart(contentClasses, contentParts, features.isSelected, 'date--selected', 'selected-date')
+    appendClassParts(contentClasses, contentParts, customClasses)
 
     if (template) {
       const cell = renderDayTemplate(template, {
@@ -1258,30 +1397,11 @@ export class TotCalendar extends HTMLElement {
     const cellParts = ['month']
     const template = templates.get('cell-month')
 
-    if (features.bordersMonthTop) {
-      cellClasses.push('month--month-top')
-      cellParts.push('month-top')
-    }
-
-    if (features.bordersMonthBottom) {
-      cellClasses.push('month--month-bottom')
-      cellParts.push('month-bottom')
-    }
-
-    if (features.bordersYearTop) {
-      cellClasses.push('month--year-top')
-      cellParts.push('year-top')
-    }
-
-    if (features.bordersYearBottom) {
-      cellClasses.push('month--year-bottom')
-      cellParts.push('year-bottom')
-    }
-
-    for (let i = 0; i < customClasses.length; i++) {
-      cellClasses.push(customClasses[i])
-      cellParts.push(customClasses[i])
-    }
+    addClassPart(cellClasses, cellParts, features.bordersMonthTop, 'month--month-top', 'month-top')
+    addClassPart(cellClasses, cellParts, features.bordersMonthBottom, 'month--month-bottom', 'month-bottom')
+    addClassPart(cellClasses, cellParts, features.bordersYearTop, 'month--year-top', 'year-top')
+    addClassPart(cellClasses, cellParts, features.bordersYearBottom, 'month--year-bottom', 'year-bottom')
+    appendClassParts(cellClasses, cellParts, customClasses)
 
     if (template) {
       const cell = renderMonthTemplate(template, {
@@ -1304,7 +1424,7 @@ export class TotCalendar extends HTMLElement {
     cell.scope = 'rowgroup'
     cell.rowSpan = monthGroup.rows
     label.className = 'month__label'
-    label.textContent = monthData.label
+    label.textContent = this._weeksPerRow > 1 ? monthData.shortLabel : monthData.label
     cell.append(label)
     this.applyMonthCellData(cell, monthData, features, customClasses)
     return cell
@@ -1356,14 +1476,22 @@ export class TotCalendar extends HTMLElement {
     this._scrollFrame = 0
   }
 
-  cancelYearScrollFrame() {
-    if (!this._yearScrollFrame) {
-      return
-    }
-
-    cancelAnimationFrame(this._yearScrollFrame)
-    this._yearScrollFrame = 0
+  setScrollTop(scroller, value) {
+    this._isSettingScroll = true
+    scroller.scrollTop = value
+    requestAnimationFrame(() => {
+      this._isSettingScroll = false
+    })
   }
+
+  setYearScrollLeft(scroller, value) {
+    this._isSettingYearScroll = true
+    scroller.scrollLeft = value
+    requestAnimationFrame(() => {
+      this._isSettingYearScroll = false
+    })
+  }
+
 
   recenterIfNeeded() {
     const scroller = this.getScroller()
@@ -1376,13 +1504,11 @@ export class TotCalendar extends HTMLElement {
       return
     }
 
-    const currentWeekOffset = currentAbsoluteRow - centerRow
+    const currentRowOffset = currentAbsoluteRow - centerRow
     const rowRemainder = scroller.scrollTop - currentAbsoluteRow * this._rowHeight
-    this._baseWeekStartDay += currentWeekOffset * 7
+    this._baseWeekStartDay += currentRowOffset * 7 * this._weeksPerRow
     this._needsRender = true
-    this._isSettingScroll = true
-    scroller.scrollTop = centerRow * this._rowHeight + rowRemainder
-    this._isSettingScroll = false
+    this.setScrollTop(scroller, centerRow * this._rowHeight + rowRemainder)
   }
 
   syncYearScrollerToDays(force) {
@@ -1405,12 +1531,7 @@ export class TotCalendar extends HTMLElement {
     const nextScrollLeft = clamp(targetLeft, 0, maxScrollLeft)
 
     if (force || Math.abs(yearScroller.scrollLeft - nextScrollLeft) > 1) {
-      this._isSettingYearScroll = true
-      this._ignoreYearScrollUntil = 0
-      yearScroller.scrollLeft = nextScrollLeft
-      requestAnimationFrame(() => {
-        this._isSettingYearScroll = false
-      })
+      this.setYearScrollLeft(yearScroller, nextScrollLeft)
     }
 
     this.updateVisibleYears(force)
@@ -1452,13 +1573,7 @@ export class TotCalendar extends HTMLElement {
     const maxScrollLeft = Math.max(0, totalYearCells * this._yearCellWidth - yearScroller.clientWidth)
     const nextScrollLeft = clamp(position - yearScroller.clientWidth / 2, 0, maxScrollLeft)
 
-    this._isSettingYearScroll = true
-    this._ignoreYearScrollUntil = 0
-    yearScroller.scrollLeft = nextScrollLeft
-    requestAnimationFrame(() => {
-      this._isSettingYearScroll = false
-    })
-
+    this.setYearScrollLeft(yearScroller, nextScrollLeft)
     this.updateVisibleYears()
     this.scrollDaysToYearScroller()
   }
@@ -1614,44 +1729,9 @@ export class TotCalendar extends HTMLElement {
     const remainder = yearScroller.scrollLeft - currentIndex * this._yearCellWidth
     this._baseYear += yearOffset
     this._needsYearRender = true
-    this._isSettingYearScroll = true
-    this._ignoreYearScrollUntil = 0
-    yearScroller.scrollLeft = centerYearCell * this._yearCellWidth + remainder
-    requestAnimationFrame(() => {
-      this._isSettingYearScroll = false
-    })
+    this.setYearScrollLeft(yearScroller, centerYearCell * this._yearCellWidth + remainder)
   }
 
-  scheduleYearToDaySync() {
-    this.updateVisibleYears()
-    this.scrollDaysToYearScroller()
-  }
-
-  markUserYearScroll(duration = 200) {
-    this._userYearScrollUntil = Date.now() + duration
-  }
-
-  isUserYearScrollActive() {
-    return Date.now() < this._userYearScrollUntil
-  }
-
-  beginYearDrivenSync() {
-    this.clearYearSyncTimer()
-    this._isSyncingFromYearScroller = true
-    this._yearSyncClearTimer = window.setTimeout(() => {
-      this._isSyncingFromYearScroller = false
-      this._yearSyncClearTimer = 0
-    }, 180)
-  }
-
-  clearYearSyncTimer() {
-    if (!this._yearSyncClearTimer) {
-      return
-    }
-
-    window.clearTimeout(this._yearSyncClearTimer)
-    this._yearSyncClearTimer = 0
-  }
 
   isYearDrivingDays() {
     return this._isSyncingFromYearScroller
@@ -1673,8 +1753,8 @@ export class TotCalendar extends HTMLElement {
     const rowHeight = Math.max(1, this._rowHeight)
     const scrollTop = scroller.scrollTop
     const visibleRowCount = scroller.clientHeight / rowHeight
-    const startDay = this._baseWeekStartDay + (scrollTop / rowHeight - centerRow) * 7
-    const endDay = startDay + visibleRowCount * 7
+    const startDay = this._baseWeekStartDay + (scrollTop / rowHeight - centerRow) * 7 * this._weeksPerRow
+    const endDay = startDay + visibleRowCount * 7 * this._weeksPerRow
 
     return {
       startDay,
@@ -1699,16 +1779,14 @@ export class TotCalendar extends HTMLElement {
     let html = '<th class="month-head" part="month-header" aria-hidden="true"></th>'
     const weekStart = this.weekStart
 
-    for (let i = 0; i < 7; i++) {
-      const dayOfWeek = (weekStart + i) % 7
-      html += `<th class="weekday" part="weekday" scope="col">${weekdayNames[dayOfWeek]}</th>`
+    for (let repetition = 0; repetition < this._weeksPerRow; repetition++) {
+      for (let i = 0; i < 7; i++) {
+        const dayOfWeek = (weekStart + i) % 7
+        html += `<th class="weekday" part="weekday" scope="col">${weekdayNames[dayOfWeek]}</th>`
+      }
     }
 
     row.innerHTML = html
-    this.updateStickyMonthHeader()
-  }
-
-  updateStickyMonthHeader() {
   }
 
   updateInputValue() {
@@ -1732,6 +1810,10 @@ export class TotCalendar extends HTMLElement {
     const measure = this.shadowRoot?.querySelector('.measure-week')
     const measuredHeight = measure?.getBoundingClientRect?.().height || 0
     this._rowHeight = measuredHeight > 0 ? measuredHeight : 32
+
+    if (Math.abs(this._zoom - 1) < .001 && this._weeksPerRow === 1) {
+      this._unzoomedRowHeight = this._rowHeight
+    }
   }
 
   setupResizeObserver() {
@@ -1812,17 +1894,33 @@ export class TotCalendar extends HTMLElement {
   }
 }
 
-function getMonthGroups(baseWeekStartDay, firstWeekOffset, weekCount, weekStart) {
+function addClassPart(classes, parts, enabled, className, partName) {
+  if (!enabled) {
+    return
+  }
+
+  classes.push(className)
+  parts.push(partName)
+}
+
+function appendClassParts(classes, parts, values) {
+  for (let i = 0; i < values.length; i++) {
+    classes.push(values[i])
+    parts.push(values[i])
+  }
+}
+
+function getMonthGroups(baseWeekStartDay, firstWeekOffset, rowCount, weekStart, weeksPerRow) {
   const groups = new Map()
   let rowIndex = 0
 
-  while (rowIndex < weekCount) {
-    const weekStartDay = baseWeekStartDay + (firstWeekOffset + rowIndex) * 7
+  while (rowIndex < rowCount) {
+    const weekStartDay = baseWeekStartDay + (firstWeekOffset + rowIndex * weeksPerRow) * 7
     const key = getWeekMonthKey(weekStartDay)
     let endIndex = rowIndex + 1
 
-    while (endIndex < weekCount) {
-      const nextWeekStartDay = baseWeekStartDay + (firstWeekOffset + endIndex) * 7
+    while (endIndex < rowCount) {
+      const nextWeekStartDay = baseWeekStartDay + (firstWeekOffset + endIndex * weeksPerRow) * 7
       if (getWeekMonthKey(nextWeekStartDay) !== key) {
         break
       }
@@ -1832,14 +1930,14 @@ function getMonthGroups(baseWeekStartDay, firstWeekOffset, weekCount, weekStart)
     const parts = getDateParts(weekStartDay)
     const month = getMonthData(parts.year, parts.month, weekStart)
     groups.set(rowIndex, {
-      label: month.label,
       month,
       rows: endIndex - rowIndex,
       firstRow: rowIndex,
       lastRow: endIndex - 1,
       weekStartDay,
+      weeksPerRow,
       startsVisibleRange: rowIndex === 0,
-      endsVisibleRange: endIndex === weekCount,
+      endsVisibleRange: endIndex === rowCount,
     })
     rowIndex = endIndex
   }
@@ -1861,11 +1959,13 @@ function getMonthData(year, monthIndex, weekStart) {
   return {
     date: `${String(year).padStart(4, '0')}-${String(monthIndex + 1).padStart(2, '0')}`,
     label: monthNames[monthIndex],
+    shortLabel: shortMonthNames[monthIndex],
     yearLabel: `${monthNames[monthIndex]} ${year}`,
     year,
     month: monthIndex + 1,
     monthIndex,
     monthName: monthNames[monthIndex],
+    shortMonthName: shortMonthNames[monthIndex],
     startDay,
     startDate: formatDay(startDay),
     endDay,
@@ -1885,6 +1985,8 @@ function getMonthFeatures(month, group) {
     rows: group.rows,
     firstRow: group.firstRow,
     lastRow: group.lastRow,
+    weeksPerRow: group.weeksPerRow,
+    isCompact: group.weeksPerRow > 1,
     startsVisibleRange: group.startsVisibleRange,
     endsVisibleRange: group.endsVisibleRange,
     isYearStart: month.monthIndex === 0,
@@ -1926,28 +2028,33 @@ function getDayData(day, dateParts = getDateParts(day)) {
     month: dateParts.month + 1,
     monthIndex: dateParts.month,
     monthName: monthNames[dateParts.month],
+    shortMonthName: shortMonthNames[dateParts.month],
     dayOfMonth: dateParts.day,
     dayOfWeek,
     weekdayName: weekdayNames[dayOfWeek],
   }
 }
 
-function getDayFeatures(day, dateParts, selectedDay, todayDay, weekStart, column) {
-  const dayData = getDayData(day, dateParts)
+function getDayFeatures(day, dateParts, selectedDay, todayDay, weekStart, column, columnCount) {
+  const dayOfWeek = getDayOfWeek(day)
+  const isMonthEnd = !isSameMonth(day + 1, dateParts)
   const features = {
     weekStart,
     column,
-    isWeekend: dayData.dayOfWeek === 0 || dayData.dayOfWeek === 6,
+    columnCount,
+    weeksPerRow: columnCount / 7,
+    isCompact: columnCount > 7,
+    isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
     isSelected: selectedDay !== null && selectedDay === day,
     isToday: todayDay === day,
     isMonthStart: dateParts.day === 1,
-    isMonthEnd: !isSameMonth(day + 1, dateParts),
+    isMonthEnd,
     isYearStart: dateParts.month === 0 && dateParts.day === 1,
-    isYearEnd: dateParts.month === 11 && !isSameMonth(day + 1, dateParts),
+    isYearEnd: dateParts.month === 11 && isMonthEnd,
   }
 
-  appendDayBoundaryFeatures(features, day, day - 7, 'Top')
-  appendDayBoundaryFeatures(features, day, day + 7, 'Bottom')
+  appendDayBoundaryFeatures(features, day, day - columnCount, 'Top')
+  appendDayBoundaryFeatures(features, day, day + columnCount, 'Bottom')
 
   if (column > 0) {
     appendDayBoundaryFeatures(features, day, day - 1, 'Left')
@@ -1955,7 +2062,7 @@ function getDayFeatures(day, dateParts, selectedDay, todayDay, weekStart, column
     clearBoundaryFeatures(features, 'Left')
   }
 
-  if (column < 6) {
+  if (column < columnCount - 1) {
     appendDayBoundaryFeatures(features, day, day + 1, 'Right')
   } else {
     clearBoundaryFeatures(features, 'Right')
@@ -2055,14 +2162,14 @@ function parseMonthInput(value) {
   return { year, monthIndex }
 }
 
-function createSpacerRow(type, height) {
+function createSpacerRow(type, height, colSpan) {
   const row = document.createElement('tr')
   const cell = document.createElement('td')
 
   row.className = `spacer spacer--${type}`
   row.setAttribute('aria-hidden', 'true')
   cell.className = 'spacer-cell'
-  cell.colSpan = 8
+  cell.colSpan = colSpan
   cell.style.height = `${Math.round(height)}px`
   row.append(cell)
   return row
@@ -2203,6 +2310,7 @@ function getMonthTemplateValues(context) {
     date: context.month.date,
     label: context.month.label,
     yearLabel: context.month.yearLabel,
+    shortLabel: context.month.shortLabel,
     month: context.month,
     monthData: context.month,
     features: context.features,
@@ -2325,6 +2433,16 @@ function getCurrentDayMoment() {
   return startOfLocalDay + elapsed / msPerDay
 }
 
+function getTouchDistance(touches) {
+  if (!touches || touches.length < 2) {
+    return 0
+  }
+
+  const first = touches[0]
+  const second = touches[1]
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY)
+}
+
 function getDayOfWeek(day) {
   return new Date(day * msPerDay).getUTCDay()
 }
@@ -2334,11 +2452,6 @@ function getWeekStartDay(day, weekStart) {
   const offset = (dayOfWeek - weekStart + 7) % 7
   return day - offset
 }
-
-function isFirstDayOfMonth(day) {
-  return getDateParts(day).day === 1
-}
-
 function isSameMonth(day, dateParts) {
   const otherParts = getDateParts(day)
   return otherParts.year === dateParts.year && otherParts.month === dateParts.month
@@ -2473,21 +2586,4 @@ function emit(element, name, detail) {
     composed: true,
     detail: detail || {},
   }))
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

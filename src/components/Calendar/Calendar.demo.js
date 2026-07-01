@@ -56,7 +56,7 @@ registerDemo({
           <tot-button id="calendarFuture" label="2050-12-25" size="small"></tot-button>
         </div>
         <tot-calendar id="mainCalendar" date="${today}" style="--tot-calendar-height: 18rem;"></tot-calendar>
-        <div class="calendar-demo-note">Type YYYY-MM-DD or scroll by touch/mouse. Month labels are virtualized with the visible week rows.</div>
+        <div class="calendar-demo-note">Type YYYY-MM-DD, scroll by touch/mouse, pinch, or use Ctrl+wheel to zoom.</div>
       </div>
 
       <div class="stack demo-group">
