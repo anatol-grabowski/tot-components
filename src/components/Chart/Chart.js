@@ -15,8 +15,10 @@ const chartStyle = `
     --border-radius: var(--tot-border-radius-small, 3px);
     --border-width: var(--tot-panel-border-width, 1px);
     --grid-border-width: var(--tot-panel-border-width, 1px);
-    --grid-color: var(--tot-panel-border-color, #e2e8f0);
+    --grid-color: var(--tot-chart-grid-color, color-mix(in srgb, var(--tot-panel-border-color, #e2e8f0) 55%, transparent));
     --line-border-width: 2px;
+    --muted-text-color: var(--tot-chart-muted-text-color, var(--tot-input-color, #1e293b));
+    --text-color: var(--tot-chart-text-color, var(--tot-input-color, #1e293b));
     --point-radius: 3px;
 
     display: block;
@@ -133,6 +135,9 @@ export class TotChart extends HTMLElement {
     this._plugins = undefined
     this._renderQueued = false
     this._statusMessage = ''
+    this._themeStylesheetLinks = []
+    this._handleThemeChange = () => this.scheduleThemeRender()
+    this._handleThemeStylesheetLoad = () => this.scheduleThemeRender()
   }
 
   get config() {
@@ -461,7 +466,10 @@ export class TotChart extends HTMLElement {
     }
 
     if (!this._themeObserver && typeof document !== 'undefined') {
-      this._themeObserver = new MutationObserver(() => this.scheduleRender())
+      this._themeObserver = new MutationObserver(() => {
+        this.syncThemeStylesheetListeners()
+        this.scheduleThemeRender()
+      })
 
       if (document.documentElement) {
         this._themeObserver.observe(document.documentElement, {
@@ -476,7 +484,48 @@ export class TotChart extends HTMLElement {
           attributeFilter: ['class', 'style'],
         })
       }
+
+      if (document.head) {
+        this._themeObserver.observe(document.head, {
+          attributes: true,
+          attributeFilter: ['href', 'media', 'disabled', 'class', 'style'],
+          childList: true,
+          subtree: true,
+        })
+      }
+
+      window.addEventListener('tot-theme-change', this._handleThemeChange)
+      document.addEventListener('tot-theme-change', this._handleThemeChange)
+      this.syncThemeStylesheetListeners()
     }
+  }
+
+  scheduleThemeRender() {
+    const render = () => {
+      if (this.isConnected) {
+        this.scheduleRender()
+      }
+    }
+
+    requestAnimationFrame(render)
+    window.setTimeout(render, 60)
+    window.setTimeout(render, 180)
+  }
+
+  syncThemeStylesheetListeners() {
+    this.clearThemeStylesheetListeners()
+    const links = document.querySelectorAll('link[rel~="stylesheet"]')
+    for (let i = 0; i < links.length; i++) {
+      links[i].addEventListener('load', this._handleThemeStylesheetLoad)
+      this._themeStylesheetLinks.push(links[i])
+    }
+  }
+
+  clearThemeStylesheetListeners() {
+    for (let i = 0; i < this._themeStylesheetLinks.length; i++) {
+      this._themeStylesheetLinks[i].removeEventListener('load', this._handleThemeStylesheetLoad)
+    }
+    this._themeStylesheetLinks = []
   }
 
   teardownObservers() {
@@ -489,6 +538,16 @@ export class TotChart extends HTMLElement {
       this._themeObserver.disconnect()
       this._themeObserver = null
     }
+
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('tot-theme-change', this._handleThemeChange)
+    }
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('tot-theme-change', this._handleThemeChange)
+    }
+
+    this.clearThemeStylesheetListeners()
   }
 }
 
@@ -823,11 +882,11 @@ function getChartTokens(host) {
     fontFamily: computed.fontFamily || '-apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif',
     fontSize: getResolvedLength(host, '--tot-font-size-x-small', 12),
     gridBorderWidth: getResolvedLength(host, '--grid-border-width', 1),
-    gridColor: getResolvedColor(host, '--grid-color', '#e2e8f0'),
+    gridColor: getResolvedColor(host, '--grid-color', 'rgba(226, 232, 240, .55)'),
     lineBorderWidth: getResolvedLength(host, '--line-border-width', 2),
-    mutedTextColor: getResolvedColor(host, '--tot-color-neutral-600', '#475569'),
+    mutedTextColor: getResolvedColor(host, '--muted-text-color', '#1e293b'),
     pointRadius: getResolvedLength(host, '--point-radius', 3),
-    textColor: getResolvedColor(host, '--tot-input-color', '#1e293b'),
+    textColor: getResolvedColor(host, '--text-color', '#1e293b'),
   }
 }
 

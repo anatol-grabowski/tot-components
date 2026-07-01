@@ -29,6 +29,10 @@ import { TotTable } from './Table/Table.js'
 import { TotMarkdown } from './Markdown/Markdown.js'
 import { TotHtml } from './Html/Html.js'
 import { TotThemeSelector } from './ThemeSelector/ThemeSelector.js'
+import { TotCopyButton } from './CopyButton/CopyButton.js'
+import { TotRating } from './Rating/Rating.js'
+import { TotDetails } from './Details/Details.js'
+import { TotAvatar } from './Avatar/Avatar.js'
 
 export function defineElement(name, klass) {
   if (!customElements.get(name)) {
@@ -70,6 +74,10 @@ defineElement('tot-table', TotTable)
 defineElement('tot-markdown', TotMarkdown)
 defineElement('tot-html', TotHtml)
 defineElement('tot-theme-selector', TotThemeSelector)
+defineElement('tot-copy-button', TotCopyButton)
+defineElement('tot-rating', TotRating)
+defineElement('tot-details', TotDetails)
+defineElement('tot-avatar', TotAvatar)
 
 export {
   TotButton,
@@ -102,4 +110,8 @@ export {
   TotMarkdown,
   TotHtml,
   TotThemeSelector,
+  TotCopyButton,
+  TotRating,
+  TotDetails,
+  TotAvatar,
 }
