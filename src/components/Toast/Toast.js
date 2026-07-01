@@ -21,7 +21,7 @@ const toastStyle = `
 
   .toast {
     align-items: center;
-    background: var(--tot-toast-background-color, rgb(17 24 39 / 92%));
+    background: var(--tot-toast-background-color, var(--tot-color-neutral-900, rgb(17 24 39 / 94%)));
     border: 0;
     border-radius: var(--tot-toast-border-radius, 999px);
     box-shadow: none;
@@ -36,7 +36,11 @@ const toastStyle = `
     min-width: min(var(--tot-toast-min-width, 12rem), calc(100vw - 2 * var(--tot-spacing-small, .75rem)));
     overflow-wrap: anywhere;
     padding: var(--tot-spacing-small, .75rem) var(--tot-spacing-large, 1.25rem);
+    pointer-events: auto;
     text-align: center;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
   }
 `
 
@@ -48,6 +52,12 @@ export class TotToast extends HTMLElement {
   constructor() {
     super()
     this._hideTimer = 0
+    this._hideTimerStartedAt = 0
+    this._remainingDuration = 0
+    this._isTimerPaused = false
+    this._isPointerInside = false
+    this._activePointerId = null
+    this._toastElement = null
   }
 
   static show(options) {
@@ -98,10 +108,16 @@ export class TotToast extends HTMLElement {
 
   disconnectedCallback() {
     clearTimeout(this._hideTimer)
+    this._activePointerId = null
     scheduleToastStackUpdate()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'open' && newValue === null) {
+      this._isPointerInside = false
+      this._activePointerId = null
+    }
+
     this.render()
     this.syncTimer()
     scheduleToastStackUpdate()
@@ -125,18 +141,107 @@ export class TotToast extends HTMLElement {
     root.innerHTML = `<style>${toastStyle}</style>
       <div class="toast" part="base" role="status" aria-live="polite">${escapeHtml(this.message)}</div>
     `
+
+    this._toastElement = root.querySelector('.toast')
+    this._toastElement.addEventListener('pointerenter', (event) => this.handlePointerEnter(event))
+    this._toastElement.addEventListener('pointerleave', (event) => this.handlePointerLeave(event))
+    this._toastElement.addEventListener('pointerdown', (event) => this.handlePointerDown(event))
+    this._toastElement.addEventListener('pointerup', (event) => this.handlePointerEnd(event))
+    this._toastElement.addEventListener('pointercancel', (event) => this.handlePointerEnd(event))
   }
 
   syncTimer() {
     clearTimeout(this._hideTimer)
+    this._hideTimerStartedAt = 0
+    this._remainingDuration = this.duration
+    this._isTimerPaused = false
 
     if (!this.open || this.duration <= 0) {
       return
     }
 
+    if (this._isPointerInside || this._activePointerId !== null) {
+      this._isTimerPaused = true
+      return
+    }
+
+    this.startHideTimer(this._remainingDuration)
+  }
+
+  startHideTimer(duration) {
+    clearTimeout(this._hideTimer)
+    this._remainingDuration = duration
+    this._hideTimerStartedAt = Date.now()
+
     this._hideTimer = window.setTimeout(() => {
       this.hide()
-    }, this.duration)
+    }, duration)
+  }
+
+  pauseTimer() {
+    if (!this.open || this.duration <= 0 || this._isTimerPaused) {
+      return
+    }
+
+    clearTimeout(this._hideTimer)
+    this._isTimerPaused = true
+
+    if (this._hideTimerStartedAt > 0) {
+      const elapsed = Date.now() - this._hideTimerStartedAt
+      this._remainingDuration = Math.max(0, this._remainingDuration - elapsed)
+    }
+  }
+
+  resumeTimer() {
+    if (!this.open || this.duration <= 0 || !this._isTimerPaused) {
+      return
+    }
+
+    this._isTimerPaused = false
+
+    if (this._remainingDuration <= 0) {
+      this.hide()
+      return
+    }
+
+    this.startHideTimer(this._remainingDuration)
+  }
+
+  handlePointerEnter() {
+    this._isPointerInside = true
+    this.pauseTimer()
+  }
+
+  handlePointerLeave() {
+    this._isPointerInside = false
+
+    if (this._activePointerId === null) {
+      this.resumeTimer()
+    }
+  }
+
+  handlePointerDown(event) {
+    this._activePointerId = event.pointerId
+    this._isPointerInside = true
+    capturePointer(this._toastElement, event.pointerId)
+    this.pauseTimer()
+  }
+
+  handlePointerEnd(event) {
+    if (this._activePointerId !== event.pointerId) {
+      return
+    }
+
+    this._activePointerId = null
+    releasePointer(this._toastElement, event.pointerId)
+
+    if (event.pointerType === 'touch') {
+      this._isPointerInside = false
+    }
+
+    if (!this._isPointerInside) {
+      this.resumeTimer()
+    }
   }
 
   getEventDetail() {
@@ -145,6 +250,29 @@ export class TotToast extends HTMLElement {
       message: this.message,
       duration: this.duration,
     }
+  }
+}
+
+
+function capturePointer(element, pointerId) {
+  if (!element || !element.setPointerCapture) {
+    return
+  }
+
+  try {
+    element.setPointerCapture(pointerId)
+  } catch {
+  }
+}
+
+function releasePointer(element, pointerId) {
+  if (!element || !element.releasePointerCapture) {
+    return
+  }
+
+  try {
+    element.releasePointerCapture(pointerId)
+  } catch {
   }
 }
 

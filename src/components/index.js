@@ -16,6 +16,7 @@ import { TotList } from './List/List.js'
 import { TotHint } from './Hint/Hint.js'
 import { TotTooltip } from './Tooltip/Tooltip.js'
 import { TotToast } from './Toast/Toast.js'
+import { TotNotification } from './Notification/Notification.js'
 import { TotMessage } from './Message/Message.js'
 import { TotInput } from './Input/Input.js'
 import { TotCalendar } from './Calendar/Calendar.js'
@@ -61,6 +62,7 @@ defineElement('tot-list', TotList)
 defineElement('tot-hint', TotHint)
 defineElement('tot-tooltip', TotTooltip)
 defineElement('tot-toast', TotToast)
+defineElement('tot-notification', TotNotification)
 defineElement('tot-message', TotMessage)
 defineElement('tot-input', TotInput)
 defineElement('tot-calendar', TotCalendar)
@@ -97,6 +99,7 @@ export {
   TotHint,
   TotTooltip,
   TotToast,
+  TotNotification,
   TotMessage,
   TotInput,
   TotCalendar,

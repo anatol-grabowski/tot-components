@@ -54,6 +54,7 @@ const ratingStyle = `
     height: 1em;
     justify-items: center;
     line-height: 1;
+    overflow: hidden;
     position: relative;
     width: 1em;
   }
@@ -76,6 +77,20 @@ const ratingStyle = `
     position: absolute;
     top: 0;
     width: var(--rating-symbol-percent, 0%);
+  }
+
+  .rating__symbol--empty .rating__symbol-active {
+    visibility: hidden;
+  }
+
+  .rating__symbol--full .rating__symbol-inactive {
+    visibility: hidden;
+  }
+
+  .rating__symbol--full .rating__symbol-active {
+    overflow: visible;
+    position: static;
+    width: auto;
   }
 
   .rating--readonly,
@@ -228,7 +243,11 @@ export class TotRating extends HTMLElement {
     for (let i = 1; i <= max; i++) {
       const percent = clamp(value - i + 1, 0, 1) * 100
       const symbol = this.getSymbolHtml(i)
-      symbols.push(`<span class="rating__symbol" part="symbol" data-value="${i}" style="--rating-symbol-percent: ${percent}%">
+      const symbolClasses = [
+        'rating__symbol',
+        this.getSymbolStateClass(percent),
+      ]
+      symbols.push(`<span class="${escapeAttribute(symbolClasses.join(' '))}" part="symbol" data-value="${i}" style="--rating-symbol-percent: ${percent}%">
         <span class="rating__symbol-inactive" aria-hidden="true">${symbol}</span>
         <span class="rating__symbol-active" aria-hidden="true">${symbol}</span>
       </span>`)
@@ -468,7 +487,21 @@ export class TotRating extends HTMLElement {
     for (let i = 0; i < symbols.length; i++) {
       const percent = clamp(value - i, 0, 1) * 100
       symbols[i].style.setProperty('--rating-symbol-percent', `${percent}%`)
+      symbols[i].classList.remove('rating__symbol--empty', 'rating__symbol--partial', 'rating__symbol--full')
+      symbols[i].classList.add(this.getSymbolStateClass(percent))
     }
+  }
+
+  getSymbolStateClass(percent) {
+    if (percent <= 0) {
+      return 'rating__symbol--empty'
+    }
+
+    if (percent >= 100) {
+      return 'rating__symbol--full'
+    }
+
+    return 'rating__symbol--partial'
   }
 
   getSymbolHtml(value) {
