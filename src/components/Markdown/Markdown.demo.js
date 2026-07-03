@@ -97,6 +97,23 @@ const pandocMarkdown = [
   '[^color-note]: Footnotes render at the end and can include [colored content]{style="color: #db2777;"}.',
 ].join('\n')
 
+
+const staticSlotMarkdown = [
+  'Sam likes [_]{slot="fill-the-blank" key="coffee"}.',
+].join('\n')
+
+const interactiveSlotMarkdown = [
+  '# Interactive slots',
+  '',
+  'Translate **dzień dobry**: [answer]{slot="answer" key="good morning"}.',
+  '',
+  'Pick the response tone: [tone]{slot="tone" key="friendly"}.',
+  '',
+  'Set your confidence: [0%]{slot="confidence" key="80"}.',
+  '',
+  '> Slotted controls stay connected while the surrounding markdown streams.',
+].join('\n')
+
 registerDemo({
   id: 'tot-markdown',
   title: 'Markdown',
@@ -104,6 +121,60 @@ registerDemo({
     const wrapper = document.createElement('div')
     wrapper.className = 'stack'
     wrapper.innerHTML = `
+      <style>
+        .markdown-slot-demo {
+          align-items: center;
+          display: inline-flex;
+          gap: var(--tot-spacing-2x-small, .25rem);
+          vertical-align: baseline;
+        }
+
+        .markdown-slot-input {
+          background: var(--tot-input-background-color, #fff);
+          border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
+          border-radius: var(--tot-input-border-radius-medium, 4px);
+          color: var(--tot-input-color, #1e293b);
+          font: inherit;
+          height: 1.65rem;
+          padding: 0 var(--tot-input-spacing-small, .5rem);
+          width: 8.5rem;
+        }
+
+        .markdown-slot-range {
+          width: 6.5rem;
+        }
+
+        .markdown-slot-button {
+          background: var(--tot-input-background-color, #fff);
+          border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
+          border-radius: var(--tot-input-border-radius-medium, 4px);
+          color: var(--tot-input-color, #1e293b);
+          cursor: pointer;
+          font: inherit;
+          height: 1.65rem;
+          padding: 0 var(--tot-spacing-x-small, .5rem);
+        }
+
+        .markdown-slot-button:hover,
+        .markdown-slot-button[aria-pressed="true"] {
+          background: var(--tot-color-primary-50, #f0f9ff);
+          border-color: var(--tot-color-primary-500, #0ea5e9);
+          color: var(--tot-color-primary-700, #0369a1);
+        }
+
+        .markdown-slot-button:focus-visible,
+        .markdown-slot-input:focus-visible,
+        .markdown-slot-range:focus-visible {
+          outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+          outline-offset: var(--tot-focus-ring-offset, 1px);
+        }
+
+        .markdown-slot-status {
+          color: var(--tot-color-neutral-600, #475569);
+          font-size: var(--tot-font-size-x-small, .75rem);
+          min-width: 3rem;
+        }
+      </style>
       <div class="stack demo-group">
         <div class="demo-label">Markdown preview with fullscreen and streaming</div>
         <div class="row">
@@ -120,6 +191,39 @@ registerDemo({
         </div>
         <tot-markdown id="pandocPreview" pandoc label="Pandoc markdown" help-text="Pandoc mode adds attributes, colored spans, math, line blocks, definitions, fenced divs, footnotes, and raw HTML sanitization."></tot-markdown>
       </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Pandoc slot placeholder</div>
+        <tot-markdown id="staticSlotPreview" pandoc label="Exercise 1" help-text="The placeholder renders as a normal span until matching light-DOM slot content is provided.">
+          <span slot="fill-the-blank" class="markdown-slot-demo">
+            <input class="markdown-slot-input" aria-label="Fill the blank" placeholder="answer">
+            <button class="markdown-slot-button" type="button" data-action="show-static-key">show key</button>
+            <span class="markdown-slot-status" data-slot-status></span>
+          </span>
+        </tot-markdown>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Interactive pandoc slots with streaming</div>
+        <div class="row">
+          <tot-button id="streamSlotsMarkdown" label="Stream slots"></tot-button>
+          <tot-button id="showSlotsMarkdown" label="Show complete"></tot-button>
+        </div>
+        <tot-markdown id="interactiveSlotsPreview" pandoc label="Streaming exercise" help-text="Multiple named slots can provide different interactive controls while markdown streams.">
+          <span slot="answer" class="markdown-slot-demo">
+            <input class="markdown-slot-input" aria-label="Translation answer" placeholder="translation">
+            <button class="markdown-slot-button" type="button" data-action="check-answer">check</button>
+            <span class="markdown-slot-status" data-slot-status></span>
+          </span>
+          <span slot="tone" class="markdown-slot-demo">
+            <button class="markdown-slot-button" type="button" data-tone="friendly" aria-pressed="false">friendly</button>
+            <button class="markdown-slot-button" type="button" data-tone="formal" aria-pressed="false">formal</button>
+            <span class="markdown-slot-status" data-slot-status></span>
+          </span>
+          <span slot="confidence" class="markdown-slot-demo">
+            <input class="markdown-slot-range" type="range" min="0" max="100" value="40" aria-label="Confidence">
+            <span class="markdown-slot-status" data-slot-status>40%</span>
+          </span>
+        </tot-markdown>
+      </div>
     `
 
     const markdown = wrapper.querySelector('#markdownPreview')
@@ -128,9 +232,17 @@ registerDemo({
     const pandoc = wrapper.querySelector('#pandocPreview')
     const pandocStreamButton = wrapper.querySelector('#streamPandocMarkdown')
     const pandocShowButton = wrapper.querySelector('#showPandocMarkdown')
+    const staticSlot = wrapper.querySelector('#staticSlotPreview')
+    const interactiveSlots = wrapper.querySelector('#interactiveSlotsPreview')
+    const slotsStreamButton = wrapper.querySelector('#streamSlotsMarkdown')
+    const slotsShowButton = wrapper.querySelector('#showSlotsMarkdown')
 
-    setupStreaming(markdown, streamButton, showButton, completeMarkdown)
-    setupStreaming(pandoc, pandocStreamButton, pandocShowButton, pandocMarkdown)
+    setupStreaming(markdown, streamButton, showButton, completeMarkdown, 'Stream markdown')
+    setupStreaming(pandoc, pandocStreamButton, pandocShowButton, pandocMarkdown, 'Stream pandoc')
+    setupStreaming(interactiveSlots, slotsStreamButton, slotsShowButton, interactiveSlotMarkdown, 'Stream slots')
+    staticSlot.value = staticSlotMarkdown
+    setupStaticSlotDemo(wrapper)
+    setupInteractiveSlotDemo(wrapper)
 
     markdown.addEventListener('fullscreen-change', (event) => {
       logEvent(markdown, 'fullscreen-change', event.detail)
@@ -140,11 +252,19 @@ registerDemo({
       logEvent(pandoc, 'fullscreen-change', event.detail)
     })
 
+    staticSlot.addEventListener('fullscreen-change', (event) => {
+      logEvent(staticSlot, 'fullscreen-change', event.detail)
+    })
+
+    interactiveSlots.addEventListener('fullscreen-change', (event) => {
+      logEvent(interactiveSlots, 'fullscreen-change', event.detail)
+    })
+
     container.appendChild(wrapper)
   },
 })
 
-function setupStreaming(markdown, streamButton, showButton, source) {
+function setupStreaming(markdown, streamButton, showButton, source, idleLabel) {
   let streamTimer = 0
   let streamIndex = source.length
   markdown.value = source
@@ -204,7 +324,56 @@ function setupStreaming(markdown, streamButton, showButton, source) {
     }
 
     streamTimer = 0
-    streamButton.setAttribute('label', markdown.pandoc ? 'Stream pandoc' : 'Stream markdown')
+    streamButton.setAttribute('label', idleLabel || (markdown.pandoc ? 'Stream pandoc' : 'Stream markdown'))
     markdown.streaming = false
   }
+}
+
+function setupStaticSlotDemo(wrapper) {
+  const slotContent = wrapper.querySelector('[slot="fill-the-blank"]')
+  const button = slotContent.querySelector('[data-action="show-static-key"]')
+  const status = slotContent.querySelector('[data-slot-status]')
+
+  button.addEventListener('click', () => {
+    status.textContent = `key: ${getSlotKey(slotContent)}`
+  })
+}
+
+function setupInteractiveSlotDemo(wrapper) {
+  const answerSlot = wrapper.querySelector('[slot="answer"]')
+  const answerInput = answerSlot.querySelector('input')
+  const checkButton = answerSlot.querySelector('[data-action="check-answer"]')
+  const answerStatus = answerSlot.querySelector('[data-slot-status]')
+  const toneSlot = wrapper.querySelector('[slot="tone"]')
+  const toneButtons = toneSlot.querySelectorAll('[data-tone]')
+  const toneStatus = toneSlot.querySelector('[data-slot-status]')
+  const confidenceSlot = wrapper.querySelector('[slot="confidence"]')
+  const confidenceRange = confidenceSlot.querySelector('input')
+  const confidenceStatus = confidenceSlot.querySelector('[data-slot-status]')
+
+  checkButton.addEventListener('click', () => {
+    const isCorrect = normalizeAnswer(answerInput.value) === normalizeAnswer(getSlotKey(answerSlot))
+    answerStatus.textContent = isCorrect ? 'correct' : 'try again'
+  })
+
+  for (let i = 0; i < toneButtons.length; i++) {
+    toneButtons[i].addEventListener('click', () => {
+      for (let j = 0; j < toneButtons.length; j++) {
+        toneButtons[j].setAttribute('aria-pressed', String(toneButtons[j] === toneButtons[i]))
+      }
+      toneStatus.textContent = toneButtons[i].dataset.tone === getSlotKey(toneSlot) ? 'key' : 'custom'
+    })
+  }
+
+  confidenceRange.addEventListener('input', () => {
+    confidenceStatus.textContent = `${confidenceRange.value}%`
+  })
+}
+
+function getSlotKey(element) {
+  return element.assignedSlot?.dataset.markdownKey || ''
+}
+
+function normalizeAnswer(value) {
+  return String(value || '').trim().toLocaleLowerCase()
 }

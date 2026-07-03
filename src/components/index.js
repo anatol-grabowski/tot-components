@@ -28,6 +28,7 @@ import { TotModal } from './Modal/Modal.js'
 import { TotTextarea } from './Textarea/Textarea.js'
 import { TotTable } from './Table/Table.js'
 import { TotMarkdown } from './Markdown/Markdown.js'
+import { TotExercise } from './Exercise/Exercise.js'
 import { TotHtml } from './Html/Html.js'
 import { TotThemeSelector } from './ThemeSelector/ThemeSelector.js'
 import { TotCopyButton } from './CopyButton/CopyButton.js'
@@ -74,6 +75,7 @@ defineElement('tot-modal', TotModal)
 defineElement('tot-textarea', TotTextarea)
 defineElement('tot-table', TotTable)
 defineElement('tot-markdown', TotMarkdown)
+defineElement('tot-exercise', TotExercise)
 defineElement('tot-html', TotHtml)
 defineElement('tot-theme-selector', TotThemeSelector)
 defineElement('tot-copy-button', TotCopyButton)
@@ -111,6 +113,7 @@ export {
   TotTextarea,
   TotTable,
   TotMarkdown,
+  TotExercise,
   TotHtml,
   TotThemeSelector,
   TotCopyButton,

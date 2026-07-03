@@ -374,6 +374,11 @@ const markdownStyle = `
     margin: 0;
   }
 
+  .markdown-output .markdown-slot,
+  .markdown-output .markdown-slot__fallback {
+    display: inline;
+  }
+
   .markdown__streaming-caret {
     display: inline-block;
     margin-inline-start: .05em;
@@ -617,7 +622,10 @@ export class TotMarkdown extends HTMLElement {
 
   updateUi() {
     const root = this.shadowRoot
-    const html = renderMarkdown(this.value, { pandoc: this.pandoc })
+    const contentSlotMode = this._fullscreen ? 'fallback' : 'native'
+    const fullscreenSlotMode = this._fullscreen ? 'native' : 'fallback'
+    const contentHtml = renderMarkdown(this.value, { pandoc: this.pandoc, slotMode: contentSlotMode })
+    const fullscreenHtml = renderMarkdown(this.value, { pandoc: this.pandoc, slotMode: fullscreenSlotMode })
     const streamingCaret = this.streaming ? '<span class="markdown__streaming-caret" aria-hidden="true"></span>' : ''
     const label = root.querySelector('.label')
     const helpText = root.querySelector('.help-text')
@@ -635,8 +643,8 @@ export class TotMarkdown extends HTMLElement {
     fullscreenTitle.textContent = this.label || (this.pandoc ? 'Pandoc markdown' : 'Markdown')
     panel.classList.toggle('markdown--pandoc', this.pandoc)
     fullscreen.hidden = !this._fullscreen
-    content.innerHTML = `${html}${streamingCaret}`
-    fullscreenContent.innerHTML = `${html}${streamingCaret}`
+    content.innerHTML = `${contentHtml}${streamingCaret}`
+    fullscreenContent.innerHTML = `${fullscreenHtml}${streamingCaret}`
 
     for (let i = 0; i < indicators.length; i++) {
       indicators[i].hidden = !this.streaming
@@ -775,7 +783,7 @@ export class TotMarkdown extends HTMLElement {
       return
     }
 
-    this._slotMarkdown = this.textContent || ''
+    this._slotMarkdown = getLightDomMarkdown(this)
   }
 
   observeLightDom() {
@@ -788,7 +796,7 @@ export class TotMarkdown extends HTMLElement {
         return
       }
 
-      this._slotMarkdown = this.textContent || ''
+      this._slotMarkdown = getLightDomMarkdown(this)
       this.render()
     })
     this._mutationObserver.observe(this, {
@@ -876,6 +884,13 @@ function parseBlocks(lines, startIndex, options = {}, state = {}) {
       continue
     }
 
+    const table = parseTable(lines, index, options, state)
+    if (table) {
+      html += table.html
+      index = table.index
+      continue
+    }
+
     if (options.pandoc) {
       const pandocBlock = parsePandocBlock(lines, index, options, state)
       if (pandocBlock) {
@@ -889,13 +904,6 @@ function parseBlocks(lines, startIndex, options = {}, state = {}) {
       const result = parseList(lines, index, options, state)
       html += result.html
       index = result.index
-      continue
-    }
-
-    const table = parseTable(lines, index, options, state)
-    if (table) {
-      html += table.html
-      index = table.index
       continue
     }
 
@@ -1209,11 +1217,14 @@ function parseInline(value, options = {}, state = {}) {
   }
 
   if (options.pandoc) {
-    text = text.replace(/\[([^\]\n]+)\]\{([^}\n]+)\}/g, (match, content, attributes) => {
+    text = text.replace(/\[([^\]\n]*)\]\{([^}\n]+)\}/g, (match, content, attributes) => {
       const parsedAttributes = parsePandocAttributes(attributes)
+      if (parsedAttributes.keyValues.slot) {
+        return stash(renderPandocSlotPlaceholder(content, parsedAttributes, options, state))
+      }
+
       return stash(`<span${renderPandocAttributes(parsedAttributes, { defaultClass: 'pandoc-span' })}>${parseInline(content, options, state)}</span>`)
     })
-
     text = text.replace(/<\/?[a-z][^>]*>/gi, match => stash(sanitizePandocRawInlineHtmlTag(match)))
   }
 
@@ -1447,6 +1458,27 @@ function renderPandocFootnotes(state, options) {
   }
   html += '</ol></section>'
   return html
+}
+
+function renderPandocSlotPlaceholder(content, attributes, options = {}, state = {}) {
+  const name = String(attributes.keyValues.slot || '').trim()
+  if (!name) {
+    return `<span${renderPandocAttributes(attributes, { defaultClass: 'pandoc-span' })}>${parseInline(content, options, state)}</span>`
+  }
+
+  const fallback = `<span class="markdown-slot__fallback">${parseInline(content, { ...options, slotMode: 'fallback' }, state)}</span>`
+  const metadata = [`data-markdown-slot="${escapeAttribute(name)}"`]
+  const key = attributes.keyValues.key
+  if (key !== undefined && key !== '') {
+    metadata.push(`data-markdown-key="${escapeAttribute(key)}"`)
+  }
+
+  const metadataAttributes = metadata.length > 0 ? ` ${metadata.join(' ')}` : ''
+  if (options.slotMode === 'native') {
+    return `<slot name="${escapeAttribute(name)}" class="markdown-slot"${metadataAttributes}>${fallback}</slot>`
+  }
+
+  return `<span class="markdown-slot"${metadataAttributes}>${fallback}</span>`
 }
 
 function extractTrailingPandocAttributes(text) {
@@ -1747,6 +1779,36 @@ function sanitizePandocNode(node) {
 
     sanitizePandocNode(child)
   }
+}
+
+function getLightDomMarkdown(element) {
+  let markdown = ''
+  const childNodes = element.childNodes || []
+  for (let i = 0; i < childNodes.length; i++) {
+    markdown += getLightDomMarkdownFromNode(childNodes[i])
+  }
+  return markdown
+}
+
+function getLightDomMarkdownFromNode(node) {
+  if (node.nodeType === 3 || node.nodeType === 4) {
+    return node.nodeValue || ''
+  }
+
+  if (node.nodeType !== 1) {
+    return ''
+  }
+
+  if (typeof node.hasAttribute === 'function' && node.hasAttribute('slot')) {
+    return ''
+  }
+
+  let markdown = ''
+  const childNodes = node.childNodes || []
+  for (let i = 0; i < childNodes.length; i++) {
+    markdown += getLightDomMarkdownFromNode(childNodes[i])
+  }
+  return markdown
 }
 
 function isSafeId(value) {
