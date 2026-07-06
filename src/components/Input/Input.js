@@ -114,7 +114,7 @@ const inputStyle = `
   }
 
   .input__control::placeholder {
-    color: var(--tot-input-placeholder-color, #64748b);
+    color: var(--tot-input-placeholder-color, #94a3b8);
     opacity: 1;
   }
 
@@ -125,7 +125,7 @@ const inputStyle = `
   }
 
   .input__control:disabled::placeholder {
-    color: var(--tot-input-placeholder-color-disabled, #94a3b8);
+    color: var(--tot-input-placeholder-color-disabled, #64748b);
   }
 
   .input__prefix,

@@ -35,6 +35,11 @@ import { TotCopyButton } from './CopyButton/CopyButton.js'
 import { TotRating } from './Rating/Rating.js'
 import { TotDetails } from './Details/Details.js'
 import { TotAvatar } from './Avatar/Avatar.js'
+import { TotLabels } from './Labels/Labels.js'
+import { TotFields } from './Fields/Fields.js'
+import { TotTickertape } from './Tickertape/Tickertape.js'
+import { TotSuggestions } from './Suggestions/Suggestions.js'
+import { TotTree, TotTreeItem } from './Tree/Tree.js'
 
 export function defineElement(name, klass) {
   if (!customElements.get(name)) {
@@ -82,6 +87,12 @@ defineElement('tot-copy-button', TotCopyButton)
 defineElement('tot-rating', TotRating)
 defineElement('tot-details', TotDetails)
 defineElement('tot-avatar', TotAvatar)
+defineElement('tot-labels', TotLabels)
+defineElement('tot-fields', TotFields)
+defineElement('tot-tickertape', TotTickertape)
+defineElement('tot-suggestions', TotSuggestions)
+defineElement('tot-tree-item', TotTreeItem)
+defineElement('tot-tree', TotTree)
 
 export {
   TotButton,
@@ -120,4 +131,10 @@ export {
   TotRating,
   TotDetails,
   TotAvatar,
+  TotLabels,
+  TotFields,
+  TotTickertape,
+  TotSuggestions,
+  TotTree,
+  TotTreeItem,
 }

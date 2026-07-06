@@ -459,8 +459,8 @@
   --tot-input-icon-color: var(--tot-color-neutral-500);
   --tot-input-icon-color-hover: var(--tot-color-neutral-600);
   --tot-input-icon-color-focus: var(--tot-color-neutral-600);
-  --tot-input-placeholder-color: var(--tot-color-neutral-500);
-  --tot-input-placeholder-color-disabled: var(--tot-color-neutral-600);
+  --tot-input-placeholder-color: var(--tot-color-neutral-400);
+  --tot-input-placeholder-color-disabled: var(--tot-color-neutral-500);
   --tot-input-spacing-small: var(--tot-spacing-x-small);
   --tot-input-spacing-medium: var(--tot-spacing-small);
   --tot-input-spacing-large: var(--tot-spacing-medium);

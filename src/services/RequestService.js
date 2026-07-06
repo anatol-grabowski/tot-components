@@ -1,5 +1,88 @@
+/**
+ * @typedef {'DELETE'|'GET'|'HEAD'|'OPTIONS'|'PATCH'|'POST'|'PUT'|'delete'|'get'|'head'|'options'|'patch'|'post'|'put'} RequestMethod
+ */
+
+/**
+ * @typedef {'arraybuffer'|'blob'|'json'|'stream'|'text'} RequestResponseType
+ */
+
+/**
+ * @typedef {string|number|boolean|null|undefined|Date|Object|Array<unknown>} RequestParamValue
+ */
+
+/**
+ * @typedef {Object.<string, RequestParamValue>} RequestParams
+ */
+
+/**
+ * @typedef {Object.<string, string|number|boolean|null|undefined>} RequestHeaders
+ */
+
+/**
+ * @typedef {FormData|Blob|ArrayBuffer|URLSearchParams|string|Object|null|undefined} RequestData
+ */
+
+/**
+ * @callback RequestValidateStatus
+ * @param {number} status
+ * @returns {boolean}
+ */
+
+/**
+ * @typedef {Object} RequestConfig
+ * @property {string=} url
+ * @property {string=} baseURL
+ * @property {string=} baseUrl
+ * @property {RequestMethod=} method
+ * @property {RequestHeaders=} headers
+ * @property {RequestParams=} params
+ * @property {RequestData=} data
+ * @property {number=} timeout
+ * @property {boolean=} withCredentials
+ * @property {RequestResponseType=} responseType
+ * @property {RequestValidateStatus=} validateStatus
+ */
+
+/**
+ * @typedef {Object} RequestResponse
+ * @property {unknown} data
+ * @property {number} status
+ * @property {string} statusText
+ * @property {Object.<string, string>} headers
+ * @property {RequestConfig} config
+ * @property {Response} request
+ * @property {string} url
+ */
+
+/**
+ * @typedef {Object} RequestErrorInput
+ * @property {string} message
+ * @property {string|null} code
+ * @property {RequestConfig} config
+ * @property {Response|null} request
+ * @property {RequestResponse=} response
+ * @property {Error=} cause
+ */
+
+/**
+ * @typedef {Error & {
+ *   code: string|null,
+ *   config: RequestConfig,
+ *   request: Response|null,
+ *   response?: RequestResponse,
+ *   status: number|null,
+ *   isAxiosError: boolean,
+ *   cause?: Error,
+ *   toJSON: () => Object
+ * }} RequestError
+ */
+
 export class RequestService {
+  /**
+   * @param {RequestConfig} [defaultConfig]
+   */
   constructor(defaultConfig = {}) {
+    /** @type {RequestConfig} */
     this.defaultConfig = {
       timeout: 0,
       headers: {},
@@ -11,6 +94,13 @@ export class RequestService {
     }
   }
 
+  /**
+   * Sends a request and returns an Axios-like response object.
+   *
+   * @param {RequestConfig} [config]
+   * @returns {Promise<RequestResponse>}
+   * @throws {RequestError}
+   */
   async request(config = {}) {
     const mergedConfig = this.mergeConfig(config)
     const controller = typeof AbortController !== 'undefined'
@@ -75,6 +165,10 @@ export class RequestService {
     return response
   }
 
+  /**
+   * @param {RequestConfig} config
+   * @returns {RequestConfig}
+   */
   mergeConfig(config) {
     return {
       ...this.defaultConfig,
@@ -87,6 +181,10 @@ export class RequestService {
     }
   }
 
+  /**
+   * @param {RequestConfig} config
+   * @returns {string}
+   */
   buildUrl(config) {
     const baseUrl = config.baseURL || config.baseUrl || ''
     const rawUrl = config.url || ''
@@ -106,6 +204,10 @@ export class RequestService {
     return url
   }
 
+  /**
+   * @param {RequestParams} params
+   * @returns {string}
+   */
   buildQuery(params) {
     const parts = []
 
@@ -144,6 +246,10 @@ export class RequestService {
     return parts.join('&')
   }
 
+  /**
+   * @param {RequestConfig} config
+   * @returns {Headers}
+   */
   buildHeaders(config) {
     const headers = new Headers()
 
@@ -162,6 +268,11 @@ export class RequestService {
     return headers
   }
 
+  /**
+   * @param {RequestConfig} config
+   * @param {Headers} headers
+   * @returns {RequestData}
+   */
   buildBody(config, headers) {
     const data = config.data
 
@@ -184,6 +295,12 @@ export class RequestService {
     return JSON.stringify(data)
   }
 
+  /**
+   * @param {Response} fetchResponse
+   * @param {RequestConfig} config
+   * @param {string} requestUrl
+   * @returns {Promise<RequestResponse>}
+   */
   async createResponse(fetchResponse, config, requestUrl) {
     const responseHeaders = this.parseHeaders(fetchResponse.headers)
     const data = await this.parseBody(fetchResponse, config)
@@ -199,6 +316,12 @@ export class RequestService {
     }
   }
 
+  /**
+   * @param {Response} fetchResponse
+   * @param {RequestConfig} config
+   * @returns {Promise<unknown>}
+   * @throws {RequestError}
+   */
   async parseBody(fetchResponse, config) {
     const responseType = config.responseType || 'json'
     const contentType = fetchResponse.headers.get('Content-Type') || ''
@@ -244,6 +367,10 @@ export class RequestService {
     return text
   }
 
+  /**
+   * @param {Headers} headers
+   * @returns {Object.<string, string>}
+   */
   parseHeaders(headers) {
     const result = {}
 
@@ -254,10 +381,18 @@ export class RequestService {
     return result
   }
 
+  /**
+   * @param {string} method
+   * @returns {boolean}
+   */
   isBodylessMethod(method) {
     return method === 'GET' || method === 'HEAD'
   }
 
+  /**
+   * @param {RequestErrorInput} params
+   * @returns {RequestError}
+   */
   createError({ message, code, config, request, response, cause }) {
     const error = new Error(message)
 
