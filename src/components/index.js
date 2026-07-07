@@ -40,6 +40,7 @@ import { TotFields } from './Fields/Fields.js'
 import { TotTickertape } from './Tickertape/Tickertape.js'
 import { TotSuggestions } from './Suggestions/Suggestions.js'
 import { TotTree, TotTreeItem } from './Tree/Tree.js'
+import { TotOdometer } from './Odometer/Odometer.js'
 
 export function defineElement(name, klass) {
   if (!customElements.get(name)) {
@@ -93,6 +94,7 @@ defineElement('tot-tickertape', TotTickertape)
 defineElement('tot-suggestions', TotSuggestions)
 defineElement('tot-tree-item', TotTreeItem)
 defineElement('tot-tree', TotTree)
+defineElement('tot-odometer', TotOdometer)
 
 export {
   TotButton,
@@ -137,4 +139,5 @@ export {
   TotSuggestions,
   TotTree,
   TotTreeItem,
+  TotOdometer,
 }
