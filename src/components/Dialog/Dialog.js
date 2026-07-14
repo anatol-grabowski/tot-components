@@ -9,7 +9,7 @@ const dialogStyle = `
 
   .overlay {
     align-items: center;
-    background: var(--tot-overlay-background-color, hsl(240 3.8% 46.1% / 16%));
+    background: var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%));
     display: flex;
     inset: 0;
     justify-content: center;

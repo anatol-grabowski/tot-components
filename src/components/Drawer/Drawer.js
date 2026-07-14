@@ -38,7 +38,7 @@ const drawerStyle = `
   }
 
   .overlay {
-    background: var(--tot-drawer-overlay-background-color, var(--tot-overlay-background-color, hsl(240 3.8% 46.1% / 16%)));
+    background: var(--tot-drawer-overlay-background-color, var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%)));
     inset: 0;
     pointer-events: auto;
     position: absolute;

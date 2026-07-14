@@ -35,6 +35,7 @@ import { TotCopyButton } from './CopyButton/CopyButton.js'
 import { TotRating } from './Rating/Rating.js'
 import { TotDetails } from './Details/Details.js'
 import { TotAvatar } from './Avatar/Avatar.js'
+import { TotGenerationPlaceholder } from './GenerationPlaceholder/GenerationPlaceholder.js'
 import { TotLabels } from './Labels/Labels.js'
 import { TotFields } from './Fields/Fields.js'
 import { TotTickertape } from './Tickertape/Tickertape.js'
@@ -88,6 +89,7 @@ defineElement('tot-copy-button', TotCopyButton)
 defineElement('tot-rating', TotRating)
 defineElement('tot-details', TotDetails)
 defineElement('tot-avatar', TotAvatar)
+defineElement('tot-generation-placeholder', TotGenerationPlaceholder)
 defineElement('tot-labels', TotLabels)
 defineElement('tot-fields', TotFields)
 defineElement('tot-tickertape', TotTickertape)
@@ -133,6 +135,7 @@ export {
   TotRating,
   TotDetails,
   TotAvatar,
+  TotGenerationPlaceholder,
   TotLabels,
   TotFields,
   TotTickertape,

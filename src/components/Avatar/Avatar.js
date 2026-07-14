@@ -2,7 +2,10 @@ const avatarStyle = `
   :host {
     --size: 2.5rem;
 
-    display: inline-block;
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 0;
     max-width: 100%;
     vertical-align: middle;
   }
@@ -47,6 +50,7 @@ const avatarStyle = `
     display: block;
     height: 100%;
     object-fit: cover;
+    vertical-align: middle;
     width: 100%;
   }
 

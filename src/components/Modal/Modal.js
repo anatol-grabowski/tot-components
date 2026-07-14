@@ -9,7 +9,7 @@ const modalStyle = `
 
   .overlay {
     align-items: center;
-    background: var(--tot-overlay-background-color, hsl(240 3.8% 46.1% / 16%));
+    background: var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%));
     display: flex;
     inset: 0;
     justify-content: center;
@@ -383,6 +383,7 @@ export class TotModal extends HTMLElement {
     }
 
     this._ignoreNextPopState = false
+    markModalHistoryNavigation()
     history.back()
   }
 
@@ -392,6 +393,15 @@ export class TotModal extends HTMLElement {
       header: this.header,
     }
   }
+}
+
+function markModalHistoryNavigation() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const count = Number(window.__totModalHistoryNavigationCount) || 0
+  window.__totModalHistoryNavigationCount = count + 1
 }
 
 function hasActiveFullscreenLayer() {

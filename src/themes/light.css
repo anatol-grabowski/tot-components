@@ -498,7 +498,7 @@
    * Overlays
    */
 
-  --tot-overlay-background-color: hsl(240 3.8% 46.1% / 16%);
+  --tot-overlay-background-color: hsl(240deg 4% 46% / 50%);
 
   /*
    * Panels
