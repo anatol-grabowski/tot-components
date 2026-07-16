@@ -45,7 +45,8 @@ registerDemo({
             "label":"Data"
           }]' value="media">
             <span slot="left">Demo app</span>
-            <tot-button slot="right" size="small" label="Config">⚙</tot-button>
+            <tot-theme-selector slot="right" size="small"></tot-theme-selector>
+            <tot-avatar slot="right" initials="AG" label="Account" style="--size: 1.75rem;"></tot-avatar>
           </tot-navbar>
         </div>
       </div>

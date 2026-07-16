@@ -162,6 +162,7 @@ export class TotDialog extends HTMLElement {
     this._previouslyFocused = null
     this._handleKeyDown = event => this.handleKeyDown(event)
     this._touchStartY = 0
+    this._overlayPointerStarted = false
   }
 
   get header() {
@@ -335,8 +336,16 @@ export class TotDialog extends HTMLElement {
     const cancelButton = root.querySelector('.dialog__cancel')
     const confirmButton = root.querySelector('.dialog__confirm')
 
+    overlay.addEventListener('pointerdown', (event) => {
+      this._overlayPointerStarted = event.target === overlay
+    })
+    overlay.addEventListener('pointercancel', () => {
+      this._overlayPointerStarted = false
+    })
     overlay.addEventListener('click', (event) => {
-      if (event.target === overlay && this.closeOnOverlay) {
+      const shouldClose = this._overlayPointerStarted && event.target === overlay
+      this._overlayPointerStarted = false
+      if (shouldClose && this.closeOnOverlay) {
         this.cancel('overlay')
       }
     })

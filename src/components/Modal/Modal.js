@@ -138,7 +138,7 @@ const modalStyle = `
 
 export class TotModal extends HTMLElement {
   static get observedAttributes() {
-    return ['header', 'open']
+    return ['header', 'open', 'close-on-overlay', 'closeonoverlay']
   }
 
   constructor() {
@@ -152,6 +152,7 @@ export class TotModal extends HTMLElement {
     this._handleKeyDown = event => this.handleKeyDown(event)
     this._handlePopState = event => this.handlePopState(event)
     this._touchStartY = 0
+    this._overlayPointerStarted = false
   }
 
   get header() {
@@ -168,6 +169,27 @@ export class TotModal extends HTMLElement {
 
   set open(value) {
     setBooleanAttribute(this, 'open', value)
+  }
+
+
+  get closeOnOverlay() {
+    if (this.hasAttribute('close-on-overlay')) {
+      return this.getAttribute('close-on-overlay') !== 'false'
+    }
+
+    if (this.hasAttribute('closeonoverlay')) {
+      return this.getAttribute('closeonoverlay') !== 'false'
+    }
+
+    return true
+  }
+
+  set closeOnOverlay(value) {
+    if (value === false || value === 'false') {
+      this.setAttribute('close-on-overlay', 'false')
+    } else {
+      this.setAttribute('close-on-overlay', '')
+    }
   }
 
   connectedCallback() {
@@ -223,8 +245,16 @@ export class TotModal extends HTMLElement {
     syncFooter()
     footerSlot.addEventListener('slotchange', syncFooter)
 
+    overlay.addEventListener('pointerdown', (event) => {
+      this._overlayPointerStarted = event.target === overlay
+    })
+    overlay.addEventListener('pointercancel', () => {
+      this._overlayPointerStarted = false
+    })
     overlay.addEventListener('click', (event) => {
-      if (event.target === overlay) {
+      const shouldClose = this._overlayPointerStarted && event.target === overlay
+      this._overlayPointerStarted = false
+      if (shouldClose && this.closeOnOverlay) {
         this.hide()
       }
     })

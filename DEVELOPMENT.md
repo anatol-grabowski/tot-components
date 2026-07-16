@@ -46,7 +46,7 @@
 - avoid unnecessary clicking, dropdowns or modals
   - prefer split buttons to dropdowns with few fixed items
   - search inputs should be case and diacritics insensitive
-- user actions should be achivable in minimum number of steps
+- user actions should be achievable in minimum number of steps
 - changes applied in one part of the UI propagate to the rest of the UI automatically
 - avoid double scrollbars
-- the app should be in light colors (no dark mode)
+- components must remain readable and aligned in both bundled themes

@@ -77,11 +77,11 @@ const themeSelectorStyle = `
   }
 
   .trigger__caret {
+    align-items: center;
     color: currentColor;
+    display: inline-flex;
     font-size: 1.1em;
     line-height: 1;
-    position: relative;
-    top: -.15em;
   }
 
   .panel {

@@ -93,8 +93,30 @@ const navbarStyle = `
     opacity: .5;
   }
 
-  ::slotted(*) {
+  .slot-group {
+    align-items: center;
+    display: inline-flex;
     flex: 0 0 auto;
+    gap: var(--tot-spacing-small, .5rem);
+    min-width: 0;
+  }
+
+  .slot-group--right {
+    justify-content: flex-end;
+  }
+
+  .slot-group[hidden] {
+    display: none;
+  }
+
+  .slot-group slot {
+    display: contents;
+  }
+
+  ::slotted(*) {
+    align-self: center;
+    flex: 0 0 auto;
+    margin: 0;
   }
 `
 
@@ -160,13 +182,30 @@ export class TotNavbar extends HTMLElement {
 
     root.innerHTML = `<style>${navbarStyle}</style>
       <nav aria-label="${escapeAttribute(label)}" part="base">
-        <slot name="left"></slot>
+        <span class="slot-group slot-group--left" part="left"><slot name="left"></slot></span>
         <div class="tabs" part="tabs" role="tablist"></div>
-        <slot name="right"></slot>
+        <span class="slot-group slot-group--right" part="right"><slot name="right"></slot></span>
       </nav>
     `
 
     const holder = root.querySelector('.tabs')
+    const slots = root.querySelectorAll('.slot-group slot')
+    for (let i = 0; i < slots.length; i++) {
+      const group = slots[i].closest('.slot-group')
+      const syncGroup = () => {
+        const nodes = slots[i].assignedNodes({ flatten: true })
+        let hasContent = false
+        for (let n = 0; n < nodes.length; n++) {
+          if (nodes[n].nodeType === Node.ELEMENT_NODE || String(nodes[n].textContent || '').trim()) {
+            hasContent = true
+            break
+          }
+        }
+        group.hidden = !hasContent
+      }
+      syncGroup()
+      slots[i].addEventListener('slotchange', syncGroup)
+    }
 
     for (let i = 0; i < tabs.length; i++) {
       const item = tabs[i]

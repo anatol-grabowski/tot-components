@@ -164,15 +164,12 @@ const buttonStyle = `
   }
 
   .button__caret {
+    align-items: center;
     color: currentColor;
     display: none;
-    font-size: .9em;
+    font-size: 1.1em;
     line-height: 1;
     margin-inline-start: 0;
-    
-    top: -0.15em;
-    position: relative;
-    font-size: 1.1em;
   }
 
   .button--caret .button__caret {

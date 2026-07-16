@@ -27,10 +27,10 @@ registerDemo({
         <div class="row">
           <tot-button id="openSlottedModal" label="Open slotted modal"></tot-button>
         </div>
-        <tot-modal id="slottedModal" header="Ignored header attribute">
+        <tot-modal id="slottedModal" header="Ignored header attribute" close-on-overlay="false">
           <span slot="header">Slotted header takes precedence</span>
           <div slot="body" class="stack">
-            <p>The named body slot is filled here. On narrow screens the modal fills the viewport with a navbar-height header.</p>
+            <p>The named body slot is filled here. Overlay clicks are disabled for this example. On narrow screens the modal fills the viewport with a navbar-height header.</p>
             <tot-textarea label="Notes" rows="4" placeholder="Write a note..."></tot-textarea>
           </div>
         </tot-modal>

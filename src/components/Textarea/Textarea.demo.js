@@ -27,6 +27,7 @@ registerDemo({
         <div class="stack">
           <tot-textarea label="Resize auto" resize="auto" placeholder="Native resize handle is visible." rows="2"></tot-textarea>
           <tot-textarea label="Resize none" resize="none" placeholder="Resize handle is hidden." rows="2"></tot-textarea>
+          <tot-textarea label="Auto size" auto-size resize="none" placeholder="The field grows with its content." rows="2"></tot-textarea>
         </div>
       </div>
       <div class="stack demo-group">

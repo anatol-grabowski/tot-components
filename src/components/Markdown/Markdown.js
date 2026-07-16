@@ -51,8 +51,11 @@ const markdownStyle = `
   .markdown__content {
     max-width: 100%;
     min-width: 0;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: visible;
+    overscroll-behavior: var(--tot-markdown-overscroll-behavior, auto);
     padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
+    touch-action: var(--tot-markdown-touch-action, pan-y);
     width: 100%;
   }
 
@@ -480,6 +483,10 @@ export class TotMarkdown extends HTMLElement {
     this._handleKeyDown = event => this.handleKeyDown(event)
     this._handlePopState = event => this.handlePopState(event)
     this._touchStartY = 0
+  }
+
+  get fullscreen() {
+    return this._fullscreen
   }
 
   get value() {

@@ -97,12 +97,15 @@ const textareaStyle = `
     flex: 1 1 auto;
     font: inherit;
     line-height: var(--tot-line-height-dense, 1.4);
+    max-width: 100%;
     min-height: var(--tot-input-height-large, 2.75rem);
     min-width: 0;
     outline: none;
     overflow: auto;
+    overscroll-behavior: var(--tot-textarea-overscroll-behavior, auto);
     padding: var(--tot-spacing-x-small, .5rem) var(--textarea-spacing);
     resize: both;
+    touch-action: var(--tot-textarea-touch-action, pan-y);
     width: 100%;
   }
 
@@ -123,6 +126,10 @@ const textareaStyle = `
   .textarea--resize-auto .textarea__control {
     field-sizing: content;
     resize: both;
+  }
+
+  .textarea--auto-size .textarea__control {
+    field-sizing: content;
   }
 
   .textarea__control::placeholder {
@@ -317,6 +324,8 @@ const resizeModes = ['auto', 'none']
 export class TotTextarea extends HTMLElement {
   static get observedAttributes() {
     return [
+      'auto-size',
+      'autosize',
       'label',
       'help-text',
       'placeholder',
@@ -339,6 +348,19 @@ export class TotTextarea extends HTMLElement {
     this._skipHistoryOnClose = false
     this._handleKeyDown = event => this.handleFullscreenKeyDown(event)
     this._handlePopState = event => this.handlePopState(event)
+  }
+
+
+  get fullscreen() {
+    return this._fullscreen
+  }
+
+  get autoSize() {
+    return this.hasAttribute('auto-size') || this.hasAttribute('autosize')
+  }
+
+  set autoSize(value) {
+    setBooleanAttribute(this, 'auto-size', value)
   }
 
   get value() {
@@ -468,6 +490,9 @@ export class TotTextarea extends HTMLElement {
 
     if (disabled) {
       textareaClasses.push('textarea--disabled')
+    }
+    if (this.autoSize) {
+      textareaClasses.push('textarea--auto-size')
     }
 
     root.innerHTML = `<style>${textareaStyle}</style>
