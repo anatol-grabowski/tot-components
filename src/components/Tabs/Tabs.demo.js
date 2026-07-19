@@ -1,14 +1,13 @@
 import { registerDemo } from '../demoCommon.js'
 
-const initialTabs = [
+const initialItems = [
   { value: 'controls', label: 'Controls' },
   { value: 'media', label: 'Media' },
   { value: 'data', label: 'Data' },
   { value: 'docs', label: 'Docs' },
 ]
 
-
-const stickyTabs = [
+const stickyItems = [
   { value: 'home', label: 'Home', sticky: 'start' },
   { value: 'overview', label: 'Overview' },
   { value: 'activity', label: 'Activity' },
@@ -27,7 +26,7 @@ const stickyTabs = [
   { value: 'add', label: '➕', sticky: 'end' },
 ]
 
-const manyTabs = [
+const manyItems = [
   { value: 'overview', label: 'Overview' },
   { value: 'activity', label: 'Activity' },
   { value: 'calendar', label: 'Calendar' },
@@ -52,9 +51,9 @@ registerDemo({
     row.className = 'stack'
     row.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Attribute tabs</div>
+        <div class="demo-label">Attribute items</div>
         <div class="demo-scroll-host">
-          <tot-tabs tabs='[{
+          <tot-tabs items='[{
             "value":"controls",
             "label":"Controls"
           },{
@@ -70,54 +69,62 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Legacy options attribute</div>
-        <div class="demo-scroll-host">
-          <tot-tabs options="alpha,beta,gamma" value="beta"></tot-tabs>
+        <div class="demo-label">Sizes</div>
+        <div class="stack">
+          <div class="demo-scroll-host"><tot-tabs size="small" items="Overview,Activity,Files" value="Activity"></tot-tabs></div>
+          <div class="demo-scroll-host"><tot-tabs size="medium" items="Overview,Activity,Files" value="Activity"></tot-tabs></div>
+          <div class="demo-scroll-host"><tot-tabs size="large" items="Overview,Activity,Files" value="Activity"></tot-tabs></div>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Many options stay inside the demo and scroll horizontally</div>
+        <div class="demo-label">String items attribute</div>
         <div class="demo-scroll-host">
-          <tot-tabs id="manyTabs"></tot-tabs>
+          <tot-tabs items="alpha,beta,gamma" value="beta"></tot-tabs>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Sticky start/end tabs</div>
+        <div class="demo-label">Many items stay inside the demo and scroll horizontally</div>
         <div class="demo-scroll-host">
-          <tot-tabs id="stickyTabs"></tot-tabs>
+          <tot-tabs id="manyItems"></tot-tabs>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Dynamic tabs property</div>
+        <div class="demo-label">Sticky start/end items</div>
+        <div class="demo-scroll-host">
+          <tot-tabs id="stickyItems"></tot-tabs>
+        </div>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Dynamic items property</div>
         <div class="demo-scroll-host">
           <tot-tabs id="dynamicTabs"></tot-tabs>
         </div>
         <div class="row">
-          <button class="demo-native-button" type="button" data-action="initial">Set initial tabs</button>
-          <button class="demo-native-button" type="button" data-action="many">Set many tabs</button>
+          <button class="demo-native-button" type="button" data-action="initial">Set initial items</button>
+          <button class="demo-native-button" type="button" data-action="many">Set many items</button>
           <button class="demo-native-button" type="button" data-action="select-files">Select Files</button>
           <button class="demo-native-button" type="button" data-action="toggle-disabled">Toggle disabled</button>
         </div>
       </div>
     `
 
-    const tabsElements = row.querySelectorAll('tot-tabs')
-    for (let i = 0; i < tabsElements.length; i++) {
-      tabsElements[i].addEventListener('change', (event) => {
-        logEvent(tabsElements[i], 'change', event.detail)
+    const tabComponents = row.querySelectorAll('tot-tabs')
+    for (let i = 0; i < tabComponents.length; i++) {
+      tabComponents[i].addEventListener('change', (event) => {
+        logEvent(tabComponents[i], 'change', event.detail)
       })
     }
 
-    const manyTabsElement = row.querySelector('#manyTabs')
-    manyTabsElement.tabs = manyTabs
-    manyTabsElement.value = 'activity'
+    const manyItemsElement = row.querySelector('#manyItems')
+    manyItemsElement.items = manyItems
+    manyItemsElement.value = 'activity'
 
-    const stickyTabsElement = row.querySelector('#stickyTabs')
-    stickyTabsElement.tabs = stickyTabs
-    stickyTabsElement.value = 'activity'
+    const stickyItemsElement = row.querySelector('#stickyItems')
+    stickyItemsElement.items = stickyItems
+    stickyItemsElement.value = 'activity'
 
     const dynamicTabs = row.querySelector('#dynamicTabs')
-    dynamicTabs.tabs = initialTabs
+    dynamicTabs.items = initialItems
     dynamicTabs.value = 'media'
 
     row.addEventListener('click', (event) => {
@@ -127,19 +134,19 @@ registerDemo({
       }
 
       if (action === 'initial') {
-        dynamicTabs.tabs = initialTabs
+        dynamicTabs.items = initialItems
         dynamicTabs.value = 'controls'
-        logEvent(dynamicTabs, 'tabs-update', { mode: 'initial', count: initialTabs.length })
+        logEvent(dynamicTabs, 'items-update', { mode: 'initial', count: initialItems.length })
       }
 
       if (action === 'many') {
-        dynamicTabs.tabs = manyTabs
+        dynamicTabs.items = manyItems
         dynamicTabs.value = 'activity'
-        logEvent(dynamicTabs, 'tabs-update', { mode: 'many', count: manyTabs.length })
+        logEvent(dynamicTabs, 'items-update', { mode: 'many', count: manyItems.length })
       }
 
       if (action === 'select-files') {
-        dynamicTabs.tabs = manyTabs
+        dynamicTabs.items = manyItems
         dynamicTabs.value = 'files'
         logEvent(dynamicTabs, 'value-update', { value: dynamicTabs.value })
       }

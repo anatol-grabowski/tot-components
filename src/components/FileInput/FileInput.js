@@ -83,11 +83,6 @@ const fileInputStyle = `
     --dropzone-border-color: var(--tot-color-primary-600, #0284c7);
   }
 
-  .dropzone:focus-visible {
-    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: var(--tot-focus-ring-offset, 1px);
-  }
-
   .dropzone--disabled {
     background: var(--tot-file-input-background-color-disabled, var(--tot-input-background-color-disabled, #f1f5f9));
     --dropzone-border-color: var(--tot-input-border-color-disabled, #cbd5e1);
@@ -226,8 +221,8 @@ export class TotFileInput extends HTMLElement {
 
   constructor() {
     super()
-    this.files = []
-    this.entries = []
+    this._files = []
+    this._entries = []
     this._dragDepth = 0
   }
 
@@ -271,11 +266,51 @@ export class TotFileInput extends HTMLElement {
     setBooleanAttribute(this, 'disabled', value)
   }
 
+  get accept() {
+    return this.getAttribute('accept') || ''
+  }
+
+  set accept(value) {
+    setNullableAttribute(this, 'accept', value)
+  }
+
+  get buttonLabel() {
+    return this.getAttribute('button-label') || 'Choose files'
+  }
+
+  set buttonLabel(value) {
+    setNullableAttribute(this, 'button-label', value)
+  }
+
+  get files() {
+    return this._files.slice()
+  }
+
+  get entries() {
+    const entries = []
+    for (let i = 0; i < this._entries.length; i++) {
+      entries.push({
+        file: this._entries[i].file,
+        path: this._entries[i].path,
+      })
+    }
+    return entries
+  }
+
   connectedCallback() {
+    this.normalizeSelection()
     this.render()
   }
 
-  attributeChangedCallback() {
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue || !this.isConnected) {
+      return
+    }
+
+    if (name === 'multiple' || name === 'directory') {
+      this.normalizeSelection()
+    }
+
     this.render()
   }
 
@@ -283,42 +318,94 @@ export class TotFileInput extends HTMLElement {
     this.openPicker()
   }
 
+  focus(options) {
+    const button = this.getBrowseButton()
+    if (button) {
+      button.focus(options)
+    }
+  }
+
+  blur() {
+    const button = this.getBrowseButton()
+    if (button) {
+      button.blur()
+    }
+  }
+
+  getInput() {
+    return this.shadowRoot?.querySelector('.file-native-input') || null
+  }
+
+  openPicker() {
+    if (this.disabled) {
+      return
+    }
+
+    const input = this.getInput()
+    if (input) {
+      input.click()
+    }
+  }
+
+  clearFiles() {
+    if (this.disabled || this._files.length === 0) {
+      return
+    }
+
+    this._files = []
+    this._entries = []
+    if (this.isConnected) {
+      this.render()
+    }
+    dispatchComposedEvent(this, 'change')
+    dispatchComposedEvent(this, 'clear')
+  }
+
+  setEntries(entries) {
+    const normalized = normalizeEntries(entries)
+    this._entries = this.multiple || this.directory ? normalized : normalized.slice(0, 1)
+    this.syncFiles()
+    if (this.isConnected) {
+      this.render()
+    }
+    dispatchComposedEvent(this, 'change')
+  }
+
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const disabled = this.disabled
-    const browseLabel = this.getAttribute('button-label') || 'Choose files'
     const title = this.directory ? 'Drop files/directories' : this.multiple ? 'Drop files' : 'Drop a file'
-    const hint = this.getModeHint()
     const fileListHtml = this.getFileListHtml()
+    const acceptAttribute = this.accept ? ` accept="${escapeAttribute(this.accept)}"` : ''
 
     root.innerHTML = `<style>${fileInputStyle}</style>
       <div class="file-control" part="base">
-        <span class="label" part="form-control-label"><slot name="label">${escapeHtml(this.label)}</slot></span>
-        <div class="dropzone${disabled ? ' dropzone--disabled' : ''}" part="dropzone" tabindex="${disabled ? '-1' : '0'}" role="button" aria-disabled="${disabled ? 'true' : 'false'}">
-          <input class="file-native-input" part="input" type="file" ${this.multiple || this.directory ? 'multiple' : ''} ${this.directory ? 'webkitdirectory directory' : ''} ${disabled ? 'disabled' : ''} ${this.hasAttribute('accept') ? `accept="${escapeAttribute(this.getAttribute('accept') || '')}"` : ''}>
-          <span class="dropzone__icon" aria-hidden="true"><slot name="icon"></slot></span>
-          <span class="dropzone__title">${escapeHtml(title)}</span>
-          <span class="dropzone__hint">${escapeHtml(hint)}</span>
-          <span class="file-actions">
-            <button class="file-button" type="button" ${disabled ? 'disabled' : ''}>${escapeHtml(browseLabel)}</button>
-            <button class="file-button file-button--neutral" type="button" data-action="clear" ${this.files.length === 0 || disabled ? 'disabled' : ''}>Clear</button>
+        <label class="label" part="label" for="file-input"><slot name="label">${escapeHtml(this.label)}</slot></label>
+        <div class="dropzone${disabled ? ' dropzone--disabled' : ''}" part="dropzone">
+          <input id="file-input" class="file-native-input" part="input" type="file" aria-describedby="help-text"${acceptAttribute} ${this.multiple || this.directory ? 'multiple' : ''} ${this.directory ? 'webkitdirectory directory' : ''} ${disabled ? 'disabled' : ''}>
+          <span class="dropzone__icon" part="icon" aria-hidden="true"><slot name="icon"></slot></span>
+          <span class="dropzone__title" part="title">${escapeHtml(title)}</span>
+          <span class="dropzone__hint" part="hint">${escapeHtml(this.getModeHint())}</span>
+          <span class="file-actions" part="actions">
+            <button class="file-button" part="browse-button" type="button" ${disabled ? 'disabled' : ''}>${escapeHtml(this.buttonLabel)}</button>
+            <button class="file-button file-button--neutral" part="clear-button" type="button" data-action="clear" ${this._files.length === 0 || disabled ? 'disabled' : ''}>Clear</button>
           </span>
         </div>
-        <div class="file-list" part="file-list" ${this.files.length === 0 ? 'hidden' : ''}>${fileListHtml}</div>
-        <span class="help-text" part="form-control-help-text"><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
+        <div class="file-list" part="file-list" ${this._files.length === 0 ? 'hidden' : ''}>${fileListHtml}</div>
+        <span id="help-text" class="help-text" part="help-text"><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
       </div>
     `
 
     const dropzone = root.querySelector('.dropzone')
-    const input = root.querySelector('.file-native-input')
-    const browseButton = root.querySelector('.file-button:not(.file-button--neutral)')
+    const input = this.getInput()
+    const browseButton = this.getBrowseButton()
     const clearButton = root.querySelector('[data-action="clear"]')
     const icon = root.querySelector('.dropzone__icon')
     const iconSlot = root.querySelector('slot[name="icon"]')
 
     this.syncIconSlot(icon, iconSlot)
     iconSlot.addEventListener('slotchange', () => this.syncIconSlot(icon, iconSlot))
-    input.addEventListener('change', () => this.handleInputChange(input))
+    input.addEventListener('change', (event) => this.handleInputChange(event, input))
     browseButton.addEventListener('click', (event) => {
       event.stopPropagation()
       this.openPicker()
@@ -328,13 +415,16 @@ export class TotFileInput extends HTMLElement {
       this.clearFiles()
     })
     dropzone.addEventListener('click', (event) => this.handleDropzoneClick(event))
-    dropzone.addEventListener('keydown', (event) => this.handleDropzoneKeyDown(event))
     dropzone.addEventListener('dragenter', (event) => this.handleDragEnter(event))
     dropzone.addEventListener('dragover', (event) => this.handleDragOver(event))
     dropzone.addEventListener('dragleave', (event) => this.handleDragLeave(event))
     dropzone.addEventListener('drop', (event) => {
       void this.handleDrop(event)
     })
+  }
+
+  getBrowseButton() {
+    return this.shadowRoot?.querySelector('.file-button:not(.file-button--neutral)') || null
   }
 
   syncIconSlot(icon, iconSlot) {
@@ -351,19 +441,10 @@ export class TotFileInput extends HTMLElement {
   }
 
   handleDropzoneClick(event) {
-    if (event.target?.closest?.('button')) {
+    if (event.target?.closest?.('button, label')) {
       return
     }
 
-    this.openPicker()
-  }
-
-  handleDropzoneKeyDown(event) {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return
-    }
-
-    event.preventDefault()
     this.openPicker()
   }
 
@@ -413,14 +494,14 @@ export class TotFileInput extends HTMLElement {
     this.setEntries(entries)
   }
 
-  handleInputChange(input) {
-    const inputFiles = Array.from(input.files || [])
+  handleInputChange(event, input) {
+    event.stopPropagation()
+    const files = Array.from(input.files || [])
     const entries = []
-    for (let i = 0; i < inputFiles.length; i++) {
-      const file = inputFiles[i]
+    for (let i = 0; i < files.length; i++) {
       entries.push({
-        file,
-        path: file.webkitRelativePath || file.name,
+        file: files[i],
+        path: files[i].webkitRelativePath || files[i].name,
       })
     }
 
@@ -428,38 +509,17 @@ export class TotFileInput extends HTMLElement {
     this.setEntries(entries)
   }
 
-  setEntries(entries) {
-    const normalized = this.multiple || this.directory ? entries : entries.slice(0, 1)
-    this.entries = normalized
-    this.files = []
-    for (let i = 0; i < normalized.length; i++) {
-      this.files.push(normalized[i].file)
+  normalizeSelection() {
+    if (!this.multiple && !this.directory && this._entries.length > 1) {
+      this._entries = this._entries.slice(0, 1)
+      this.syncFiles()
     }
-
-    this.render()
-    emit(this, 'change', this.getEventDetail())
   }
 
-  clearFiles() {
-    if (this.disabled || this.files.length === 0) {
-      return
-    }
-
-    this.files = []
-    this.entries = []
-    this.render()
-    emit(this, 'change', this.getEventDetail())
-    emit(this, 'clear', this.getEventDetail())
-  }
-
-  openPicker() {
-    if (this.disabled) {
-      return
-    }
-
-    const input = this.shadowRoot?.querySelector('.file-native-input')
-    if (input) {
-      input.click()
+  syncFiles() {
+    this._files = []
+    for (let i = 0; i < this._entries.length; i++) {
+      this._files.push(this._entries[i].file)
     }
   }
 
@@ -479,48 +539,43 @@ export class TotFileInput extends HTMLElement {
   }
 
   getFileListHtml() {
-    if (this.entries.length === 0) {
+    if (this._entries.length === 0) {
       return ''
     }
 
     const lines = []
     const maxVisible = 8
-    for (let i = 0; i < this.entries.length && i < maxVisible; i++) {
-      const entry = this.entries[i]
-      lines.push(`<div class="file-list__item">
-        <span class="file-list__name" title="${escapeAttribute(entry.path)}">${escapeHtml(entry.path)}</span>
-        <span class="file-list__meta">${escapeHtml(formatBytes(entry.file.size))}</span>
+    for (let i = 0; i < this._entries.length && i < maxVisible; i++) {
+      const entry = this._entries[i]
+      lines.push(`<div class="file-list__item" part="file-item">
+        <span class="file-list__name" part="file-name" title="${escapeAttribute(entry.path)}">${escapeHtml(entry.path)}</span>
+        <span class="file-list__meta" part="file-meta">${escapeHtml(formatBytes(entry.file.size))}</span>
       </div>`)
     }
 
-    if (this.entries.length > maxVisible) {
-      lines.push(`<div class="file-list__meta">+${this.entries.length - maxVisible} more</div>`)
+    if (this._entries.length > maxVisible) {
+      lines.push(`<div class="file-list__meta" part="file-meta">+${this._entries.length - maxVisible} more</div>`)
     }
 
     return lines.join('')
   }
+}
 
-  getEventDetail() {
-    const entries = []
-    for (let i = 0; i < this.entries.length; i++) {
-      const entry = this.entries[i]
-      entries.push({
+function normalizeEntries(entries) {
+  const source = Array.from(entries || [])
+  const normalized = []
+  for (let i = 0; i < source.length; i++) {
+    const entry = source[i]
+    if (entry instanceof File) {
+      normalized.push({ file: entry, path: entry.webkitRelativePath || entry.name })
+    } else if (entry?.file instanceof File) {
+      normalized.push({
         file: entry.file,
-        name: entry.file.name,
-        path: entry.path,
-        size: entry.file.size,
-        type: entry.file.type,
+        path: String(entry.path || entry.file.webkitRelativePath || entry.file.name),
       })
     }
-
-    return {
-      files: this.files.slice(),
-      entries,
-      count: this.files.length,
-      multiple: this.multiple,
-      directory: this.directory,
-    }
   }
+  return normalized
 }
 
 async function getEntriesFromDataTransfer(dataTransfer) {
@@ -606,11 +661,10 @@ async function readDirectoryEntries(entry) {
   return entries
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function dispatchComposedEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

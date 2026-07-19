@@ -1,13 +1,13 @@
 import { registerDemo } from '../demoCommon.js'
 
-const initialTabs = [
+const initialItems = [
   { value: 'controls', label: 'Controls' },
   { value: 'media', label: 'Media' },
   { value: 'data', label: 'Data' },
   { value: 'docs', label: 'Docs' },
 ]
 
-const expandedTabs = [
+const expandedItems = [
   { value: 'overview', label: 'Overview' },
   { value: 'controls', label: 'Controls' },
   { value: 'media', label: 'Media' },
@@ -32,9 +32,9 @@ registerDemo({
     row.className = 'stack'
     row.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Attribute tabs</div>
+        <div class="demo-label">Attribute items</div>
         <div class="demo-scroll-host">
-          <tot-navbar tabs='[{
+          <tot-navbar items='[{
             "value":"home",
             "label":"Home"
           },{
@@ -44,29 +44,52 @@ registerDemo({
             "value":"data",
             "label":"Data"
           }]' value="media">
-            <span slot="left">Demo app</span>
-            <tot-theme-selector slot="right" size="small"></tot-theme-selector>
-            <tot-avatar slot="right" initials="AG" label="Account" style="--size: 1.75rem;"></tot-avatar>
+            <span slot="prefix">Demo app</span>
+            <tot-theme-selector slot="suffix" size="small" variant="plain"></tot-theme-selector>
+            <tot-avatar slot="suffix" initials="AG" label="Account" style="--size: 1.75rem;"></tot-avatar>
           </tot-navbar>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Many options stay inside the demo and scroll horizontally</div>
+        <div class="demo-label">Sizes</div>
+        <div class="stack">
+          <div class="demo-scroll-host">
+            <tot-navbar size="small" items="home,docs" value="home">
+              <span slot="prefix">Small</span>
+              <tot-theme-selector slot="suffix" size="small" variant="plain"></tot-theme-selector>
+            </tot-navbar>
+          </div>
+          <div class="demo-scroll-host">
+            <tot-navbar size="medium" items="home,docs" value="home">
+              <span slot="prefix">Medium</span>
+              <tot-theme-selector slot="suffix" size="medium" variant="plain"></tot-theme-selector>
+            </tot-navbar>
+          </div>
+          <div class="demo-scroll-host">
+            <tot-navbar size="large" items="home,docs" value="home">
+              <span slot="prefix">Large</span>
+              <tot-theme-selector slot="suffix" size="large" variant="plain"></tot-theme-selector>
+            </tot-navbar>
+          </div>
+        </div>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Many items stay inside the demo and scroll horizontally</div>
         <div class="demo-scroll-host">
           <tot-navbar id="manyNavbar">
-            <span slot="left">Tools</span>
-            <tot-button slot="right" size="small" label="Save"></tot-button>
+            <span slot="prefix">Tools</span>
+            <tot-button slot="suffix" size="small" label="Save"></tot-button>
           </tot-navbar>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Dynamic tabs property</div>
+        <div class="demo-label">Dynamic items property</div>
         <div class="demo-scroll-host">
           <tot-navbar id="dynamicNavbar"></tot-navbar>
         </div>
         <div class="row">
-          <button class="demo-native-button" type="button" data-action="initial">Set initial tabs</button>
-          <button class="demo-native-button" type="button" data-action="expanded">Set many tabs</button>
+          <button class="demo-native-button" type="button" data-action="initial">Set initial items</button>
+          <button class="demo-native-button" type="button" data-action="expanded">Set many items</button>
           <button class="demo-native-button" type="button" data-action="reports">Select Reports</button>
           <button class="demo-native-button" type="button" data-action="toggle-disabled">Toggle disabled</button>
         </div>
@@ -81,11 +104,11 @@ registerDemo({
     }
 
     const manyNavbar = row.querySelector('#manyNavbar')
-    manyNavbar.tabs = expandedTabs
+    manyNavbar.items = expandedItems
     manyNavbar.value = 'reports'
 
     const dynamicNavbar = row.querySelector('#dynamicNavbar')
-    dynamicNavbar.tabs = initialTabs
+    dynamicNavbar.items = initialItems
     dynamicNavbar.value = 'media'
 
     row.addEventListener('click', (event) => {
@@ -95,21 +118,21 @@ registerDemo({
       }
 
       if (action === 'initial') {
-        dynamicNavbar.tabs = initialTabs
+        dynamicNavbar.items = initialItems
         dynamicNavbar.value = 'controls'
-        logEvent(dynamicNavbar, 'tabs-update', { mode: 'initial', count: initialTabs.length })
+        logEvent(dynamicNavbar, 'items-update', { mode: 'initial', count: initialItems.length })
       }
 
       if (action === 'expanded') {
-        dynamicNavbar.tabs = expandedTabs
+        dynamicNavbar.items = expandedItems
         dynamicNavbar.value = 'settings'
-        logEvent(dynamicNavbar, 'tabs-update', { mode: 'many', count: expandedTabs.length })
+        logEvent(dynamicNavbar, 'items-update', { mode: 'many', count: expandedItems.length })
       }
 
       if (action === 'reports') {
-        dynamicNavbar.tabs = expandedTabs
+        dynamicNavbar.items = expandedItems
         dynamicNavbar.value = 'reports'
-        logEvent(dynamicNavbar, 'tabs-update', { mode: 'reports', selected: dynamicNavbar.value })
+        logEvent(dynamicNavbar, 'items-update', { mode: 'reports', selected: dynamicNavbar.value })
       }
 
       if (action === 'toggle-disabled') {

@@ -11,7 +11,13 @@ const navbarStyle = `
     box-sizing: border-box;
   }
 
-  nav {
+  .navbar {
+    --tot-navbar-current-height: var(--tot-navbar-height-medium, var(--tot-navbar-height, 2.75rem));
+    --tot-navbar-current-font-size: var(--tot-input-font-size-medium, .875rem);
+    --tot-navbar-current-spacing: var(--tot-spacing-2x-small, .25rem);
+    --tot-navbar-current-edge-spacing: calc(var(--tot-navbar-current-spacing) + var(--tot-spacing-3x-small, .125rem));
+    --tot-navbar-current-tab-spacing: var(--tot-navbar-current-edge-spacing);
+
     align-items: center;
     background: var(--tot-navbar-background-color, var(--tot-color-neutral-100, #f1f5f9));
     border: 0;
@@ -20,12 +26,24 @@ const navbarStyle = `
     color: var(--tot-input-color, #1e293b);
     display: flex;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-input-font-size-medium, .875rem);
+    font-size: var(--tot-navbar-current-font-size);
     gap: var(--tot-spacing-small, .5rem);
-    min-height: var(--tot-navbar-height, 2.75rem);
+    min-height: var(--tot-navbar-current-height);
     max-width: 100%;
     overflow: visible;
-    padding: 0 var(--tot-spacing-small, .5rem);
+    padding: 0 var(--tot-navbar-current-edge-spacing);
+  }
+
+  .navbar--small {
+    --tot-navbar-current-height: var(--tot-navbar-height-small, 2.25rem);
+    --tot-navbar-current-font-size: var(--tot-input-font-size-small, .75rem);
+    --tot-navbar-current-spacing: var(--tot-spacing-3x-small, .125rem);
+  }
+
+  .navbar--large {
+    --tot-navbar-current-height: var(--tot-navbar-height-large, 3.25rem);
+    --tot-navbar-current-font-size: var(--tot-input-font-size-large, 1rem);
+    --tot-navbar-current-spacing: var(--tot-spacing-x-small, .5rem);
   }
 
   .tabs {
@@ -33,7 +51,7 @@ const navbarStyle = `
     display: flex;
     flex: 1 1 auto;
     gap: 0;
-    height: var(--tot-navbar-height, 2.75rem);
+    height: var(--tot-navbar-current-height);
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -56,7 +74,7 @@ const navbarStyle = `
     justify-content: center;
     max-width: 16rem;
     min-width: 0;
-    padding: 0 var(--tot-spacing-medium, 1rem);
+    padding: 0 var(--tot-navbar-current-tab-spacing);
     position: relative;
     white-space: nowrap;
   }
@@ -101,7 +119,7 @@ const navbarStyle = `
     min-width: 0;
   }
 
-  .slot-group--right {
+  .slot-group--suffix {
     justify-content: flex-end;
   }
 
@@ -120,21 +138,33 @@ const navbarStyle = `
   }
 `
 
+const sizes = ['small', 'medium', 'large']
+
 export class TotNavbar extends HTMLElement {
   static get observedAttributes() {
-    return ['tabs', 'value', 'disabled', 'aria-label']
+    return ['items', 'value', 'size', 'disabled', 'aria-label']
   }
 
-  get tabs() {
-    if (this._tabs) {
-      return this._tabs.slice()
+  constructor() {
+    super()
+    this._items = null
+    this._scrollFrame = 0
+    this._handleClick = event => this.handleClick(event)
+    this._handleKeyDown = event => this.handleKeyDown(event)
+  }
+
+  get items() {
+    if (this._items) {
+      return cloneItems(this._items)
     }
-    return parseOptions(this.getAttribute('tabs'))
+    return parseItems(this.getAttribute('items'))
   }
 
-  set tabs(value) {
-    this._tabs = parseOptions(value)
-    this.render()
+  set items(value) {
+    this._items = parseItems(value)
+    if (this.isConnected) {
+      this.renderItems()
+    }
   }
 
   get value() {
@@ -142,11 +172,15 @@ export class TotNavbar extends HTMLElement {
   }
 
   set value(value) {
-    if (value === null || value === undefined) {
-      this.removeAttribute('value')
-    } else {
-      this.setAttribute('value', String(value))
-    }
+    setNullableAttribute(this, 'value', value)
+  }
+
+  get size() {
+    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
+  }
+
+  set size(value) {
+    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
   }
 
   get disabled() {
@@ -161,35 +195,173 @@ export class TotNavbar extends HTMLElement {
     }
   }
 
+  get ariaLabel() {
+    return this.getAttribute('aria-label') || 'Main navigation'
+  }
+
+  set ariaLabel(value) {
+    setNullableAttribute(this, 'aria-label', value)
+  }
+
   connectedCallback() {
     this.render()
   }
 
-  attributeChangedCallback(name) {
-    if (name === 'tabs') {
-      this._tabs = null
+  disconnectedCallback() {
+    cancelAnimationFrame(this._scrollFrame)
+    this._scrollFrame = 0
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue || !this.isConnected) {
+      return
     }
-    this.render()
+
+    if (name === 'items') {
+      this._items = null
+      this.renderItems()
+      return
+    }
+
+    if (name === 'value') {
+      this.syncSelection()
+      return
+    }
+
+    if (name === 'disabled') {
+      this.syncDisabled()
+      return
+    }
+
+    if (name === 'size') {
+      this.syncSize()
+      return
+    }
+
+    this.syncLabel()
+  }
+
+  focus(options) {
+    const buttons = this.getTabButtons()
+    let target = null
+    for (let i = 0; i < buttons.length; i++) {
+      if (!buttons[i].disabled && buttons[i].getAttribute('aria-selected') === 'true') {
+        target = buttons[i]
+        break
+      }
+    }
+
+    if (!target) {
+      target = getFirstEnabledButton(buttons)
+    }
+    target?.focus(options)
+  }
+
+  blur() {
+    const activeElement = this.shadowRoot?.activeElement
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur()
+    }
+  }
+
+  getTabButtons() {
+    return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('button.tab')) : []
   }
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const previousScrollLeft = root.querySelector('.tabs')?.scrollLeft || 0
-    const tabs = this.tabs
-    const value = this.getResolvedValue(tabs)
-    const disabled = this.disabled
-    const label = this.getAttribute('aria-label') || 'Main navigation'
+    if (!root.querySelector('.navbar')) {
+      root.innerHTML = `<style>${navbarStyle}</style>
+        <nav class="navbar" part="base">
+          <span class="slot-group slot-group--prefix" part="prefix"><slot name="prefix"></slot></span>
+          <div class="tabs" part="tabs" role="tablist"></div>
+          <span class="slot-group slot-group--suffix" part="suffix"><slot name="suffix"></slot></span>
+        </nav>
+      `
 
-    root.innerHTML = `<style>${navbarStyle}</style>
-      <nav aria-label="${escapeAttribute(label)}" part="base">
-        <span class="slot-group slot-group--left" part="left"><slot name="left"></slot></span>
-        <div class="tabs" part="tabs" role="tablist"></div>
-        <span class="slot-group slot-group--right" part="right"><slot name="right"></slot></span>
-      </nav>
-    `
+      const holder = root.querySelector('.tabs')
+      holder.addEventListener('click', this._handleClick)
+      holder.addEventListener('keydown', this._handleKeyDown)
+      this.connectSlots()
+    }
 
-    const holder = root.querySelector('.tabs')
-    const slots = root.querySelectorAll('.slot-group slot')
+    this.syncSize()
+    this.syncLabel()
+    this.renderItems()
+  }
+
+  renderItems() {
+    const holder = this.shadowRoot?.querySelector('.tabs')
+    if (!holder) {
+      return
+    }
+
+    const previousScrollLeft = holder.scrollLeft
+    const activeValue = this.shadowRoot.activeElement?.dataset?.value || ''
+    const items = this.items
+    const fragment = document.createDocumentFragment()
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'tab'
+      button.setAttribute('part', 'tab')
+      button.setAttribute('role', 'tab')
+      button.dataset.index = String(i)
+      button.dataset.value = item.value
+      button.dataset.text = item.label
+      button.textContent = item.label
+      fragment.append(button)
+    }
+
+    holder.replaceChildren(fragment)
+    this.syncDisabled(items)
+    holder.scrollLeft = previousScrollLeft
+
+    cancelAnimationFrame(this._scrollFrame)
+    this._scrollFrame = requestAnimationFrame(() => {
+      this._scrollFrame = 0
+      holder.scrollLeft = previousScrollLeft
+      if (activeValue) {
+        const button = findButtonByValue(holder, activeValue)
+        button?.focus({ preventScroll: true })
+      }
+    })
+  }
+
+  syncSize() {
+    const navbar = this.shadowRoot?.querySelector('.navbar')
+    if (navbar) {
+      navbar.className = `navbar navbar--${this.size}`
+    }
+  }
+
+  syncLabel() {
+    this.shadowRoot?.querySelector('.navbar')?.setAttribute('aria-label', this.ariaLabel)
+  }
+
+  syncDisabled(items = this.items) {
+    const buttons = this.getTabButtons()
+    for (let i = 0; i < buttons.length; i++) {
+      const item = items[Number(buttons[i].dataset.index)]
+      buttons[i].disabled = this.disabled || Boolean(item?.disabled)
+    }
+    this.syncSelection(items)
+  }
+
+  syncSelection(items = this.items) {
+    const resolvedValue = this.getResolvedValue(items)
+    const buttons = this.getTabButtons()
+    for (let i = 0; i < buttons.length; i++) {
+      const selected = buttons[i].dataset.value === resolvedValue
+      buttons[i].setAttribute('aria-selected', String(selected))
+      buttons[i].tabIndex = selected && !buttons[i].disabled ? 0 : -1
+    }
+  }
+
+  connectSlots() {
+    const slots = this.shadowRoot.querySelectorAll('.slot-group slot')
     for (let i = 0; i < slots.length; i++) {
       const group = slots[i].closest('.slot-group')
       const syncGroup = () => {
@@ -206,44 +378,73 @@ export class TotNavbar extends HTMLElement {
       syncGroup()
       slots[i].addEventListener('slotchange', syncGroup)
     }
-
-    for (let i = 0; i < tabs.length; i++) {
-      const item = tabs[i]
-      const btn = document.createElement('button')
-      btn.type = 'button'
-      btn.className = 'tab'
-      btn.part = 'tab'
-      btn.setAttribute('role', 'tab')
-      btn.setAttribute('aria-selected', String(item.value === value))
-      btn.dataset.value = item.value
-      btn.dataset.text = item.label
-      btn.disabled = disabled || item.disabled
-      btn.textContent = item.label
-      btn.addEventListener('click', () => {
-        if (btn.disabled) {
-          return
-        }
-
-        this.value = item.value
-        emit(this, 'change', { value: item.value, item })
-      })
-      holder.append(btn)
-    }
-
-    holder.scrollLeft = previousScrollLeft
-    requestAnimationFrame(() => {
-      holder.scrollLeft = previousScrollLeft
-    })
   }
 
-  getResolvedValue(tabs) {
-    const value = this.getAttribute('value') || ''
-    for (let i = 0; i < tabs.length; i++) {
-      if (tabs[i].value === value) {
+  handleClick(event) {
+    const target = event.target instanceof Element ? event.target.closest('button.tab') : null
+    if (!target || target.disabled) {
+      return
+    }
+
+    const item = this.items[Number(target.dataset.index)]
+    if (!item) {
+      return
+    }
+
+    this.value = item.value
+    emit(this, 'change', { value: item.value, item })
+  }
+
+  handleKeyDown(event) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      return
+    }
+
+    const current = event.target instanceof Element ? event.target.closest('button.tab') : null
+    if (!current) {
+      return
+    }
+
+    const buttons = this.getTabButtons()
+    const enabled = []
+    for (let i = 0; i < buttons.length; i++) {
+      if (!buttons[i].disabled) {
+        enabled.push(buttons[i])
+      }
+    }
+    if (enabled.length === 0) {
+      return
+    }
+
+    const currentIndex = enabled.indexOf(current)
+    let nextIndex = currentIndex
+    if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = enabled.length - 1
+    } else if (event.key === 'ArrowRight') {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % enabled.length
+    } else {
+      nextIndex = currentIndex < 0 ? enabled.length - 1 : (currentIndex - 1 + enabled.length) % enabled.length
+    }
+
+    enabled[nextIndex].focus()
+    event.preventDefault()
+  }
+
+  getResolvedValue(items) {
+    const value = this.value
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].value === value) {
         return value
       }
     }
-    return tabs[0] ? tabs[0].value : ''
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i].disabled) {
+        return items[i].value
+      }
+    }
+    return items[0] ? items[0].value : ''
   }
 }
 
@@ -251,11 +452,11 @@ function emit(element, name, detail) {
   element.dispatchEvent(new CustomEvent(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
+    detail,
   }))
 }
 
-function parseOptions(value) {
+function parseItems(value) {
   if (value === null || value === undefined || value === '') {
     return []
   }
@@ -279,26 +480,66 @@ function parseOptions(value) {
     return []
   }
 
-  const options = []
+  const items = []
   for (let i = 0; i < source.length; i++) {
     const item = source[i]
     if (typeof item === 'string') {
-      options.push({
+      items.push({
         value: item,
         label: item,
         disabled: false,
       })
     } else if (item && typeof item === 'object') {
-      const optionValue = item.value ?? item.id ?? item.label ?? ''
-      const optionLabel = item.label ?? item.value ?? item.id ?? ''
-      options.push({
-        value: String(optionValue),
-        label: String(optionLabel),
+      const itemValue = item.value ?? item.id ?? item.label ?? ''
+      const itemLabel = item.label ?? item.value ?? item.id ?? ''
+      items.push({
+        value: String(itemValue),
+        label: String(itemLabel),
         disabled: Boolean(item.disabled),
       })
     }
   }
-  return options
+  return items
+}
+
+function cloneItems(items) {
+  const result = []
+  for (let i = 0; i < items.length; i++) {
+    result.push({ ...items[i] })
+  }
+  return result
+}
+
+function findButtonByValue(holder, value) {
+  const buttons = holder.querySelectorAll('button.tab')
+  for (let i = 0; i < buttons.length; i++) {
+    if (buttons[i].dataset.value === value) {
+      return buttons[i]
+    }
+  }
+  return null
+}
+
+function getFirstEnabledButton(buttons) {
+  for (let i = 0; i < buttons.length; i++) {
+    if (!buttons[i].disabled) {
+      return buttons[i]
+    }
+  }
+  return null
+}
+
+function getSupportedValue(value, supported, fallback) {
+  const normalized = String(value || '').toLowerCase()
+  return supported.includes(normalized) ? normalized : fallback
+}
+
+function setNullableAttribute(element, name, value) {
+  if (value === null || value === undefined || value === '') {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
 }
 
 function parseJson(value, fallback) {
@@ -307,18 +548,4 @@ function parseJson(value, fallback) {
   } catch (error) {
     return fallback
   }
-}
-
-function escapeAttribute(value) {
-  return String(value).replace(/[&<>"'`]/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '`': '&#96;',
-    }
-    return replacements[match]
-  })
 }

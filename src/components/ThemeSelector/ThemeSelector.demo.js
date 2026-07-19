@@ -14,6 +14,21 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Light, dark, and system modes</div>
+        <div class="row">
+          <tot-theme-selector value="light" label="Light"></tot-theme-selector>
+          <tot-theme-selector value="dark" label="Dark"></tot-theme-selector>
+          <tot-theme-selector value="system" label="System"></tot-theme-selector>
+        </div>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Variants</div>
+        <div class="row" style="background: var(--tot-color-neutral-100); padding: var(--tot-spacing-small);">
+          <tot-theme-selector label="Default"></tot-theme-selector>
+          <tot-theme-selector label="Plain" variant="plain"></tot-theme-selector>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Configured with explicit theme names</div>
         <div class="row">
           <tot-theme-selector id="namedThemeSelector" label="Color scheme" themes="light,dark"></tot-theme-selector>

@@ -13,6 +13,7 @@ registerDemo({
         <div class="demo-label">Images, initials, and icon fallback</div>
         <div class="row">
           <tot-avatar image="${avatarImage}" label="User avatar with image"></tot-avatar>
+          <tot-avatar image="data:image/png;base64,invalid" initials="FB" label="Failed image fallback"></tot-avatar>
           <tot-avatar initials="AG" label="Avatar with initials AG"></tot-avatar>
           <tot-avatar label="Avatar with default icon"></tot-avatar>
           <tot-avatar label="Avatar with custom icon">
@@ -29,11 +30,11 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Sizes via CSS custom property</div>
+        <div class="demo-label">Sizes</div>
         <div class="row">
-          <tot-avatar initials="S" label="Small avatar" style="--size: 1.75rem;"></tot-avatar>
+          <tot-avatar initials="S" size="small" label="Small avatar"></tot-avatar>
           <tot-avatar initials="M" label="Medium avatar"></tot-avatar>
-          <tot-avatar initials="L" label="Large avatar" style="--size: 3.25rem;"></tot-avatar>
+          <tot-avatar initials="L" size="large" label="Large avatar"></tot-avatar>
         </div>
       </div>
     `

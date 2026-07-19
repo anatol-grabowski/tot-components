@@ -142,12 +142,12 @@ def copy_tree_overwrite(source_dir, target_dir):
 
 def run_deploy():
   result = subprocess.run(
-    ['npm', 'run', 'deploy'],
+    ['make', 'deploy'],
     cwd=TARGET_DIR,
   )
 
   if result.returncode != 0:
-    print(f'npm run deploy failed with exit code {result.returncode}')
+    print(f'make deploy failed with exit code {result.returncode}')
 
 
 def handle_zip(path):
@@ -162,7 +162,7 @@ def handle_zip(path):
   safe_extract_zip_dir_contents(path, TARGET_DIR)
   print('Extraction complete.')
 
-  if ask_yes_no('Run "npm run deploy" now?'):
+  if ask_yes_no('Run "make deploy" now?'):
     run_deploy()
   else:
     print('Deploy skipped.')

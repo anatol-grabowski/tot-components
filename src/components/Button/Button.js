@@ -167,9 +167,19 @@ const buttonStyle = `
     align-items: center;
     color: currentColor;
     display: none;
-    font-size: 1.1em;
+    height: 1em;
+    justify-content: center;
     line-height: 1;
     margin-inline-start: 0;
+    width: 1em;
+  }
+
+  .button__caret svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
   }
 
   .button--caret .button__caret {
@@ -207,48 +217,133 @@ export class TotButton extends HTMLElement {
       'label',
       'target',
       'rel',
-      'download',
     ]
+  }
+
+  get variant() {
+    return this.getSupportedValue('variant', variants, 'default')
+  }
+
+  set variant(value) {
+    this.setAttribute('variant', this.getSupportedValueFromValue(value, variants, 'default'))
+  }
+
+  get size() {
+    return this.getSupportedValue('size', sizes, 'medium')
+  }
+
+  set size(value) {
+    this.setAttribute('size', this.getSupportedValueFromValue(value, sizes, 'medium'))
+  }
+
+  get outline() {
+    return this.hasAttribute('outline')
+  }
+
+  set outline(value) {
+    this.toggleBooleanAttribute('outline', value)
+  }
+
+  get disabled() {
+    return this.hasAttribute('disabled')
+  }
+
+  set disabled(value) {
+    this.toggleBooleanAttribute('disabled', value)
+  }
+
+  get href() {
+    return this.getAttribute('href') || ''
+  }
+
+  set href(value) {
+    this.setStringAttribute('href', value)
+  }
+
+  get loading() {
+    return this.hasAttribute('loading')
+  }
+
+  set loading(value) {
+    this.toggleBooleanAttribute('loading', value)
+  }
+
+  get caret() {
+    return this.hasAttribute('caret')
+  }
+
+  set caret(value) {
+    this.toggleBooleanAttribute('caret', value)
+  }
+
+  get label() {
+    return this.getAttribute('label') || ''
+  }
+
+  set label(value) {
+    this.setStringAttribute('label', value)
+  }
+
+  get target() {
+    return this.getAttribute('target') || ''
+  }
+
+  set target(value) {
+    this.setStringAttribute('target', value)
+  }
+
+  get rel() {
+    return this.getAttribute('rel') || 'noreferrer noopener'
+  }
+
+  set rel(value) {
+    this.setStringAttribute('rel', value)
   }
 
   connectedCallback() {
     this.render()
   }
 
-  attributeChangedCallback() {
-    this.render()
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue && this.isConnected) {
+      this.render()
+    }
   }
 
   click() {
-    const control = this.shadowRoot?.querySelector('.button')
+    const control = this.getControl()
     if (control) {
       control.click()
     }
   }
 
   focus(options) {
-    const control = this.shadowRoot?.querySelector('.button')
+    const control = this.getControl()
     if (control) {
       control.focus(options)
     }
   }
 
   blur() {
-    const control = this.shadowRoot?.querySelector('.button')
+    const control = this.getControl()
     if (control) {
       control.blur()
     }
   }
 
+  getControl() {
+    return this.shadowRoot?.querySelector('.button') || null
+  }
+
   render() {
-    const variant = this.getSupportedValue('variant', variants, 'default')
-    const size = this.getSupportedValue('size', sizes, 'medium')
-    const disabled = this.hasAttribute('disabled')
-    const loading = this.hasAttribute('loading')
-    const outline = this.hasAttribute('outline')
-    const caret = this.hasAttribute('caret')
-    const href = this.getAttribute('href') || ''
-    const label = this.getAttribute('label') || ''
+    const variant = this.variant
+    const size = this.size
+    const disabled = this.disabled
+    const loading = this.loading
+    const outline = this.outline
+    const caret = this.caret
+    const href = this.href
+    const label = this.label
     const tag = href ? 'a' : 'button'
     const classes = [
       'button',
@@ -283,12 +378,16 @@ export class TotButton extends HTMLElement {
     const root = this.getRoot()
     root.innerHTML = `<style>${buttonStyle}</style>
       <${tag} ${attributes}>
-        <span class="button__content">
-          <span class="button__slot"><slot></slot></span>
-          <span class="button__fallback">${escapeHtml(label)}</span>
-          <span class="button__caret" part="caret" aria-hidden="true">⌵</span>
+        <span class="button__content" part="content">
+          <span class="button__slot" part="label"><slot></slot></span>
+          <span class="button__fallback" part="label">${escapeHtml(label)}</span>
+          <span class="button__caret" part="caret" aria-hidden="true">
+            <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
+            </svg>
+          </span>
         </span>
-        <span class="button__loader" aria-hidden="true">⏳</span>
+        <span class="button__loader" part="loader" aria-hidden="true">⏳</span>
       </${tag}>
     `
 
@@ -329,10 +428,18 @@ export class TotButton extends HTMLElement {
   }
 
   getSupportedValue(attributeName, supportedValues, fallback) {
-    const value = this.getAttribute(attributeName) || fallback
+    return this.getSupportedValueFromValue(
+      this.getAttribute(attributeName),
+      supportedValues,
+      fallback,
+    )
+  }
+
+  getSupportedValueFromValue(value, supportedValues, fallback) {
+    const normalizedValue = value || fallback
     for (let i = 0; i < supportedValues.length; i++) {
-      if (supportedValues[i] === value) {
-        return value
+      if (supportedValues[i] === normalizedValue) {
+        return normalizedValue
       }
     }
     return fallback
@@ -360,12 +467,7 @@ export class TotButton extends HTMLElement {
         attributes.push(`href="${escapeAttribute(href)}"`)
       }
       this.addOptionalAttribute(attributes, 'target')
-      this.addOptionalAttribute(attributes, 'download')
-      if (this.hasAttribute('target')) {
-        attributes.push(`rel="${escapeAttribute(this.getAttribute('rel') || 'noreferrer noopener')}"`)
-      } else {
-        this.addOptionalAttribute(attributes, 'rel')
-      }
+      attributes.push(`rel="${escapeAttribute(this.rel)}"`)
     }
 
     return attributes.join(' ')
@@ -374,6 +476,22 @@ export class TotButton extends HTMLElement {
   addOptionalAttribute(attributes, name) {
     if (this.hasAttribute(name)) {
       attributes.push(`${name}="${escapeAttribute(this.getAttribute(name) || '')}"`)
+    }
+  }
+
+  toggleBooleanAttribute(name, value) {
+    if (value) {
+      this.setAttribute(name, '')
+    } else {
+      this.removeAttribute(name)
+    }
+  }
+
+  setStringAttribute(name, value) {
+    if (value === null || value === undefined) {
+      this.removeAttribute(name)
+    } else {
+      this.setAttribute(name, String(value))
     }
   }
 }

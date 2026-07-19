@@ -1,7 +1,5 @@
 const avatarStyle = `
   :host {
-    --size: 2.5rem;
-
     align-items: center;
     display: inline-flex;
     justify-content: center;
@@ -15,15 +13,16 @@ const avatarStyle = `
   }
 
   .avatar {
+    --tot-avatar-effective-size: var(--tot-avatar-size, var(--tot-avatar-size-medium, 2.5rem));
     align-items: center;
     background: var(--tot-color-neutral-100, #f1f5f9);
     border: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-200, #e2e8f0);
     color: var(--tot-color-neutral-600, #475569);
     display: inline-flex;
     font-family: var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif);
-    font-size: calc(var(--size) * .4);
+    font-size: calc(var(--tot-avatar-effective-size) * .4);
     font-weight: var(--tot-font-weight-semibold, 600);
-    height: var(--size);
+    height: var(--tot-avatar-effective-size);
     justify-content: center;
     line-height: 1;
     max-width: 100%;
@@ -31,7 +30,15 @@ const avatarStyle = `
     text-transform: uppercase;
     user-select: none;
     -webkit-user-select: none;
-    width: var(--size);
+    width: var(--tot-avatar-effective-size);
+  }
+
+  .avatar--small {
+    --tot-avatar-effective-size: var(--tot-avatar-size, var(--tot-avatar-size-small, 1.75rem));
+  }
+
+  .avatar--large {
+    --tot-avatar-effective-size: var(--tot-avatar-size, var(--tot-avatar-size-large, 3.25rem));
   }
 
   .avatar--circle {
@@ -67,10 +74,15 @@ const avatarStyle = `
   }
 
   .avatar__icon {
-    font-size: calc(var(--size) * .5);
+    font-size: calc(var(--tot-avatar-effective-size) * .5);
+  }
+
+  [hidden] {
+    display: none;
   }
 `
 
+const sizes = ['small', 'medium', 'large']
 const shapes = ['circle', 'square', 'rounded']
 const loadings = ['eager', 'lazy']
 
@@ -82,12 +94,27 @@ export class TotAvatar extends HTMLElement {
       'initials',
       'loading',
       'shape',
+      'size',
     ]
   }
 
   constructor() {
     super()
     this._imageFailed = false
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${avatarStyle}</style>
+      <span class="avatar" part="base">
+        <img class="avatar__image" part="image" alt="" hidden>
+        <span class="avatar__initials" part="initials" hidden></span>
+        <span class="avatar__icon" part="icon" aria-hidden="true" hidden><slot name="icon">👤</slot></span>
+      </span>
+    `
+
+    this._baseElement = root.querySelector('.avatar')
+    this._imageElement = root.querySelector('.avatar__image')
+    this._initialsElement = root.querySelector('.avatar__initials')
+    this._iconElement = root.querySelector('.avatar__icon')
+    this._imageElement.addEventListener('error', () => this.handleImageError())
   }
 
   get image() {
@@ -95,6 +122,16 @@ export class TotAvatar extends HTMLElement {
   }
 
   set image(value) {
+    const nextValue = value === null || value === undefined ? null : String(value)
+    if (nextValue !== null && this.getAttribute('image') === nextValue) {
+      this._imageElement.removeAttribute('src')
+      this._imageFailed = false
+      if (this.isConnected) {
+        this.render()
+      }
+      return
+    }
+
     setNullableAttribute(this, 'image', value)
   }
 
@@ -122,6 +159,14 @@ export class TotAvatar extends HTMLElement {
     this.setAttribute('loading', getSupportedValue(value, loadings, 'eager'))
   }
 
+  get size() {
+    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
+  }
+
+  set size(value) {
+    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
+  }
+
   get shape() {
     return getSupportedValue(this.getAttribute('shape'), shapes, 'circle')
   }
@@ -143,41 +188,55 @@ export class TotAvatar extends HTMLElement {
       this._imageFailed = false
     }
 
+    if (this.isConnected) {
+      this.render()
+    }
+  }
+
+  getImage() {
+    return this._imageElement
+  }
+
+  handleImageError() {
+    if (this._imageFailed) {
+      return
+    }
+
+    this._imageFailed = true
     this.render()
   }
 
   render() {
     const image = this.image
-    const label = this.label
     const initials = this.initials.trim().slice(0, 2)
-    const shape = this.shape
-    const root = this.getRoot()
-    const content = image && !this._imageFailed
-      ? `<img class="avatar__image" part="image" src="${escapeAttribute(image)}" alt="" loading="${escapeAttribute(this.loading)}">`
-      : initials
-        ? `<span class="avatar__initials" part="initials">${escapeHtml(initials)}</span>`
-        : `<span class="avatar__icon" part="icon" aria-hidden="true"><slot name="icon">👤</slot></span>`
+    const showImage = Boolean(image && !this._imageFailed)
+    const showInitials = Boolean(!showImage && initials)
+    const label = this.label
 
-    root.innerHTML = `<style>${avatarStyle}</style>
-      <span
-        class="avatar avatar--${escapeAttribute(shape)}"
-        part="base"
-        role="img"
-        aria-label="${escapeAttribute(label)}"
-      >${content}</span>
-    `
-
-    const img = root.querySelector('img')
-    if (img) {
-      img.addEventListener('error', () => {
-        this._imageFailed = true
-        this.render()
-      })
+    this._baseElement.className = `avatar avatar--${this.size} avatar--${this.shape}`
+    if (label) {
+      this._baseElement.setAttribute('role', 'img')
+      this._baseElement.setAttribute('aria-label', label)
+      this._baseElement.removeAttribute('aria-hidden')
+    } else {
+      this._baseElement.removeAttribute('role')
+      this._baseElement.removeAttribute('aria-label')
+      this._baseElement.setAttribute('aria-hidden', 'true')
     }
-  }
 
-  getRoot() {
-    return this.shadowRoot || this.attachShadow({ mode: 'open' })
+    this._imageElement.hidden = !showImage
+    this._initialsElement.hidden = !showInitials
+    this._iconElement.hidden = showImage || showInitials
+    this._initialsElement.textContent = initials
+    this._imageElement.loading = this.loading
+
+    if (image) {
+      if (this._imageElement.getAttribute('src') !== image) {
+        this._imageElement.setAttribute('src', image)
+      }
+    } else {
+      this._imageElement.removeAttribute('src')
+    }
   }
 }
 
@@ -197,21 +256,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

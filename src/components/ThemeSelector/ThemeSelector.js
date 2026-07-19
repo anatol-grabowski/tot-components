@@ -70,18 +70,65 @@ const themeSelectorStyle = `
     padding: 0 var(--tot-input-spacing-large, 1rem);
   }
 
+
+  .trigger--plain {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .trigger--plain:hover {
+    background: var(--tot-color-neutral-200, #e2e8f0);
+    border-color: transparent;
+  }
+
+  .trigger--plain:active {
+    background: var(--tot-color-neutral-300, #cbd5e1);
+  }
+
+  .trigger__icon,
+  .trigger__caret,
+  .item__icon,
+  .item__check {
+    align-items: center;
+    color: currentColor;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .trigger__icon,
+  .item__icon {
+    height: 1.25em;
+    width: 1.25em;
+  }
+
+  .trigger__icon svg,
+  .item__icon svg,
+  .item__check svg,
+  .trigger__caret svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
+  }
+
   .trigger__label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
+  .trigger__label[hidden] {
+    display: none;
+  }
+
   .trigger__caret {
-    align-items: center;
-    color: currentColor;
-    display: inline-flex;
-    font-size: 1.1em;
-    line-height: 1;
+    height: .9em;
+    margin-inline-start: .05em;
+    opacity: .75;
+    width: .9em;
   }
 
   .panel {
@@ -123,7 +170,7 @@ const themeSelectorStyle = `
     display: grid;
     font: inherit;
     gap: var(--tot-spacing-2x-small, .25rem);
-    grid-template-columns: 1.25rem minmax(0, 1fr);
+    grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
     line-height: var(--tot-line-height-normal, 1.4);
     min-height: var(--tot-input-height-small, 1.75rem);
     padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-x-small, .5rem);
@@ -139,7 +186,8 @@ const themeSelectorStyle = `
 
   .item__check {
     color: var(--tot-color-primary-600, #0284c7);
-    text-align: center;
+    height: 1em;
+    width: 1em;
   }
 
   .item__label {
@@ -154,12 +202,25 @@ const lightThemeName = 'light'
 const darkThemeName = 'dark'
 
 const sizes = ['small', 'medium', 'large']
+const variants = ['default', 'plain']
 
 const defaultThemes = [
   { name: lightThemeName, label: 'Light', href: '' },
   { name: darkThemeName, label: 'Dark', href: '' },
   { name: systemThemeName, label: 'System', href: '' },
 ]
+
+const caretIcon = `
+  <svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <path d="m4 6 4 4 4-4"></path>
+  </svg>
+`
+
+const checkIcon = `
+  <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <path d="m3.5 8.2 2.8 2.8 6.2-6.2"></path>
+  </svg>
+`
 
 export class TotThemeSelector extends HTMLElement {
   static get observedAttributes() {
@@ -170,6 +231,7 @@ export class TotThemeSelector extends HTMLElement {
       'base-path',
       'link-id',
       'size',
+      'variant',
     ]
   }
 
@@ -196,7 +258,9 @@ export class TotThemeSelector extends HTMLElement {
 
   set themes(value) {
     this._themes = parseThemes(value)
-    this.render()
+    if (this.isConnected) {
+      this.render()
+    }
   }
 
   get value() {
@@ -204,15 +268,31 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   set value(value) {
-    if (value === null || value === undefined || value === '') {
-      this.removeAttribute('value')
-    } else {
-      this.setAttribute('value', String(value))
-    }
+    setNullableAttribute(this, 'value', value)
+  }
+
+  get label() {
+    return this.getAttribute('label') || ''
+  }
+
+  set label(value) {
+    setNullableAttribute(this, 'label', value)
+  }
+
+  get basePath() {
+    return this.getAttribute('base-path') || ''
+  }
+
+  set basePath(value) {
+    setStringAttribute(this, 'base-path', value)
   }
 
   get linkId() {
     return this.getAttribute('link-id') || 'themeStylesheet'
+  }
+
+  set linkId(value) {
+    setNullableAttribute(this, 'link-id', value)
   }
 
   get size() {
@@ -221,6 +301,14 @@ export class TotThemeSelector extends HTMLElement {
 
   set size(value) {
     this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
+  }
+
+  get variant() {
+    return getSupportedValue(this.getAttribute('variant'), variants, 'default')
+  }
+
+  set variant(value) {
+    this.setAttribute('variant', getSupportedValue(value, variants, 'default'))
   }
 
   connectedCallback() {
@@ -248,33 +336,70 @@ export class TotThemeSelector extends HTMLElement {
       this._visualViewport = null
     }
     cancelAnimationFrame(this._positionFrame)
+    this._positionFrame = 0
+    this._open = false
     this.removeSystemThemeListener()
   }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
     if (name === 'themes') {
       this._themes = null
     }
 
-    this.render()
+    if (this.isConnected) {
+      this.render()
+    }
+  }
+
+  focus(options) {
+    this.getTrigger()?.focus(options)
+  }
+
+  blur() {
+    this.getTrigger()?.blur()
+  }
+
+  getTrigger() {
+    return this.shadowRoot?.querySelector('.trigger') || null
+  }
+
+  getItems() {
+    return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.item')) : []
   }
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const currentTheme = this.value
-    const buttonLabel = this.getButtonLabel(currentTheme)
+    const currentThemeName = this.value
+    const currentTheme = this.getThemeByName(currentThemeName) || this.themes[0] || null
+    const effectiveTheme = this.getEffectiveTheme(currentTheme)
     const size = this.size
-    const items = this.getMenuItems(currentTheme)
-    const itemsHtml = this.renderItems(items)
+    const variant = this.variant
+    const triggerLabel = this.label
+    const accessibleLabel = this.getAccessibleLabel(currentTheme, effectiveTheme)
+    const itemsHtml = this.renderItems(this.getMenuItems(currentThemeName))
 
     root.innerHTML = `<style>${themeSelectorStyle}</style>
       <span class="selector" part="base">
-        <button class="trigger trigger--${escapeAttribute(size)}" type="button" aria-haspopup="listbox" aria-expanded="${this._open ? 'true' : 'false'}" aria-label="Theme">
-          <span class="trigger__label">${escapeHtml(buttonLabel)}</span>
-          <span class="trigger__caret" aria-hidden="true">⌵</span>
+        <button
+          class="trigger trigger--${escapeAttribute(size)} trigger--${escapeAttribute(variant)}"
+          part="trigger"
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded="${this._open ? 'true' : 'false'}"
+          aria-controls="theme-selector-menu"
+          aria-label="${escapeAttribute(accessibleLabel)}"
+          title="${escapeAttribute(accessibleLabel)}"
+        >
+          <span class="trigger__icon" part="trigger-icon" aria-hidden="true">${renderThemeIcon(currentThemeName, effectiveTheme ? effectiveTheme.name : '')}</span>
+          <span class="trigger__label" part="trigger-label" ${triggerLabel ? '' : 'hidden'}>${escapeHtml(triggerLabel)}</span>
+          <span class="trigger__caret" part="caret" aria-hidden="true">${caretIcon}</span>
         </button>
         <div class="panel" part="panel" ${this._open ? '' : 'hidden'}>
-          <div class="menu" role="listbox" aria-label="Theme options">
+          <div id="theme-selector-menu" class="menu" part="menu" role="listbox" aria-label="Theme options">
             ${itemsHtml}
           </div>
         </div>
@@ -304,51 +429,45 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   renderItem(item) {
-    return `<button class="item" type="button" role="option" aria-selected="${item.checked ? 'true' : 'false'}" data-value="${escapeAttribute(item.value)}">
-      <span class="item__check" aria-hidden="true">${item.checked ? '✓' : ''}</span>
-      <span class="item__label">${escapeHtml(item.label)}</span>
+    return `<button class="item" part="item" type="button" role="option" aria-selected="${item.checked ? 'true' : 'false'}" data-value="${escapeAttribute(item.value)}">
+      <span class="item__icon" part="item-icon" aria-hidden="true">${renderThemeIcon(item.value, item.effectiveTheme)}</span>
+      <span class="item__label" part="item-label">${escapeHtml(item.label)}</span>
+      <span class="item__check" part="item-check" aria-hidden="true">${item.checked ? checkIcon : ''}</span>
     </button>`
   }
 
-  getMenuItems(currentTheme) {
+  getMenuItems(currentThemeName) {
     const themes = this.themes
+    const systemTheme = this.getSystemThemeName()
     const items = []
 
     for (let i = 0; i < themes.length; i++) {
       items.push({
         value: themes[i].name,
         label: themes[i].label,
-        checked: themes[i].name === currentTheme,
+        checked: themes[i].name === currentThemeName,
+        effectiveTheme: themes[i].name === systemThemeName ? systemTheme : themes[i].name,
       })
     }
 
     return items
   }
 
-  getButtonLabel(currentTheme) {
-    const theme = this.getThemeByName(currentTheme) || this.themes[0]
-    const icon = theme ? this.getThemeIcon(theme.name) : ''
-    const prefix = this.getAttribute('label')
-
-    if (prefix) {
-      return icon ? `${prefix}: ${icon}` : prefix
+  getAccessibleLabel(theme, effectiveTheme) {
+    const label = this.label || 'Theme'
+    const themeLabel = theme ? theme.label : ''
+    if (!themeLabel) {
+      return label
     }
 
-    return icon || (theme ? theme.label : '')
-  }
-
-  getThemeIcon(themeName) {
-    const effectiveThemeName = themeName === systemThemeName ? this.getSystemThemeName() : themeName
-
-    if (effectiveThemeName === darkThemeName) {
-      return '🌙'
+    const selectedLabel = label.toLocaleLowerCase() === themeLabel.toLocaleLowerCase()
+      ? themeLabel
+      : `${label}: ${themeLabel}`
+    if (theme && theme.name === systemThemeName && effectiveTheme) {
+      return `${selectedLabel} (${effectiveTheme.label})`
     }
 
-    if (effectiveThemeName === lightThemeName) {
-      return '☀️'
-    }
-
-    return '◐'
+    return selectedLabel
   }
 
   handleTriggerClick(event) {
@@ -371,12 +490,35 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   handlePanelKeyDown(event) {
-    if (event.key !== 'Escape') {
+    if (event.key === 'Escape') {
+      this.setOpen(false)
+      this.focusTrigger()
+      event.preventDefault()
       return
     }
 
-    this.setOpen(false)
-    this.focusTrigger()
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Home' && event.key !== 'End') {
+      return
+    }
+
+    const items = this.getItems()
+    if (items.length === 0) {
+      return
+    }
+
+    const currentIndex = items.indexOf(this.shadowRoot.activeElement)
+    let nextIndex = currentIndex
+    if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = items.length - 1
+    } else if (event.key === 'ArrowDown') {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
+    } else {
+      nextIndex = currentIndex < 0 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length
+    }
+
+    items[nextIndex].focus()
     event.preventDefault()
   }
 
@@ -392,8 +534,8 @@ export class TotThemeSelector extends HTMLElement {
       return
     }
 
+    this._open = false
     this.applyTheme(theme)
-    this.setOpen(false)
     this.focusTrigger()
   }
 
@@ -413,15 +555,32 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   setOpen(open) {
-    if (this._open === open) {
-      if (open) {
+    const nextOpen = Boolean(open)
+    if (this._open === nextOpen) {
+      if (nextOpen) {
         this.schedulePanelPosition()
       }
       return
     }
 
-    this._open = open
-    this.render()
+    this._open = nextOpen
+    const trigger = this.getTrigger()
+    const panel = this.shadowRoot?.querySelector('.panel')
+    if (!trigger || !panel) {
+      if (this.isConnected) {
+        this.render()
+      }
+      return
+    }
+
+    trigger.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
+    panel.hidden = !nextOpen
+    if (nextOpen) {
+      this.schedulePanelPosition()
+    } else {
+      cancelAnimationFrame(this._positionFrame)
+      this._positionFrame = 0
+    }
   }
 
   schedulePanelPosition() {
@@ -430,11 +589,12 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   updatePanelPosition() {
+    this._positionFrame = 0
     if (!this._open || !this.shadowRoot) {
       return
     }
 
-    const trigger = this.shadowRoot.querySelector('.trigger')
+    const trigger = this.getTrigger()
     const panel = this.shadowRoot.querySelector('.panel')
     if (!trigger || !panel) {
       return
@@ -477,12 +637,24 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   focusTrigger() {
-    this.shadowRoot?.querySelector('.trigger')?.focus()
+    this.getTrigger()?.focus()
   }
 
   focusFirstItem() {
     requestAnimationFrame(() => {
-      this.shadowRoot?.querySelector('.item:not([disabled])')?.focus()
+      const items = this.getItems()
+      if (items.length === 0) {
+        return
+      }
+
+      let selectedItem = null
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].getAttribute('aria-selected') === 'true') {
+          selectedItem = items[i]
+          break
+        }
+      }
+      ;(selectedItem || items[0]).focus()
     })
   }
 
@@ -492,7 +664,7 @@ export class TotThemeSelector extends HTMLElement {
     }
 
     const themeName = event.detail && event.detail.theme ? String(event.detail.theme) : this.detectCurrentTheme()
-    if (themeName && this.getAttribute('value') !== themeName) {
+    if (themeName && this.getThemeByName(themeName) && this.getAttribute('value') !== themeName) {
       this.setAttribute('value', themeName)
       return
     }
@@ -524,7 +696,12 @@ export class TotThemeSelector extends HTMLElement {
       this.applyThemeClasses(effectiveTheme.name)
     }
 
-    this.setAttribute('value', theme.name)
+    const valueChanged = this.getAttribute('value') !== theme.name
+    if (valueChanged) {
+      this.setAttribute('value', theme.name)
+    } else if (this.isConnected) {
+      this.render()
+    }
 
     const detail = {
       theme: theme.name,
@@ -638,9 +815,13 @@ export class TotThemeSelector extends HTMLElement {
   }
 
   getBasePath() {
-    const configured = this.getAttribute('base-path')
-    if (configured !== null) {
-      return configured.endsWith('/') || configured === '' ? configured : `${configured}/`
+    const configured = this.basePath
+    if (configured) {
+      return configured.endsWith('/') ? configured : `${configured}/`
+    }
+
+    if (this.hasAttribute('base-path')) {
+      return ''
     }
 
     const link = this.getThemeLink(false)
@@ -698,6 +879,62 @@ export class TotThemeSelector extends HTMLElement {
 
     return themes[0] ? themes[0].name : ''
   }
+}
+
+function renderThemeIcon(themeName, effectiveThemeName) {
+  if (themeName === systemThemeName) {
+    return renderSystemIcon(effectiveThemeName === darkThemeName)
+  }
+
+  if (themeName === darkThemeName) {
+    return renderDarkIcon()
+  }
+
+  if (themeName === lightThemeName) {
+    return renderLightIcon()
+  }
+
+  return renderGenericThemeIcon()
+}
+
+function renderLightIcon() {
+  return `
+    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="3.5"></circle>
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
+    </svg>
+  `
+}
+
+function renderDarkIcon() {
+  return `
+    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M20.2 15.2A8.6 8.6 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path>
+    </svg>
+  `
+}
+
+function renderSystemIcon(dark) {
+  const indicator = dark
+    ? '<path d="M15.9 7.2a2.7 2.7 0 0 1-3.1-3.1 2.9 2.9 0 1 0 3.1 3.1Z"></path>'
+    : '<circle cx="14.3" cy="5.7" r="1.5"></circle><path d="M14.3 2.8v.8M14.3 7.8v.8M11.4 5.7h.8M16.4 5.7h.8"></path>'
+
+  return `
+    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <rect x="3" y="4" width="18" height="13" rx="2"></rect>
+      <path d="M8.5 21h7M12 17v4"></path>
+      ${indicator}
+    </svg>
+  `
+}
+
+function renderGenericThemeIcon() {
+  return `
+    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="8.5"></circle>
+      <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z"></path>
+    </svg>
+  `
 }
 
 function parseThemes(value) {
@@ -907,6 +1144,22 @@ function getSupportedValue(value, supportedValues, fallback) {
     }
   }
   return fallback
+}
+
+function setNullableAttribute(element, name, value) {
+  if (value === null || value === undefined || value === '') {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
+}
+
+function setStringAttribute(element, name, value) {
+  if (value === null || value === undefined) {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
 }
 
 function emit(element, name, detail) {

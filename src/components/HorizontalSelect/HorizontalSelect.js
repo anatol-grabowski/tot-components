@@ -2,6 +2,7 @@ const horizontalSelectStyle = `
   :host {
     display: block;
     max-width: 100%;
+    vertical-align: top;
   }
 
   *, *::before, *::after {
@@ -12,7 +13,7 @@ const horizontalSelectStyle = `
     color: var(--tot-input-color, #1e293b);
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    gap: var(--tot-spacing-3x-small, .125rem);
+    gap: var(--tot-spacing-2x-small, .25rem);
     max-width: 100%;
     min-width: 0;
   }
@@ -25,7 +26,8 @@ const horizontalSelectStyle = `
     overflow-wrap: anywhere;
   }
 
-  .label:empty {
+  .label[hidden],
+  .help-text[hidden] {
     display: none;
   }
 
@@ -34,7 +36,6 @@ const horizontalSelectStyle = `
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-block: 0;
     scrollbar-width: thin;
   }
 
@@ -48,7 +49,8 @@ const horizontalSelectStyle = `
 
   .option {
     --option-height: var(--tot-input-height-medium, 2.25rem);
-    --option-spacing: var(--tot-input-spacing-medium, .75rem);
+    --option-spacing: var(--tot-spacing-2x-small, .25rem);
+    --option-edge-spacing: calc(var(--option-spacing) + var(--tot-spacing-3x-small, .125rem));
     --option-font-size: var(--tot-input-font-size-medium, .875rem);
 
     -webkit-appearance: none;
@@ -64,12 +66,13 @@ const horizontalSelectStyle = `
     font: inherit;
     font-size: var(--option-font-size);
     font-weight: var(--tot-input-font-weight, 400);
-    gap: var(--tot-spacing-3x-small, .125rem);
+    height: var(--option-height);
     justify-content: center;
-    line-height: 1;
-    min-height: var(--option-height);
+    letter-spacing: var(--tot-input-letter-spacing, normal);
+    line-height: var(--tot-input-line-height, 1.25);
     min-width: var(--tot-horizontal-select-option-min-width, 0);
-    padding: 0 var(--option-spacing);
+    padding-block: 0;
+    padding-inline: var(--option-edge-spacing);
     position: relative;
     text-align: center;
     transition:
@@ -79,6 +82,10 @@ const horizontalSelectStyle = `
       var(--tot-transition-fast, 150ms) box-shadow;
     user-select: none;
     white-space: nowrap;
+  }
+
+  .option + .option {
+    margin-inline-start: calc(-1 * var(--tot-input-border-width, 1px));
   }
 
   .option:first-child {
@@ -93,20 +100,21 @@ const horizontalSelectStyle = `
 
   .select--small .option {
     --option-height: var(--tot-input-height-small, 1.75rem);
-    --option-spacing: var(--tot-input-spacing-small, .5rem);
+    --option-spacing: var(--tot-spacing-3x-small, .125rem);
     --option-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
   .select--large .option {
     --option-height: var(--tot-input-height-large, 2.75rem);
-    --option-spacing: var(--tot-input-spacing-large, 1rem);
+    --option-spacing: var(--tot-spacing-x-small, .5rem);
     --option-font-size: var(--tot-input-font-size-large, 1rem);
   }
 
-  .option:hover:not(.option--disabled):not(.option--selected) {
+  .option:hover:not(:disabled):not(.option--selected) {
     background: var(--tot-input-background-color-hover, #f8fafc);
     border-color: var(--tot-input-border-color-hover, #94a3b8);
     color: var(--tot-input-color-hover, #0f172a);
+    z-index: 1;
   }
 
   .option:focus-visible {
@@ -119,18 +127,14 @@ const horizontalSelectStyle = `
     background: var(--tot-color-primary-600, #0284c7);
     border-color: var(--tot-color-primary-600, #0284c7);
     color: var(--tot-color-neutral-0, #fff);
+    z-index: 1;
   }
 
   .select--multiple .option--selected + .option--selected {
     border-left-color: color-mix(in srgb, var(--tot-color-neutral-0, #fff) 72%, var(--tot-color-primary-600, #0284c7));
   }
 
-  .option--disabled {
-    cursor: not-allowed;
-    opacity: .55;
-  }
-
-  .select--disabled .option {
+  .option:disabled {
     cursor: not-allowed;
     opacity: .55;
   }
@@ -140,10 +144,6 @@ const horizontalSelectStyle = `
     font-size: var(--tot-input-help-text-font-size-medium, .8125rem);
     line-height: 1.35;
     overflow-wrap: anywhere;
-  }
-
-  .help-text:empty {
-    display: none;
   }
 
   .select--small .label {
@@ -171,11 +171,11 @@ export class TotHorizontalSelect extends HTMLElement {
       'items',
       'value',
       'values',
-      'multiple',
-      'disabled',
-      'size',
       'label',
       'help-text',
+      'size',
+      'multiple',
+      'disabled',
     ]
   }
 
@@ -194,7 +194,7 @@ export class TotHorizontalSelect extends HTMLElement {
 
   set items(value) {
     this._items = parseItems(value)
-    this.render()
+    this.requestRender()
   }
 
   get value() {
@@ -204,7 +204,7 @@ export class TotHorizontalSelect extends HTMLElement {
 
   set value(value) {
     this._selectedValues = value === null || value === undefined || value === '' ? [] : [String(value)]
-    this.render()
+    this.requestRender()
   }
 
   get values() {
@@ -213,7 +213,7 @@ export class TotHorizontalSelect extends HTMLElement {
 
   set values(value) {
     this._selectedValues = parseValues(value)
-    this.render()
+    this.requestRender()
   }
 
   get selectedValues() {
@@ -234,30 +234,6 @@ export class TotHorizontalSelect extends HTMLElement {
     return getSelectedValuesFromItems(this.items).slice(0, 1)
   }
 
-  get multiple() {
-    return this.hasAttribute('multiple')
-  }
-
-  set multiple(value) {
-    setBooleanAttribute(this, 'multiple', value)
-  }
-
-  get disabled() {
-    return this.hasAttribute('disabled')
-  }
-
-  set disabled(value) {
-    setBooleanAttribute(this, 'disabled', value)
-  }
-
-  get size() {
-    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
-  }
-
-  set size(value) {
-    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
-  }
-
   get label() {
     return this.getAttribute('label') || ''
   }
@@ -274,6 +250,30 @@ export class TotHorizontalSelect extends HTMLElement {
     setNullableAttribute(this, 'help-text', value)
   }
 
+  get size() {
+    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
+  }
+
+  set size(value) {
+    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
+  }
+
+  get multiple() {
+    return this.hasAttribute('multiple')
+  }
+
+  set multiple(value) {
+    setBooleanAttribute(this, 'multiple', value)
+  }
+
+  get disabled() {
+    return this.hasAttribute('disabled')
+  }
+
+  set disabled(value) {
+    setBooleanAttribute(this, 'disabled', value)
+  }
+
   connectedCallback() {
     this.render()
   }
@@ -287,17 +287,52 @@ export class TotHorizontalSelect extends HTMLElement {
       this._selectedValues = null
     }
 
-    this.render()
+    this.requestRender()
+  }
+
+  focus(options) {
+    const buttons = this.getEnabledButtons()
+    if (buttons.length === 0) {
+      return
+    }
+
+    const selectedValue = this.value
+    for (let i = 0; i < buttons.length; i++) {
+      if (buttons[i].dataset.value === selectedValue) {
+        buttons[i].focus(options)
+        return
+      }
+    }
+
+    buttons[0].focus(options)
+  }
+
+  blur() {
+    this.shadowRoot?.activeElement?.blur?.()
+  }
+
+  getButtons() {
+    return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.option')) : []
+  }
+
+  requestRender() {
+    if (this.isConnected) {
+      this.render()
+    }
   }
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const previousScrollLeft = root.querySelector('.scroller')?.scrollLeft || 0
+    const previousFocusedValue = root.activeElement?.dataset?.value || ''
     const size = this.size
     const multiple = this.multiple
     const disabled = this.disabled
     const items = this.items
     const selectedValues = this.selectedValues
+    const focusableValue = getFocusableValue(items, selectedValues, disabled)
+    const hasLabel = Boolean(this.label) || this.hasNamedSlotContent('label')
+    const hasHelpText = Boolean(this.helpText) || this.hasNamedSlotContent('help-text')
     const classes = ['select', `select--${size}`]
     const buttons = []
 
@@ -319,42 +354,53 @@ export class TotHorizontalSelect extends HTMLElement {
         buttonClasses.push('option--selected')
       }
 
-      if (itemDisabled) {
-        buttonClasses.push('option--disabled')
-      }
-
       buttons.push(`<button
         class="${escapeAttribute(buttonClasses.join(' '))}"
+        part="option"
         type="button"
         role="option"
         aria-selected="${selected ? 'true' : 'false'}"
         data-value="${escapeAttribute(item.value)}"
-        tabindex="${itemDisabled ? '-1' : '0'}"
+        tabindex="${!itemDisabled && item.value === focusableValue ? '0' : '-1'}"
         ${itemDisabled ? 'disabled' : ''}
       >${escapeHtml(item.label)}</button>`)
     }
 
     root.innerHTML = `<style>${horizontalSelectStyle}</style>
       <div class="${escapeAttribute(classes.join(' '))}" part="base">
-        <span class="label" part="form-control-label"><slot name="label">${escapeHtml(this.label)}</slot></span>
+        <span id="label" class="label" part="label" ${hasLabel ? '' : 'hidden'}><slot name="label">${escapeHtml(this.label)}</slot></span>
         <div class="scroller" part="scroller">
-          <div class="options" part="options" role="listbox" aria-multiselectable="${multiple ? 'true' : 'false'}">
-            ${buttons.join('')}
-          </div>
+          <div
+            class="options"
+            part="options"
+            role="listbox"
+            aria-multiselectable="${multiple ? 'true' : 'false'}"
+            aria-disabled="${disabled ? 'true' : 'false'}"
+            ${hasLabel ? 'aria-labelledby="label"' : ''}
+            ${hasHelpText ? 'aria-describedby="help-text"' : ''}
+          >${buttons.join('')}</div>
         </div>
-        <span class="help-text" part="form-control-help-text"><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
+        <span id="help-text" class="help-text" part="help-text" ${hasHelpText ? '' : 'hidden'}><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
       </div>
     `
 
     const scroller = root.querySelector('.scroller')
     const options = root.querySelector('.options')
-    scroller.scrollLeft = previousScrollLeft
-    requestAnimationFrame(() => {
-      scroller.scrollLeft = previousScrollLeft
-    })
+    const labelSlot = root.querySelector('slot[name="label"]')
+    const helpTextSlot = root.querySelector('slot[name="help-text"]')
 
+    scroller.scrollLeft = previousScrollLeft
     options.addEventListener('click', (event) => this.handleClick(event))
     options.addEventListener('keydown', (event) => this.handleKeyDown(event))
+    labelSlot.addEventListener('slotchange', () => this.syncTextVisibility('label'))
+    helpTextSlot.addEventListener('slotchange', () => this.syncTextVisibility('help-text'))
+
+    requestAnimationFrame(() => {
+      scroller.scrollLeft = previousScrollLeft
+      if (previousFocusedValue) {
+        this.focusButton(previousFocusedValue)
+      }
+    })
   }
 
   handleClick(event) {
@@ -407,12 +453,11 @@ export class TotHorizontalSelect extends HTMLElement {
     }
 
     const item = this.getItemByValue(value)
-    if (!item || item.disabled) {
+    if (!item || item.disabled || this.disabled) {
       return
     }
 
     let nextValues = this.selectedValues
-    let selected = false
 
     if (this.multiple) {
       const index = nextValues.indexOf(value)
@@ -420,21 +465,17 @@ export class TotHorizontalSelect extends HTMLElement {
         nextValues.splice(index, 1)
       } else {
         nextValues.push(value)
-        selected = true
       }
     } else {
       if (nextValues[0] === value) {
         return
       }
-
-      selected = true
       nextValues = [value]
     }
 
     this._selectedValues = nextValues
     this.render()
-    emit(this, 'input', this.getEventDetail(item, selected))
-    emit(this, 'change', this.getEventDetail(item, selected))
+    dispatchComposedEvent(this, 'change')
   }
 
   getItemByValue(value) {
@@ -448,7 +489,7 @@ export class TotHorizontalSelect extends HTMLElement {
   }
 
   getEnabledButtons() {
-    const buttons = this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.option')) : []
+    const buttons = this.getButtons()
     const enabled = []
     for (let i = 0; i < buttons.length; i++) {
       if (!buttons[i].disabled) {
@@ -458,15 +499,66 @@ export class TotHorizontalSelect extends HTMLElement {
     return enabled
   }
 
-  getEventDetail(item, selected) {
-    return {
-      value: this.value,
-      values: this.selectedValues,
-      multiple: this.multiple,
-      item,
-      selected: Boolean(selected),
+  focusButton(value) {
+    const buttons = this.getButtons()
+    for (let i = 0; i < buttons.length; i++) {
+      if (buttons[i].dataset.value === value && !buttons[i].disabled) {
+        buttons[i].focus()
+        return
+      }
     }
   }
+
+  syncTextVisibility(name) {
+    const selector = name === 'label' ? '.label' : '.help-text'
+    const element = this.shadowRoot?.querySelector(selector)
+    const listbox = this.shadowRoot?.querySelector('.options')
+    const hasContent = Boolean(this.getAttribute(name)) || this.hasNamedSlotContent(name)
+
+    if (element) {
+      element.hidden = !hasContent
+    }
+
+    if (listbox) {
+      const ariaAttribute = name === 'label' ? 'aria-labelledby' : 'aria-describedby'
+      if (hasContent) {
+        listbox.setAttribute(ariaAttribute, name)
+      } else {
+        listbox.removeAttribute(ariaAttribute)
+      }
+    }
+  }
+
+  hasNamedSlotContent(name) {
+    for (let i = 0; i < this.children.length; i++) {
+      if (this.children[i].slot === name) {
+        return true
+      }
+    }
+    return false
+  }
+}
+
+function getFocusableValue(items, selectedValues, disabled) {
+  if (disabled) {
+    return ''
+  }
+
+  for (let i = 0; i < selectedValues.length; i++) {
+    for (let j = 0; j < items.length; j++) {
+      if (items[j].value === selectedValues[i] && !items[j].disabled) {
+        return items[j].value
+      }
+    }
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    if (!items[i].disabled) {
+      return items[i].value
+    }
+  }
+
+  return ''
 }
 
 function getRelativeButton(buttons, active, step) {
@@ -577,11 +669,10 @@ function getSelectedValuesFromItems(items) {
   return values
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function dispatchComposedEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

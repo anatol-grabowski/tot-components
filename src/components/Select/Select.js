@@ -27,7 +27,8 @@ const selectStyle = `
     overflow-wrap: anywhere;
   }
 
-  .label:empty {
+  .label[hidden],
+  .help-text[hidden] {
     display: none;
   }
 
@@ -39,7 +40,8 @@ const selectStyle = `
 
   .control {
     --select-height: var(--tot-input-height-medium, 2.25rem);
-    --select-spacing: var(--tot-input-spacing-medium, .75rem);
+    --select-spacing: var(--tot-spacing-2x-small, .25rem);
+    --select-edge-spacing: calc(var(--select-spacing) + var(--tot-spacing-3x-small, .125rem));
     --select-font-size: var(--tot-input-font-size-medium, .875rem);
 
     align-items: center;
@@ -60,7 +62,8 @@ const selectStyle = `
     max-width: 100%;
     min-width: 0;
     outline: none;
-    padding: 0 var(--select-spacing);
+    padding-block: 0;
+    padding-inline: var(--select-edge-spacing);
     transition:
       var(--tot-transition-fast, 150ms) background-color,
       var(--tot-transition-fast, 150ms) border-color,
@@ -72,13 +75,13 @@ const selectStyle = `
 
   .select--small .control {
     --select-height: var(--tot-input-height-small, 1.75rem);
-    --select-spacing: var(--tot-input-spacing-small, .5rem);
+    --select-spacing: var(--tot-spacing-3x-small, .125rem);
     --select-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
   .select--large .control {
     --select-height: var(--tot-input-height-large, 2.75rem);
-    --select-spacing: var(--tot-input-spacing-large, 1rem);
+    --select-spacing: var(--tot-spacing-x-small, .5rem);
     --select-font-size: var(--tot-input-font-size-large, 1rem);
   }
 
@@ -140,7 +143,7 @@ const selectStyle = `
   }
 
   .select__value--placeholder {
-    color: var(--tot-input-placeholder-color, #64748b);
+    color: var(--tot-input-placeholder-color, #94a3b8);
   }
 
   .select__tag {
@@ -167,6 +170,10 @@ const selectStyle = `
 
   .select__actions {
     gap: var(--tot-spacing-3x-small, .125rem);
+  }
+
+  .select__actions[hidden] {
+    display: none;
   }
 
   .select__button {
@@ -206,9 +213,19 @@ const selectStyle = `
   }
 
   .select__caret {
-    font-size: .8em;
+    height: 1em;
+    justify-content: center;
     transform: rotate(0deg);
     transition: var(--tot-transition-fast, 150ms) transform;
+    width: 1em;
+  }
+
+  .select__caret svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
   }
 
   .select--open .select__caret {
@@ -309,7 +326,7 @@ const selectStyle = `
     width: 100%;
   }
 
-  .hint-text {
+  .help-text {
     color: var(--tot-input-help-text-color, var(--tot-color-neutral-600, #475569));
     display: block;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
@@ -318,7 +335,7 @@ const selectStyle = `
     overflow-wrap: anywhere;
   }
 
-  .hint-text:empty {
+  .help-text:empty {
     display: none;
   }
 
@@ -326,7 +343,7 @@ const selectStyle = `
     font-size: var(--tot-input-label-font-size-small, .8125rem);
   }
 
-  .form-control--small .hint-text {
+  .form-control--small .help-text {
     font-size: var(--tot-input-help-text-font-size-small, .75rem);
   }
 
@@ -334,7 +351,7 @@ const selectStyle = `
     font-size: var(--tot-input-label-font-size-large, 1rem);
   }
 
-  .form-control--large .hint-text {
+  .form-control--large .help-text {
     font-size: var(--tot-input-help-text-font-size-large, .875rem);
   }
 `
@@ -345,6 +362,7 @@ export class TotSelect extends HTMLElement {
   static get observedAttributes() {
     return [
       'label',
+      'help-text',
       'hint-text',
       'placeholder',
       'clearable',
@@ -353,7 +371,6 @@ export class TotSelect extends HTMLElement {
       'size',
       'open',
       'hoist',
-      'options',
       'items',
       'value',
       'values',
@@ -362,7 +379,7 @@ export class TotSelect extends HTMLElement {
 
   constructor() {
     super()
-    this._options = null
+    this._items = null
     this._selectedValues = null
     this._hasPrefix = false
     this._hasSuffix = false
@@ -371,24 +388,16 @@ export class TotSelect extends HTMLElement {
     this._handleWindowChange = () => this.schedulePanelPosition()
   }
 
-  get options() {
-    if (this._options) {
-      return cloneOptions(this._options)
-    }
-    return parseOptions(this.getAttribute('options') || this.getAttribute('items'))
-  }
-
-  set options(value) {
-    this._options = parseOptions(value)
-    this.render()
-  }
-
   get items() {
-    return this.options
+    if (this._items) {
+      return cloneItems(this._items)
+    }
+    return parseItems(this.getAttribute('items'))
   }
 
   set items(value) {
-    this.options = value
+    this._items = parseItems(value)
+    this.requestRender()
   }
 
   get value() {
@@ -398,7 +407,7 @@ export class TotSelect extends HTMLElement {
 
   set value(value) {
     this._selectedValues = value === null || value === undefined || value === '' ? [] : [String(value)]
-    this.render()
+    this.requestRender()
   }
 
   get values() {
@@ -407,7 +416,7 @@ export class TotSelect extends HTMLElement {
 
   set values(value) {
     this._selectedValues = parseValues(value)
-    this.render()
+    this.requestRender()
   }
 
   get selectedValues() {
@@ -419,7 +428,7 @@ export class TotSelect extends HTMLElement {
       const valuesAttribute = this.getAttribute('values')
       const valueAttribute = this.getAttribute('value')
       const values = parseValues(valuesAttribute !== null ? valuesAttribute : valueAttribute)
-      return values.length > 0 ? values : getSelectedValuesFromOptions(this.options)
+      return values.length > 0 ? values : getSelectedValuesFromOptions(this.items)
     }
 
     const value = this.getAttribute('value')
@@ -427,7 +436,7 @@ export class TotSelect extends HTMLElement {
       return value === '' ? [] : [value]
     }
 
-    return getSelectedValuesFromOptions(this.options).slice(0, 1)
+    return getSelectedValuesFromOptions(this.items).slice(0, 1)
   }
 
   get label() {
@@ -438,12 +447,20 @@ export class TotSelect extends HTMLElement {
     setNullableAttribute(this, 'label', value)
   }
 
+  get helpText() {
+    return this.getAttribute('help-text') || this.getAttribute('hint-text') || ''
+  }
+
+  set helpText(value) {
+    setNullableAttribute(this, 'help-text', value)
+  }
+
   get hintText() {
-    return this.getAttribute('hint-text') || ''
+    return this.helpText
   }
 
   set hintText(value) {
-    setNullableAttribute(this, 'hint-text', value)
+    this.helpText = value
   }
 
   get placeholder() {
@@ -503,7 +520,7 @@ export class TotSelect extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this.requestRender()
     document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.addEventListener('resize', this._handleWindowChange)
     document.addEventListener('scroll', this._handleWindowChange, true)
@@ -517,15 +534,15 @@ export class TotSelect extends HTMLElement {
   }
 
   attributeChangedCallback(name) {
-    if (name === 'options' || name === 'items') {
-      this._options = null
+    if (name === 'items') {
+      this._items = null
     }
 
     if (name === 'value' || name === 'values') {
       this._selectedValues = null
     }
 
-    this.render()
+    this.requestRender()
   }
 
   focus(options) {
@@ -542,10 +559,19 @@ export class TotSelect extends HTMLElement {
     }
   }
 
+  requestRender() {
+    if (this.isConnected) {
+      this.render()
+    }
+  }
+
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const previousScrollTop = root.querySelector('.panel__surface')?.scrollTop || 0
-    const options = this.options
+    const previousFocusedValue = root.activeElement?.classList?.contains('option')
+      ? root.activeElement.dataset.value
+      : ''
+    const options = this.items
     const selectedValues = this.selectedValues
     const selectedOptions = getSelectedOptions(options, selectedValues)
     const size = this.size
@@ -553,11 +579,14 @@ export class TotSelect extends HTMLElement {
     const disabled = this.disabled
     const hasPrefix = this.hasNamedSlotContent('prefix')
     const hasSuffix = this.hasNamedSlotContent('suffix')
+    const hasLabel = Boolean(this.label) || this.hasNamedSlotContent('label')
+    const hasHelpText = Boolean(this.helpText) || this.hasNamedSlotContent('help-text')
     const formClasses = ['form-control', `form-control--${size}`]
     const selectClasses = ['select', `select--${size}`]
     const controlClasses = ['control']
     const valueContent = this.getDisplayValueContent(selectedOptions, selectedValues)
     const hasValue = selectedValues.length > 0
+    const showClearButton = this.clearable && hasValue
     const valueClasses = ['select__value']
 
     this._hasPrefix = hasPrefix
@@ -588,56 +617,70 @@ export class TotSelect extends HTMLElement {
     }
 
     root.innerHTML = `<style>${selectStyle}</style>
-      <div class="${escapeAttribute(formClasses.join(' '))}" part="form-control">
-        <span class="label" part="form-control-label">${escapeHtml(this.label)}</span>
-        <div class="${escapeAttribute(selectClasses.join(' '))}" part="base">
+      <div class="${escapeAttribute(formClasses.join(' '))}" part="base">
+        <span id="label" class="label" part="label" ${hasLabel ? '' : 'hidden'}><slot name="label">${escapeHtml(this.label)}</slot></span>
+        <div class="${escapeAttribute(selectClasses.join(' '))}">
           <div
             class="${escapeAttribute(controlClasses.join(' '))}"
             part="control"
             role="combobox"
             aria-expanded="${open ? 'true' : 'false'}"
             aria-haspopup="listbox"
+            aria-controls="listbox"
             aria-disabled="${disabled ? 'true' : 'false'}"
+            ${hasLabel ? 'aria-labelledby="label"' : ''}
+            ${hasHelpText ? 'aria-describedby="help-text"' : ''}
             tabindex="${disabled ? '-1' : '0'}"
           >
             <span class="select__prefix" part="prefix"><slot name="prefix"></slot></span>
             <span class="${escapeAttribute(valueClasses.join(' '))}" part="display-value">${valueContent}</span>
             <span class="select__suffix" part="suffix"><slot name="suffix"></slot></span>
-            <span class="select__actions" part="actions">
-              <button class="select__button select__clear-button" type="button" aria-label="Clear selection" ${this.clearable && hasValue ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>×</button>
+            <span class="select__actions" part="actions" ${showClearButton ? '' : 'hidden'}>
+              <button class="select__button select__clear-button" part="clear-button" type="button" aria-label="Clear selection" ${showClearButton ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>×</button>
             </span>
-            <span class="select__caret" aria-hidden="true">⌄</span>
+            <span class="select__caret" part="caret" aria-hidden="true">
+              <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
+              </svg>
+            </span>
           </div>
           <div class="panel" part="panel" ${open ? '' : 'hidden'}>
-            <div class="panel__surface">
-              <div class="listbox" role="listbox" aria-multiselectable="${this.multiple ? 'true' : 'false'}">
+            <div class="panel__surface" part="panel-surface">
+              <div id="listbox" class="listbox" part="listbox" role="listbox" aria-multiselectable="${this.multiple ? 'true' : 'false'}">
                 ${this.renderOptions(options, selectedValues)}
               </div>
             </div>
           </div>
         </div>
-        <span class="hint-text" part="form-control-hint-text">${escapeHtml(this.hintText)}</span>
+        <span id="help-text" class="help-text" part="help-text" ${hasHelpText ? '' : 'hidden'}><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
       </div>
     `
 
     const control = root.querySelector('.control')
     const clearButton = root.querySelector('.select__clear-button')
+    const labelSlot = root.querySelector('slot[name="label"]')
     const prefixSlot = root.querySelector('slot[name="prefix"]')
     const suffixSlot = root.querySelector('slot[name="suffix"]')
+    const helpTextSlot = root.querySelector('slot[name="help-text"]')
     const panelSurface = root.querySelector('.panel__surface')
     const listbox = root.querySelector('.listbox')
 
     panelSurface.scrollTop = previousScrollTop
     requestAnimationFrame(() => {
       panelSurface.scrollTop = previousScrollTop
+      if (open && previousFocusedValue) {
+        this.focusOption(previousFocusedValue)
+      }
     })
 
     control.addEventListener('click', () => this.handleControlClick())
     control.addEventListener('keydown', (event) => this.handleControlKeyDown(event))
     clearButton.addEventListener('mousedown', (event) => event.preventDefault())
     clearButton.addEventListener('click', (event) => this.handleClear(event))
+    labelSlot.addEventListener('slotchange', () => this.syncTextVisibility('label'))
     prefixSlot.addEventListener('slotchange', () => this.handleSlotChange())
     suffixSlot.addEventListener('slotchange', () => this.handleSlotChange())
+    helpTextSlot.addEventListener('slotchange', () => this.syncTextVisibility('help-text'))
     listbox.addEventListener('click', (event) => this.handleOptionClick(event))
     listbox.addEventListener('keydown', (event) => this.handleListboxKeyDown(event))
 
@@ -651,7 +694,7 @@ export class TotSelect extends HTMLElement {
     for (let i = 0; i < options.length; i++) {
       const option = options[i]
       if (option.type === 'divider') {
-        output.push('<div class="divider" role="separator"></div>')
+        output.push('<div class="divider" part="divider" role="separator"></div>')
         continue
       }
 
@@ -666,12 +709,13 @@ export class TotSelect extends HTMLElement {
 
       output.push(`<div
         class="${escapeAttribute(classes.join(' '))}"
+        part="option"
         role="option"
         aria-selected="${selected ? 'true' : 'false'}"
         aria-disabled="${option.disabled ? 'true' : 'false'}"
         data-value="${escapeAttribute(option.value)}"
         tabindex="${option.disabled ? '-1' : '0'}"
-      ><span class="option__check" aria-hidden="true">✓</span><span class="option__label">${escapeHtml(option.label)}</span></div>`)
+      ><span class="option__check" part="option-check" aria-hidden="true">✓</span><span class="option__label" part="option-label">${escapeHtml(option.label)}</span></div>`)
     }
     return output.join('')
   }
@@ -694,11 +738,11 @@ export class TotSelect extends HTMLElement {
     const visibleCount = labels.length > 3 ? 2 : labels.length
     const parts = []
     for (let i = 0; i < visibleCount; i++) {
-      parts.push(`<span class="select__tag">${escapeHtml(labels[i])}</span>`)
+      parts.push(`<span class="select__tag" part="tag">${escapeHtml(labels[i])}</span>`)
     }
 
     if (labels.length > visibleCount) {
-      parts.push(`<span class="select__tag select__tag--count">${labels.length} selected</span>`)
+      parts.push(`<span class="select__tag select__tag--count" part="tag-count">${labels.length} selected</span>`)
     }
 
     return parts.join('')
@@ -787,29 +831,27 @@ export class TotSelect extends HTMLElement {
     }
 
     this._selectedValues = []
-    this.render()
+    this.requestRender()
     this.focus()
-    emit(this, 'input', this.getEventDetail(null, false))
-    emit(this, 'change', this.getEventDetail(null, false))
-    emit(this, 'clear', this.getEventDetail(null, false))
+    dispatchComposedEvent(this, 'change')
+    dispatchComposedEvent(this, 'clear')
   }
 
   handleSlotChange() {
     const hasPrefix = this.hasNamedSlotContent('prefix')
     const hasSuffix = this.hasNamedSlotContent('suffix')
     if (hasPrefix !== this._hasPrefix || hasSuffix !== this._hasSuffix) {
-      this.render()
+      this.requestRender()
     }
   }
 
   toggleValue(value) {
-    const option = getOptionByValue(this.options, value)
+    const option = getOptionByValue(this.items, value)
     if (!option || option.disabled || this.disabled) {
       return
     }
 
     let nextValues = this.selectedValues
-    let selected = false
 
     if (this.multiple) {
       const index = nextValues.indexOf(value)
@@ -817,20 +859,23 @@ export class TotSelect extends HTMLElement {
         nextValues.splice(index, 1)
       } else {
         nextValues.push(value)
-        selected = true
       }
       this._selectedValues = nextValues
-      this.render()
+      this.requestRender()
     } else {
-      selected = nextValues[0] !== value
+      if (nextValues[0] === value) {
+        this.open = false
+        this.focus()
+        return
+      }
+
       nextValues = [value]
       this._selectedValues = nextValues
       this.open = false
       this.focus()
     }
 
-    emit(this, 'input', this.getEventDetail(option, selected))
-    emit(this, 'change', this.getEventDetail(option, selected))
+    dispatchComposedEvent(this, 'change')
   }
 
   focusCurrentOrFirstOption() {
@@ -852,8 +897,22 @@ export class TotSelect extends HTMLElement {
     })
   }
 
+  getOptionElements() {
+    return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.option')) : []
+  }
+
+  focusOption(value) {
+    const options = this.getOptionElements()
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].dataset.value === value && options[i].getAttribute('aria-disabled') !== 'true') {
+        options[i].focus()
+        return
+      }
+    }
+  }
+
   getEnabledOptionElements() {
-    const options = this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.option')) : []
+    const options = this.getOptionElements()
     const enabled = []
     for (let i = 0; i < options.length; i++) {
       if (options[i].getAttribute('aria-disabled') !== 'true') {
@@ -930,13 +989,25 @@ export class TotSelect extends HTMLElement {
     panel.style.top = `${top}px`
   }
 
-  getEventDetail(option, selected) {
-    return {
-      value: this.value,
-      values: this.selectedValues,
-      multiple: this.multiple,
-      option,
-      selected: Boolean(selected),
+  syncTextVisibility(name) {
+    const selector = name === 'label' ? '.label' : '.help-text'
+    const element = this.shadowRoot?.querySelector(selector)
+    const control = this.getControl()
+    const hasContent = name === 'label'
+      ? Boolean(this.label) || this.hasNamedSlotContent(name)
+      : Boolean(this.helpText) || this.hasNamedSlotContent(name)
+
+    if (element) {
+      element.hidden = !hasContent
+    }
+
+    if (control) {
+      const ariaAttribute = name === 'label' ? 'aria-labelledby' : 'aria-describedby'
+      if (hasContent) {
+        control.setAttribute(ariaAttribute, name)
+      } else {
+        control.removeAttribute(ariaAttribute)
+      }
     }
   }
 
@@ -959,7 +1030,7 @@ function getRelativeOption(options, active, step) {
   return options[(index + step + options.length) % options.length]
 }
 
-function parseOptions(value) {
+function parseItems(value) {
   if (value === null || value === undefined || value === '') {
     return []
   }
@@ -1021,8 +1092,8 @@ function normalizeOption(option) {
   }
 }
 
-function cloneOptions(options) {
-  return parseOptions(options)
+function cloneItems(items) {
+  return parseItems(items)
 }
 
 function parseValues(value) {
@@ -1088,11 +1159,10 @@ function getOptionByValue(options, value) {
   return null
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function dispatchComposedEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

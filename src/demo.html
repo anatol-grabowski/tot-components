@@ -94,6 +94,31 @@ h2 {
   flex-wrap: wrap;
 }
 
+.inline-control-row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.inline-labeled-control-row {
+  align-items: flex-end;
+}
+
+.inline-control-row > tot-input,
+.inline-control-row > tot-checkbox,
+.inline-control-row > tot-select,
+.inline-control-row > tot-horizontal-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inline-control-row > tot-button {
+  flex: 0 0 auto;
+}
+
+.inline-checkbox-row > tot-checkbox {
+  margin-block-start: calc((var(--tot-input-height-medium, 2.25rem) - var(--tot-toggle-size-medium, 1.125rem)) / 2);
+}
+
 .stack {
   display: grid;
   gap: var(--tot-spacing-x-small, 10px);
@@ -270,8 +295,8 @@ h2 {
 <div class="demo-app">
   <header class="demo-header">
     <tot-navbar id="demoNavbar" aria-label="Demo sections">
-      <span class="demo-title" slot="left">tot-components</span>
-      <span class="demo-nav-actions" slot="right">
+      <span class="demo-title" slot="prefix">tot-components</span>
+      <span class="demo-nav-actions" slot="suffix">
         <tot-button id="logsButton" size="small" label="Show logs"></tot-button>
         <tot-theme-selector id="themeSelector" size="small"></tot-theme-selector>
       </span>
@@ -370,18 +395,18 @@ h2 {
 
   function setupDemoNavbar() {
     const sections = getRegisteredDemos()
-    const tabs = []
+    const items = []
 
     for (let i = 0; i < sections.length; i++) {
-      tabs.push({
+      items.push({
         value: sections[i].id,
         label: sections[i].title,
       })
     }
 
-    demoNavbar.tabs = tabs
-    if (tabs.length > 0) {
-      demoNavbar.value = tabs[0].value
+    demoNavbar.items = items
+    if (items.length > 0) {
+      demoNavbar.value = items[0].value
     }
 
     demoNavbar.addEventListener('change', (event) => {

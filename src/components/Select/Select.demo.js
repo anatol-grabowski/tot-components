@@ -1,6 +1,6 @@
 import { registerDemo } from '../demoCommon.js'
 
-const statusOptions = [
+const statusItems = [
   { value: 'todo', label: 'To do' },
   { value: 'doing', label: 'In progress', selected: true },
   { value: 'done', label: 'Done' },
@@ -8,7 +8,7 @@ const statusOptions = [
   { value: 'archived', label: 'Archived', disabled: true },
 ]
 
-const tagOptions = [
+const tagItems = [
   { value: 'ux', label: 'UX' },
   { value: 'api', label: 'Api' },
   { value: 'docs', label: 'Docs' },
@@ -17,7 +17,7 @@ const tagOptions = [
   { value: 'blocked', label: 'Blocked', disabled: true },
 ]
 
-const manyOptions = [
+const manyItems = [
   { value: 'overview', label: 'Overview' },
   { value: 'activity', label: 'Activity' },
   { value: 'media', label: 'Media' },
@@ -38,11 +38,11 @@ registerDemo({
     wrapper.className = 'stack'
     wrapper.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Single select, JSON options, clearable</div>
+        <div class="demo-label">Single select, JSON items, clearable</div>
         <tot-select
           id="statusSelect"
           label="Status"
-          hint-text="Options can include dividers and disabled rows."
+          help-text="Items can include dividers and disabled rows."
           placeholder="Choose status"
           clearable
         >
@@ -62,32 +62,63 @@ registerDemo({
       <div class="stack demo-group">
         <div class="demo-label">Sizes and attribute configuration</div>
         <div class="stack">
-          <tot-select size="small" label="Small" value="b" options='[{"value":"a","label":"Alpha"},{"value":"b","label":"Beta"},{"value":"c","label":"Gamma"}]'></tot-select>
-          <tot-select size="large" label="Large" placeholder="Choose period" value="week" options='[{"value":"day","label":"Day"},{"value":"week","label":"Week"},{"value":"month","label":"Month"},"divider",{"value":"year","label":"Year","disabled":true}]'></tot-select>
+          <tot-select size="small" label="Small" value="b" items='[{"value":"a","label":"Alpha"},{"value":"b","label":"Beta"},{"value":"c","label":"Gamma"}]'></tot-select>
+          <tot-select size="large" label="Large" placeholder="Choose period" value="week" items='[{"value":"day","label":"Day"},{"value":"week","label":"Week"},{"value":"month","label":"Month"},"divider",{"value":"year","label":"Year","disabled":true}]'></tot-select>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Dynamic options and hoisted panel</div>
+        <div class="demo-label">Inline with button</div>
+        <div class="stack">
+          <div class="row inline-control-row inline-labeled-control-row">
+            <tot-select id="inlinePrioritySelect" label="Priority" placeholder="Choose priority"></tot-select>
+            <tot-button variant="primary">Set</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-select id="inlineStatusSelect" placeholder="Choose status"></tot-select>
+            <tot-button variant="primary">Apply</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-select id="inlineTeamSelect" placeholder="Choose team" help-text="The assignment is applied immediately."></tot-select>
+            <tot-button variant="primary">Assign</tot-button>
+          </div>
+        </div>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Dynamic items and hoisted panel</div>
         <div class="row">
           <tot-select id="dynamicSelect" label="Assignee" placeholder="Assign" hoist clearable></tot-select>
-          <button class="demo-native-button" type="button" data-action="swap-options">Swap options</button>
-          <button class="demo-native-button" type="button" data-action="set-value">Set selected</button>
-          <button class="demo-native-button" type="button" data-action="toggle-disabled">Toggle disabled</button>
+          <tot-button data-action="swap-items">Swap items</tot-button>
+          <tot-button data-action="set-value">Set selected</tot-button>
+          <tot-button data-action="toggle-disabled">Toggle disabled</tot-button>
         </div>
       </div>
     `
 
     const statusSelect = wrapper.querySelector('#statusSelect')
     const tagSelect = wrapper.querySelector('#tagSelect')
-    const dynamicSelect = wrapper.querySelector('#dynamicSelect')
     const manySelect = wrapper.querySelector('#manySelect')
+    const inlinePrioritySelect = wrapper.querySelector('#inlinePrioritySelect')
+    const inlineStatusSelect = wrapper.querySelector('#inlineStatusSelect')
+    const inlineTeamSelect = wrapper.querySelector('#inlineTeamSelect')
+    const dynamicSelect = wrapper.querySelector('#dynamicSelect')
 
-    statusSelect.options = statusOptions
-    tagSelect.options = tagOptions
+    statusSelect.items = statusItems
+    tagSelect.items = tagItems
     tagSelect.values = ['ux', 'docs']
-    manySelect.options = manyOptions
+    manySelect.items = manyItems
     manySelect.values = ['overview', 'activity', 'media', 'data', 'docs', 'settings']
-    dynamicSelect.options = [
+    inlinePrioritySelect.items = [
+      { value: 'low', label: 'Low' },
+      { value: 'normal', label: 'Normal', selected: true },
+      { value: 'high', label: 'High' },
+    ]
+    inlineStatusSelect.items = statusItems
+    inlineTeamSelect.items = [
+      { value: 'design', label: 'Design' },
+      { value: 'frontend', label: 'Frontend' },
+      { value: 'backend', label: 'Backend' },
+    ]
+    dynamicSelect.items = [
       { value: 'ana', label: 'Ana' },
       { value: 'bo', label: 'Bo' },
       { value: 'chen', label: 'Chen', disabled: true },
@@ -96,14 +127,11 @@ registerDemo({
     const selects = wrapper.querySelectorAll('tot-select')
     for (let i = 0; i < selects.length; i++) {
       const select = selects[i]
-      select.addEventListener('input', (event) => {
-        logEvent(select, 'input', getSelectEventDetail(event.detail))
+      select.addEventListener('change', () => {
+        logEvent(select, 'change', getSelectState(select))
       })
-      select.addEventListener('change', (event) => {
-        logEvent(select, 'change', getSelectEventDetail(event.detail))
-      })
-      select.addEventListener('clear', (event) => {
-        logEvent(select, 'clear', getSelectEventDetail(event.detail))
+      select.addEventListener('clear', () => {
+        logEvent(select, 'clear', getSelectState(select))
       })
     }
 
@@ -113,15 +141,15 @@ registerDemo({
         return
       }
 
-      if (action === 'swap-options') {
-        dynamicSelect.options = [
+      if (action === 'swap-items') {
+        dynamicSelect.items = [
           { value: 'design', label: 'Design team' },
           { value: 'frontend', label: 'Frontend' },
           'divider',
           { value: 'backend', label: 'Backend' },
         ]
         dynamicSelect.value = 'frontend'
-        logEvent(dynamicSelect, 'options-update', { count: dynamicSelect.options.length, value: dynamicSelect.value })
+        logEvent(dynamicSelect, 'items-update', { count: dynamicSelect.items.length, value: dynamicSelect.value })
       }
 
       if (action === 'set-value') {
@@ -141,12 +169,10 @@ registerDemo({
   },
 })
 
-function getSelectEventDetail(detail) {
+function getSelectState(select) {
   return {
-    value: detail.value,
-    values: detail.values,
-    multiple: detail.multiple,
-    selected: detail.selected,
-    option: detail.option ? { value: detail.option.value, label: detail.option.label } : null,
+    value: select.value,
+    values: select.values,
+    multiple: select.multiple,
   }
 }

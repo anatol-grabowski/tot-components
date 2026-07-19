@@ -9,7 +9,7 @@ const inputStyle = `
     box-sizing: border-box;
   }
 
-  .form-control {
+  .input-wrap {
     display: grid;
     gap: var(--tot-spacing-2x-small, .25rem);
     max-width: 100%;
@@ -26,13 +26,15 @@ const inputStyle = `
     overflow-wrap: anywhere;
   }
 
-  .label:empty {
+  .label[hidden],
+  .help-text[hidden] {
     display: none;
   }
 
   .input {
     --input-height: var(--tot-input-height-medium, 2.25rem);
-    --input-spacing: var(--tot-input-spacing-medium, .75rem);
+    --input-spacing: var(--tot-spacing-2x-small, .25rem);
+    --input-edge-spacing: calc(var(--input-spacing) + var(--tot-spacing-3x-small, .125rem));
     --input-font-size: var(--tot-input-font-size-medium, .875rem);
 
     align-items: center;
@@ -52,7 +54,8 @@ const inputStyle = `
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
-    padding: 0 var(--input-spacing);
+    padding-block: 0;
+    padding-inline: var(--input-edge-spacing);
     transition:
       var(--tot-transition-fast, 150ms) background-color,
       var(--tot-transition-fast, 150ms) border-color,
@@ -63,14 +66,18 @@ const inputStyle = `
 
   .input--small {
     --input-height: var(--tot-input-height-small, 1.75rem);
-    --input-spacing: var(--tot-input-spacing-small, .5rem);
+    --input-spacing: var(--tot-spacing-3x-small, .125rem);
     --input-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
   .input--large {
     --input-height: var(--tot-input-height-large, 2.75rem);
-    --input-spacing: var(--tot-input-spacing-large, 1rem);
+    --input-spacing: var(--tot-spacing-x-small, .5rem);
     --input-font-size: var(--tot-input-font-size-large, 1rem);
+  }
+
+  .input--has-actions {
+    padding-inline-end: var(--input-spacing);
   }
 
   .input:hover:not(.input--disabled) {
@@ -150,7 +157,10 @@ const inputStyle = `
 
   .input__actions {
     gap: var(--tot-spacing-3x-small, .125rem);
-    margin-inline-end: 0;
+  }
+
+  .input__actions[hidden] {
+    display: none;
   }
 
   .input__button {
@@ -185,6 +195,14 @@ const inputStyle = `
     opacity: .5;
   }
 
+  .input__button svg {
+    display: block;
+    height: 1.15em;
+    pointer-events: none;
+    stroke: currentColor;
+    width: 1.15em;
+  }
+
   .input__button[hidden] {
     display: none;
   }
@@ -198,25 +216,37 @@ const inputStyle = `
     overflow-wrap: anywhere;
   }
 
-  .help-text:empty {
-    display: none;
-  }
-
-  .form-control--small .label {
+  .input-wrap--small .label {
     font-size: var(--tot-input-label-font-size-small, .8125rem);
   }
 
-  .form-control--small .help-text {
+  .input-wrap--small .help-text {
     font-size: var(--tot-input-help-text-font-size-small, .75rem);
   }
 
-  .form-control--large .label {
+  .input-wrap--large .label {
     font-size: var(--tot-input-label-font-size-large, 1rem);
   }
 
-  .form-control--large .help-text {
+  .input-wrap--large .help-text {
     font-size: var(--tot-input-help-text-font-size-large, .875rem);
   }
+`
+
+const showPasswordIcon = `
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+    <circle cx="12" cy="12" r="2.75"></circle>
+  </svg>
+`
+
+const hidePasswordIcon = `
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 3l18 18"></path>
+    <path d="M10.6 6.2A10.5 10.5 0 0 1 12 6c6 0 9.5 6 9.5 6a17.4 17.4 0 0 1-3.1 3.8"></path>
+    <path d="M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6c1.2 0 2.3-.2 3.3-.6"></path>
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+  </svg>
 `
 
 const sizes = ['small', 'medium', 'large']
@@ -240,8 +270,6 @@ export class TotInput extends HTMLElement {
     super()
     this._value = null
     this._passwordVisible = false
-    this._hasPrefix = false
-    this._hasSuffix = false
   }
 
   get value() {
@@ -250,11 +278,7 @@ export class TotInput extends HTMLElement {
       return input.value
     }
 
-    if (this._value !== null) {
-      return this._value
-    }
-
-    return this.getAttribute('value') || ''
+    return this._value ?? this.getAttribute('value') ?? ''
   }
 
   set value(value) {
@@ -330,7 +354,11 @@ export class TotInput extends HTMLElement {
     this.render()
   }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
     if (name === 'value') {
       this._value = null
     }
@@ -339,7 +367,22 @@ export class TotInput extends HTMLElement {
       this._passwordVisible = false
     }
 
-    this.render()
+    if (!this.isConnected) {
+      return
+    }
+
+    if (name === 'value') {
+      this.updateInputValue()
+    } else {
+      this.render()
+    }
+  }
+
+  click() {
+    const input = this.getInput()
+    if (input) {
+      input.click()
+    }
   }
 
   focus(options) {
@@ -363,79 +406,95 @@ export class TotInput extends HTMLElement {
     }
   }
 
+  getInput() {
+    return this.shadowRoot?.querySelector('.input__control') || null
+  }
+
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
     const size = this.size
     const disabled = this.disabled
-    const clearable = this.clearable
     const passwordToggle = this.passwordToggle && this.type === 'password'
-    const hasPrefix = this.hasNamedSlotContent('prefix')
-    const hasSuffix = this.hasNamedSlotContent('suffix')
     const inputType = passwordToggle && this._passwordVisible ? 'text' : this.type
-    const formClasses = ['form-control', `form-control--${size}`]
+    const wrapClasses = ['input-wrap', `input-wrap--${size}`]
     const inputClasses = ['input', `input--${size}`]
-
-    this._hasPrefix = hasPrefix
-    this._hasSuffix = hasSuffix
+    const hasLabel = Boolean(this.label) || this.hasNamedSlotContent('label')
+    const hasHelpText = Boolean(this.helpText) || this.hasNamedSlotContent('help-text')
+    const showClearButton = this.clearable && !disabled && this.value.length > 0
+    const hasActions = showClearButton || passwordToggle
 
     if (disabled) {
       inputClasses.push('input--disabled')
     }
 
-    if (hasPrefix) {
+    if (this.hasNamedSlotContent('prefix')) {
       inputClasses.push('input--has-prefix')
     }
 
-    if (hasSuffix) {
+    if (this.hasNamedSlotContent('suffix')) {
       inputClasses.push('input--has-suffix')
     }
 
+    if (hasActions) {
+      inputClasses.push('input--has-actions')
+    }
+
     root.innerHTML = `<style>${inputStyle}</style>
-      <label class="${escapeAttribute(formClasses.join(' '))}" part="form-control">
-        <span class="label" part="form-control-label"><slot name="label">${escapeHtml(this.label)}</slot></span>
-        <span class="${escapeAttribute(inputClasses.join(' '))}" part="base">
+      <div class="${escapeAttribute(wrapClasses.join(' '))}" part="base">
+        <label class="label" part="label" for="control" ${hasLabel ? '' : 'hidden'}><slot name="label">${escapeHtml(this.label)}</slot></label>
+        <span class="${escapeAttribute(inputClasses.join(' '))}" part="control">
           <span class="input__prefix" part="prefix"><slot name="prefix"></slot></span>
           <input
+            id="control"
             class="input__control"
             part="input"
             type="${escapeAttribute(inputType)}"
             value="${escapeAttribute(this.value)}"
             placeholder="${escapeAttribute(this.placeholder)}"
+            ${hasHelpText ? 'aria-describedby="help-text"' : ''}
             ${disabled ? 'disabled' : ''}
           >
           <span class="input__suffix" part="suffix"><slot name="suffix"></slot></span>
-          <span class="input__actions" part="actions">
-            <button class="input__button input__clear-button" type="button" aria-label="Clear input" ${clearable ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>×</button>
-            <button class="input__button input__password-button" type="button" aria-label="${this._passwordVisible ? 'Hide password' : 'Show password'}" ${passwordToggle ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>${this._passwordVisible ? '🙈' : '👁'}</button>
+          <span class="input__actions" part="actions" ${hasActions ? '' : 'hidden'}>
+            <button class="input__button input__clear-button" part="clear-button" type="button" aria-label="Clear input" ${showClearButton ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>×</button>
+            <button class="input__button input__password-button" part="password-button" type="button" aria-label="${this._passwordVisible ? 'Hide password' : 'Show password'}" aria-pressed="${String(this._passwordVisible)}" ${passwordToggle ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>${getPasswordIcon(this._passwordVisible)}</button>
           </span>
         </span>
-        <span class="help-text" part="form-control-help-text"><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
-      </label>
+        <span id="help-text" class="help-text" part="help-text" ${hasHelpText ? '' : 'hidden'}><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
+      </div>
     `
 
-    const input = root.querySelector('.input__control')
+    const base = root.querySelector('.input')
+    const input = this.getInput()
+    const labelSlot = root.querySelector('slot[name="label"]')
     const prefixSlot = root.querySelector('slot[name="prefix"]')
     const suffixSlot = root.querySelector('slot[name="suffix"]')
+    const helpTextSlot = root.querySelector('slot[name="help-text"]')
     const clearButton = root.querySelector('.input__clear-button')
     const passwordButton = root.querySelector('.input__password-button')
 
-    input.addEventListener('input', () => {
+    base.addEventListener('click', (event) => {
+      if (!event.target?.closest?.('button')) {
+        input.focus()
+      }
+    })
+    input.addEventListener('input', (event) => {
       this._value = input.value
       this.updateClearButton()
-      emit(this, 'input', this.getEventDetail())
+      this.forwardEventIfNeeded(event)
     })
-
-    input.addEventListener('change', () => {
+    input.addEventListener('change', (event) => {
       this._value = input.value
-      emit(this, 'change', this.getEventDetail())
+      this.forwardEventIfNeeded(event)
     })
-
     clearButton.addEventListener('mousedown', (event) => event.preventDefault())
     clearButton.addEventListener('click', () => this.handleClear())
     passwordButton.addEventListener('mousedown', (event) => event.preventDefault())
     passwordButton.addEventListener('click', () => this.handlePasswordToggle())
-    prefixSlot.addEventListener('slotchange', () => this.handleSlotChange())
-    suffixSlot.addEventListener('slotchange', () => this.handleSlotChange())
+    labelSlot.addEventListener('slotchange', () => this.syncTextVisibility('label'))
+    prefixSlot.addEventListener('slotchange', () => this.syncSlotVisibility('prefix'))
+    suffixSlot.addEventListener('slotchange', () => this.syncSlotVisibility('suffix'))
+    helpTextSlot.addEventListener('slotchange', () => this.syncTextVisibility('help-text'))
     this.updateClearButton()
   }
 
@@ -445,7 +504,7 @@ export class TotInput extends HTMLElement {
     }
 
     const input = this.getInput()
-    if (!input) {
+    if (!input || input.value.length === 0) {
       return
     }
 
@@ -453,9 +512,9 @@ export class TotInput extends HTMLElement {
     this._value = ''
     this.updateClearButton()
     input.focus()
-    emit(this, 'input', this.getEventDetail())
-    emit(this, 'change', this.getEventDetail())
-    emit(this, 'clear', this.getEventDetail())
+    dispatchComposedEvent(input, 'input')
+    dispatchComposedEvent(input, 'change')
+    dispatchComposedEvent(this, 'clear')
   }
 
   handlePasswordToggle() {
@@ -473,44 +532,64 @@ export class TotInput extends HTMLElement {
 
     if (button) {
       button.setAttribute('aria-label', this._passwordVisible ? 'Hide password' : 'Show password')
-      button.textContent = this._passwordVisible ? '🙈' : '👁'
+      button.setAttribute('aria-pressed', String(this._passwordVisible))
+      button.innerHTML = getPasswordIcon(this._passwordVisible)
     }
   }
 
-  handleSlotChange() {
-    const hasPrefix = this.hasNamedSlotContent('prefix')
-    const hasSuffix = this.hasNamedSlotContent('suffix')
-    if (hasPrefix !== this._hasPrefix || hasSuffix !== this._hasSuffix) {
-      this.render()
+  syncSlotVisibility(name) {
+    const base = this.shadowRoot?.querySelector('.input')
+    if (base) {
+      base.classList.toggle(`input--has-${name}`, this.hasNamedSlotContent(name))
+    }
+  }
+
+  syncTextVisibility(name) {
+    const selector = name === 'label' ? '.label' : '.help-text'
+    const element = this.shadowRoot?.querySelector(selector)
+    const hasContent = Boolean(this.getAttribute(name)) || this.hasNamedSlotContent(name)
+
+    if (element) {
+      element.hidden = !hasContent
+    }
+
+    if (name === 'help-text') {
+      const input = this.getInput()
+      if (input) {
+        if (hasContent) {
+          input.setAttribute('aria-describedby', 'help-text')
+        } else {
+          input.removeAttribute('aria-describedby')
+        }
+      }
     }
   }
 
   updateInputValue() {
     const input = this.getInput()
     if (input) {
-      input.value = this._value === null ? this.value : this._value
+      input.value = this._value ?? this.getAttribute('value') ?? ''
       this.updateClearButton()
     }
   }
 
   updateClearButton() {
+    const input = this.getInput()
+    const actions = this.shadowRoot?.querySelector('.input__actions')
     const clearButton = this.shadowRoot?.querySelector('.input__clear-button')
-    if (!clearButton) {
+    const passwordButton = this.shadowRoot?.querySelector('.input__password-button')
+    if (!input || !actions || !clearButton || !passwordButton) {
       return
     }
 
-    clearButton.hidden = !this.clearable || this.disabled || this.value.length === 0
+    clearButton.hidden = !this.clearable || this.disabled || input.value.length === 0
+    actions.hidden = clearButton.hidden && passwordButton.hidden
+    actions.closest('.input')?.classList.toggle('input--has-actions', !actions.hidden)
   }
 
-  getInput() {
-    return this.shadowRoot?.querySelector('.input__control')
-  }
-
-  getEventDetail() {
-    return {
-      value: this.value,
-      size: this.size,
-      type: this.type,
+  forwardEventIfNeeded(event) {
+    if (!event.composed) {
+      dispatchComposedEvent(this, event.type)
     }
   }
 
@@ -524,11 +603,14 @@ export class TotInput extends HTMLElement {
   }
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function getPasswordIcon(passwordVisible) {
+  return passwordVisible ? hidePasswordIcon : showPasswordIcon
+}
+
+function dispatchComposedEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

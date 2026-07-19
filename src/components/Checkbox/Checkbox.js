@@ -18,8 +18,8 @@ const checkboxStyle = `
   .checkbox {
     --toggle-size: var(--tot-toggle-size-medium, 1.125rem);
     --checkbox-font-size: var(--tot-input-font-size-medium, .875rem);
-    --checkbox-help-offset: 1.625rem;
 
+    -webkit-tap-highlight-color: transparent;
     color: var(--tot-input-label-color, var(--tot-input-color, #1e293b));
     cursor: pointer;
     display: inline-flex;
@@ -37,13 +37,11 @@ const checkboxStyle = `
   .checkbox--small {
     --toggle-size: var(--tot-toggle-size-small, 1rem);
     --checkbox-font-size: var(--tot-input-font-size-small, .8125rem);
-    --checkbox-help-offset: 1.375rem;
   }
 
   .checkbox--large {
     --toggle-size: var(--tot-toggle-size-large, 1.375rem);
     --checkbox-font-size: var(--tot-input-font-size-large, 1rem);
-    --checkbox-help-offset: 1.875rem;
   }
 
   .checkbox__input {
@@ -99,7 +97,6 @@ const checkboxStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-help-text-font-size-medium, .8125rem);
     line-height: 1.35;
-    margin-inline-start: var(--checkbox-help-offset);
     max-width: 100%;
     overflow-wrap: anywhere;
   }
@@ -134,8 +131,8 @@ const checkboxStyle = `
     border-color: var(--tot-color-primary-500, #0ea5e9);
   }
 
-  .checkbox--checked .checkbox__checked-icon,
-  .checkbox--indeterminate:not(.checkbox--checked) .checkbox__indeterminate-icon {
+  .checkbox--checked:not(.checkbox--indeterminate) .checkbox__checked-icon,
+  .checkbox--indeterminate .checkbox__indeterminate-icon {
     display: inline-block;
   }
 
@@ -148,7 +145,7 @@ const checkboxStyle = `
     color: var(--tot-input-color-disabled, var(--tot-color-neutral-700, #334155));
   }
 
-  .checkbox__help-text:empty {
+  .checkbox__help-text[hidden] {
     display: none;
   }
 `
@@ -211,12 +208,26 @@ export class TotCheckbox extends HTMLElement {
     }
   }
 
+  get label() {
+    return this.getAttribute('label') || ''
+  }
+
+  set label(value) {
+    if (value === null || value === undefined) {
+      this.removeAttribute('label')
+    } else {
+      this.setAttribute('label', String(value))
+    }
+  }
+
   connectedCallback() {
     this.render()
   }
 
-  attributeChangedCallback() {
-    this.render()
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue && this.isConnected && !this._syncingInput) {
+      this.render()
+    }
   }
 
   click() {
@@ -246,8 +257,9 @@ export class TotCheckbox extends HTMLElement {
     const indeterminate = this.indeterminate
     const disabled = this.disabled
     const size = this.size
-    const label = this.getAttribute('label') || ''
+    const label = this.label
     const helpText = this.helpText
+    const hasHelpText = Boolean(helpText) || this.hasNamedSlotContent('help-text')
     const classes = [
       'checkbox',
       `checkbox--${size}`,
@@ -270,6 +282,7 @@ export class TotCheckbox extends HTMLElement {
         <label class="${escapeAttribute(classes.join(' '))}">
           <input
             class="checkbox__input"
+            part="input"
             type="checkbox"
             aria-checked="${indeterminate ? 'mixed' : String(checked)}"
             ${checked ? 'checked' : ''}
@@ -281,32 +294,65 @@ export class TotCheckbox extends HTMLElement {
           </span>
           <span class="checkbox__label" part="label"><slot>${escapeHtml(label)}</slot></span>
         </label>
-        <span class="checkbox__help-text" part="form-control-help-text"><slot name="help-text">${escapeHtml(helpText)}</slot></span>
+        <span class="checkbox__help-text" part="help-text" ${hasHelpText ? '' : 'hidden'}><slot name="help-text">${escapeHtml(helpText)}</slot></span>
       </div>
     `
 
     const input = root.querySelector('input')
+    const helpTextElement = root.querySelector('.checkbox__help-text')
+    const helpTextSlot = root.querySelector('slot[name="help-text"]')
     input.indeterminate = indeterminate
-    input.addEventListener('input', () => {
-      emit(this, 'input', this.getEventDetail(input))
+    input.addEventListener('input', (event) => {
+      this._syncFromInput(input)
+      this._forwardEventIfNeeded(event)
     })
-    input.addEventListener('change', () => {
-      this.indeterminate = false
-      this.checked = input.checked
-      emit(this, 'change', this.getEventDetail(input))
+    input.addEventListener('change', (event) => {
+      this._syncFromInput(input)
+      this._forwardEventIfNeeded(event)
+    })
+    helpTextSlot.addEventListener('slotchange', () => {
+      helpTextElement.hidden = !this.hasNamedSlotContent('help-text') && !this.helpText
     })
   }
 
   getInput() {
-    return this.shadowRoot?.querySelector('input')
+    return this.shadowRoot?.querySelector('input') || null
   }
 
-  getEventDetail(input) {
-    return {
-      checked: input.checked,
-      indeterminate: input.indeterminate,
-      size: this.size,
+  _syncFromInput(input) {
+    const checked = input.checked
+    const indeterminate = input.indeterminate
+    const control = input.closest('.checkbox')
+
+    input.setAttribute('aria-checked', indeterminate ? 'mixed' : String(checked))
+    control.classList.toggle('checkbox--checked', checked)
+    control.classList.toggle('checkbox--indeterminate', indeterminate)
+
+    this._syncingInput = true
+    try {
+      this.checked = checked
+      this.indeterminate = indeterminate
+    } finally {
+      this._syncingInput = false
     }
+  }
+
+  _forwardEventIfNeeded(event) {
+    if (!event.composed) {
+      this.dispatchEvent(new Event(event.type, {
+        bubbles: true,
+        composed: true,
+      }))
+    }
+  }
+
+  hasNamedSlotContent(name) {
+    for (let i = 0; i < this.children.length; i++) {
+      if (this.children[i].slot === name) {
+        return true
+      }
+    }
+    return false
   }
 
   toggleBooleanAttribute(name, value) {
@@ -316,14 +362,6 @@ export class TotCheckbox extends HTMLElement {
       this.removeAttribute(name)
     }
   }
-}
-
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
-    detail: detail || {},
-  }))
 }
 
 function getSupportedValue(value, supportedValues, fallback) {

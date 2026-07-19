@@ -250,13 +250,21 @@ export class TotAudioRecorder extends HTMLElement {
     this._resizeObserver = null
     this._themeObserver = null
     this._themeStylesheetLinks = []
+    this._wakeLock = null
+    this._wakeLockPending = false
     this._handleThemeChange = () => this.scheduleThemeRedraw()
     this._handleThemeStylesheetLoad = () => this.scheduleThemeRedraw()
+    this._handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && this.isRecordingInProgress()) {
+        void this.acquireWakeLock()
+      }
+    }
     this._isAbort = false
   }
 
   connectedCallback() {
     this.observeThemeChanges()
+    document.addEventListener('visibilitychange', this._handleVisibilityChange)
     this.render()
   }
 
@@ -275,6 +283,7 @@ export class TotAudioRecorder extends HTMLElement {
     this.clearThemeStylesheetListeners()
     window.removeEventListener('tot-theme-change', this._handleThemeChange)
     document.removeEventListener('tot-theme-change', this._handleThemeChange)
+    document.removeEventListener('visibilitychange', this._handleVisibilityChange)
   }
 
   render() {
@@ -441,6 +450,7 @@ export class TotAudioRecorder extends HTMLElement {
     })
     this._isAbort = false
     this._recorder.start()
+    void this.acquireWakeLock()
     this._playback.style.display = 'none'
     this._recordButton.hidden = true
     this._recordButton.disabled = false
@@ -457,6 +467,57 @@ export class TotAudioRecorder extends HTMLElement {
     this.setupAnalyser()
     this.drawLiveWave()
     emit(this, 'recording-start')
+  }
+
+  isRecordingInProgress() {
+    return Boolean(this._recorder && this._recorder.state !== 'inactive')
+  }
+
+  async acquireWakeLock() {
+    if (
+      this._wakeLock
+      || this._wakeLockPending
+      || !this.isConnected
+      || !this.isRecordingInProgress()
+      || document.visibilityState !== 'visible'
+      || !('wakeLock' in navigator)
+    ) {
+      return
+    }
+
+    this._wakeLockPending = true
+    try {
+      const wakeLock = await navigator.wakeLock.request('screen')
+      if (!this.isConnected || !this.isRecordingInProgress()) {
+        await wakeLock.release()
+        return
+      }
+
+      this._wakeLock = wakeLock
+      wakeLock.addEventListener('release', () => {
+        if (this._wakeLock === wakeLock) {
+          this._wakeLock = null
+        }
+      }, { once: true })
+    } catch {
+      // Recording remains available when wake lock is unsupported or denied.
+    } finally {
+      this._wakeLockPending = false
+    }
+  }
+
+  async releaseWakeLock() {
+    const wakeLock = this._wakeLock
+    this._wakeLock = null
+    if (!wakeLock || wakeLock.released) {
+      return
+    }
+
+    try {
+      await wakeLock.release()
+    } catch {
+      // The browser may already have released the lock.
+    }
   }
 
   setupAnalyser() {
@@ -696,6 +757,7 @@ export class TotAudioRecorder extends HTMLElement {
   }
 
   stopTracks() {
+    void this.releaseWakeLock()
     if (this._stream) {
       const tracks = this._stream.getTracks()
       for (let i = 0; i < tracks.length; i++) {

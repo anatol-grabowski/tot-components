@@ -31,7 +31,7 @@ registerDemo({
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Multiple selection, disabled item, horizontal scroll</div>
-        <tot-horizontal-select id="fruitSelect" label="Fruit" help-text="Multiple selected options keep visible borders and fixed widths." multiple></tot-horizontal-select>
+        <tot-horizontal-select id="fruitSelect" label="Fruit" help-text="Multiple selected options remain visible." multiple></tot-horizontal-select>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Sizes and JSON attribute configuration</div>
@@ -41,21 +41,52 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="stack">
+          <div class="row inline-control-row inline-labeled-control-row">
+            <tot-horizontal-select id="inlineViewSelect" label="View"></tot-horizontal-select>
+            <tot-button variant="primary">Open</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-horizontal-select id="inlineDensitySelect"></tot-horizontal-select>
+            <tot-button variant="primary">Save</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-horizontal-select id="inlinePeriodSelect" help-text="This changes the report interval."></tot-horizontal-select>
+            <tot-button variant="primary">Update</tot-button>
+          </div>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Dynamic item configuration</div>
         <div class="row">
-          <tot-horizontal-select id="dynamicSelect" label="Dynamic" value="left"></tot-horizontal-select>
-          <button class="demo-native-button" type="button" data-action="swap-items">Swap items</button>
-          <button class="demo-native-button" type="button" data-action="set-values">Set selected</button>
+          <tot-horizontal-select id="dynamicSelect" label="Alignment" value="left"></tot-horizontal-select>
+          <tot-button data-action="swap-items">Swap items</tot-button>
+          <tot-button data-action="set-values">Set selected</tot-button>
         </div>
       </div>
     `
 
     const densitySelect = wrapper.querySelector('#densitySelect')
     const fruitSelect = wrapper.querySelector('#fruitSelect')
+    const inlineViewSelect = wrapper.querySelector('#inlineViewSelect')
+    const inlineDensitySelect = wrapper.querySelector('#inlineDensitySelect')
+    const inlinePeriodSelect = wrapper.querySelector('#inlinePeriodSelect')
     const dynamicSelect = wrapper.querySelector('#dynamicSelect')
 
     densitySelect.items = densityItems
     fruitSelect.items = fruitItems
+    inlineViewSelect.items = [
+      { value: 'list', label: 'List', selected: true },
+      { value: 'board', label: 'Board' },
+      { value: 'calendar', label: 'Calendar' },
+    ]
+    inlineDensitySelect.items = densityItems
+    inlinePeriodSelect.items = [
+      { value: 'day', label: 'Day' },
+      { value: 'week', label: 'Week', selected: true },
+      { value: 'month', label: 'Month' },
+    ]
     dynamicSelect.items = [
       { value: 'left', label: 'Left' },
       { value: 'center', label: 'Center' },
@@ -65,11 +96,8 @@ registerDemo({
     const selects = wrapper.querySelectorAll('tot-horizontal-select')
     for (let i = 0; i < selects.length; i++) {
       const select = selects[i]
-      select.addEventListener('input', (event) => {
-        logEvent(select, 'input', getSelectEventDetail(event.detail))
-      })
-      select.addEventListener('change', (event) => {
-        logEvent(select, 'change', getSelectEventDetail(event.detail))
+      select.addEventListener('change', () => {
+        logEvent(select, 'change', getSelectState(select))
       })
     }
 
@@ -96,12 +124,10 @@ registerDemo({
   },
 })
 
-function getSelectEventDetail(detail) {
+function getSelectState(select) {
   return {
-    value: detail.value,
-    values: detail.values,
-    multiple: detail.multiple,
-    selected: detail.selected,
-    item: detail.item ? { value: detail.item.value, label: detail.item.label } : null,
+    value: select.value,
+    values: select.values,
+    multiple: select.multiple,
   }
 }

@@ -43,19 +43,36 @@ registerDemo({
           <tot-input label="Disabled" value="Unavailable" disabled help-text="Disabled input"></tot-input>
         </div>
       </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="stack">
+          <div class="row inline-control-row inline-labeled-control-row">
+            <tot-input label="Project name" placeholder="New project"></tot-input>
+            <tot-button variant="primary">Create</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-input placeholder="Search"></tot-input>
+            <tot-button variant="primary">Search</tot-button>
+          </div>
+          <div class="row inline-control-row">
+            <tot-input placeholder="Email address" help-text="We'll send a confirmation link."></tot-input>
+            <tot-button variant="primary">Send</tot-button>
+          </div>
+        </div>
+      </div>
     `
 
     const inputs = wrapper.querySelectorAll('tot-input')
     for (let i = 0; i < inputs.length; i++) {
       const input = inputs[i]
-      input.addEventListener('input', (event) => {
-        logEvent(input, 'input', event.detail)
+      input.addEventListener('input', () => {
+        logEvent(input, 'input', { value: input.value })
       })
-      input.addEventListener('change', (event) => {
-        logEvent(input, 'change', event.detail)
+      input.addEventListener('change', () => {
+        logEvent(input, 'change', { value: input.value })
       })
-      input.addEventListener('clear', (event) => {
-        logEvent(input, 'clear', event.detail)
+      input.addEventListener('clear', () => {
+        logEvent(input, 'clear', { value: input.value })
       })
     }
 

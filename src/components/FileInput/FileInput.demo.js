@@ -26,19 +26,15 @@ registerDemo({
     const fileInputs = wrapper.querySelectorAll('tot-file-input')
     for (let i = 0; i < fileInputs.length; i++) {
       const fileInput = fileInputs[i]
-      fileInput.addEventListener('change', (event) => {
+      fileInput.addEventListener('change', () => {
         logEvent(fileInput, 'change', {
-          count: event.detail.count,
-          multiple: event.detail.multiple,
-          directory: event.detail.directory,
-          entries: event.detail.entries,
+          count: fileInput.files.length,
+          entries: fileInput.entries,
         })
       })
-      fileInput.addEventListener('clear', (event) => {
+      fileInput.addEventListener('clear', () => {
         logEvent(fileInput, 'clear', {
-          count: event.detail.count,
-          multiple: event.detail.multiple,
-          directory: event.detail.directory,
+          count: fileInput.files.length,
         })
       })
     }

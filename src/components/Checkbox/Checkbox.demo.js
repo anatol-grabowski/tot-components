@@ -28,19 +28,39 @@ registerDemo({
         <tot-checkbox label="Label attribute fallback"></tot-checkbox>
         <tot-checkbox label="Slot has priority">Slotted label wins</tot-checkbox>
       </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="stack">
+          <div class="row inline-control-row inline-checkbox-row">
+            <tot-checkbox>Remember this choice</tot-checkbox>
+            <tot-button variant="primary">Save</tot-button>
+          </div>
+          <div class="row inline-control-row inline-checkbox-row">
+            <tot-checkbox help-text="You can change this later.">Enable notifications</tot-checkbox>
+            <tot-button variant="primary">Continue</tot-button>
+          </div>
+        </div>
+      </div>
     `
 
     const checkboxes = row.querySelectorAll('tot-checkbox')
     for (let i = 0; i < checkboxes.length; i++) {
       const checkbox = checkboxes[i]
-      checkbox.addEventListener('input', (event) => {
-        logEvent(checkbox, 'input', event.detail)
+      checkbox.addEventListener('input', () => {
+        logEvent(checkbox, 'input', getCheckboxState(checkbox))
       })
-      checkbox.addEventListener('change', (event) => {
-        logEvent(checkbox, 'change', event.detail)
+      checkbox.addEventListener('change', () => {
+        logEvent(checkbox, 'change', getCheckboxState(checkbox))
       })
     }
 
     container.appendChild(row)
   },
 })
+
+function getCheckboxState(checkbox) {
+  return {
+    checked: checkbox.checked,
+    indeterminate: checkbox.indeterminate,
+  }
+}

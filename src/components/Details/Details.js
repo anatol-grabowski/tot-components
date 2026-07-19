@@ -64,16 +64,27 @@ const detailsStyle = `
     color: var(--tot-color-neutral-500, #64748b);
     display: inline-flex;
     flex: 0 0 auto;
-    font-size: .875rem;
+    height: 1rem;
     justify-content: center;
     line-height: 1;
-    transition: var(--tot-transition-fast, 150ms) transform;
     width: 1rem;
   }
 
   .details__expand-icon,
   .details__collapse-icon {
+    align-items: center;
     display: none;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .details__summary-icon svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
   }
 
   .details:not(.details--open) .details__expand-icon,
@@ -198,8 +209,20 @@ export class TotDetails extends HTMLElement {
         >
           <span class="details__summary" part="summary"><slot name="summary">${escapeHtml(summary)}</slot></span>
           <span class="details__summary-icon" part="summary-icon" aria-hidden="true">
-            <span class="details__expand-icon"><slot name="expand-icon">›</slot></span>
-            <span class="details__collapse-icon"><slot name="collapse-icon">⌄</slot></span>
+            <span class="details__expand-icon">
+              <slot name="expand-icon">
+                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  <path d="m6.25 4.5 3.5 3.5-3.5 3.5"></path>
+                </svg>
+              </slot>
+            </span>
+            <span class="details__collapse-icon">
+              <slot name="collapse-icon">
+                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
+                </svg>
+              </slot>
+            </span>
           </span>
         </button>
         <div class="details__content" part="content" aria-hidden="${open ? 'false' : 'true'}">
