@@ -403,6 +403,12 @@ export class TotExercise extends HTMLElement {
     this._matchResponses = new Map()
     this._selectedMatchId = ''
     this._mutationObserver = null
+    this._elements = null
+    this._exerciseSource = undefined
+    this._exerciseResult = null
+    this._renderedSlots = new Map()
+    this._renderedStructure = ''
+    this._controlsDirty = true
   }
 
   get value() {
@@ -422,8 +428,11 @@ export class TotExercise extends HTMLElement {
   }
 
   set value(value) {
+    const previousValue = this.value
     this._value = value === null || value === undefined ? '' : String(value)
-    this.render()
+    if (this._value !== previousValue) {
+      this.render()
+    }
   }
 
   get markdown() {
@@ -474,8 +483,16 @@ export class TotExercise extends HTMLElement {
   attributeChangedCallback(name) {
     if (name === 'value' || name === 'markdown') {
       this._value = null
+      this.render()
+      return
     }
-    this.render()
+
+    if (!this.isConnected && !this.shadowRoot) {
+      return
+    }
+
+    this.renderShell()
+    this.updateMarkdownProperties()
   }
 
   reset() {
@@ -484,7 +501,7 @@ export class TotExercise extends HTMLElement {
     this._choiceResponses.clear()
     this._matchResponses.clear()
     this._selectedMatchId = ''
-    this.render()
+    this.renderControls()
     emit(this, 'reset', this.getEventDetail())
     emit(this, 'change', this.getEventDetail())
   }
@@ -494,10 +511,22 @@ export class TotExercise extends HTMLElement {
       return
     }
 
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    const result = this.getExerciseResult()
+    this.renderShell(result)
+    this.cleanState(result.placeholders)
+    this.updateMarkdownProperties(result)
+    this.renderExerciseSlots(result)
+    this.updateFooter(result.placeholders)
+  }
+
+  renderShell(result = this.getExerciseResult()) {
+    if (this.shadowRoot) {
+      return
+    }
+
+    const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${exerciseStyle}</style>
       <div class="exercise" part="base">
-        <tot-markdown class="exercise__markdown" pandoc part="markdown"></tot-markdown>
         <div class="exercise__footer" part="footer">
           <tot-button class="exercise__reveal-all" size="small" variant="primary"></tot-button>
           <tot-button class="exercise__reset" size="small" label="Reset exercise"></tot-button>
@@ -505,30 +534,91 @@ export class TotExercise extends HTMLElement {
       </div>
     `
 
-    const result = buildExerciseMarkdown(this.value, this._slotPrefix)
-    const markdown = root.querySelector('tot-markdown')
-    const revealAllButton = root.querySelector('.exercise__reveal-all')
-    const resetButton = root.querySelector('.exercise__reset')
-
+    const exercise = root.querySelector('.exercise')
+    const footer = root.querySelector('.exercise__footer')
+    const markdown = document.createElement('tot-markdown')
+    markdown.className = 'exercise__markdown'
+    markdown.setAttribute('pandoc', '')
+    markdown.setAttribute('part', 'markdown')
     markdown.label = this.label
     markdown.helpText = this.helpText
     markdown.streaming = this.streaming
     markdown.value = result.markdown
+    exercise.insertBefore(markdown, footer)
 
-    this.cleanState(result.placeholders)
-    this.renderExerciseSlots(markdown, result)
-
-    revealAllButton.setAttribute('label', this.areAllAnswersShown(result.placeholders) ? 'Hide' : 'Validate')
-    revealAllButton.addEventListener('click', () => this.toggleAllAnswers(result.placeholders))
-    resetButton.addEventListener('click', () => this.reset())
+    this._elements = {
+      markdown,
+      resetButton: root.querySelector('.exercise__reset'),
+      revealAllButton: root.querySelector('.exercise__reveal-all'),
+    }
+    this._elements.revealAllButton.addEventListener('click', () => {
+      this.toggleAllAnswers(this.getExerciseResult().placeholders)
+    })
+    this._elements.resetButton.addEventListener('click', () => this.reset())
   }
 
-  renderExerciseSlots(markdown, result) {
+  updateMarkdownProperties(result = this.getExerciseResult()) {
+    const markdown = this._elements?.markdown
+    if (!markdown) {
+      return
+    }
+
+    const label = this.label
+    const helpText = this.helpText
+    const streaming = this.streaming
+    if (markdown.label !== label) {
+      markdown.label = label
+    }
+    if (markdown.helpText !== helpText) {
+      markdown.helpText = helpText
+    }
+    if (markdown.streaming !== streaming) {
+      markdown.streaming = streaming
+    }
+    if (markdown.value !== result.markdown) {
+      markdown.value = result.markdown
+    }
+  }
+
+  updateFooter(placeholders) {
+    const revealAllButton = this._elements?.revealAllButton
+    if (!revealAllButton) {
+      return
+    }
+
+    const label = this.areAllAnswersShown(placeholders) ? 'Hide' : 'Validate'
+    if (revealAllButton.getAttribute('label') !== label) {
+      revealAllButton.setAttribute('label', label)
+    }
+  }
+
+  renderExerciseSlots(result) {
+    const markdown = this._elements?.markdown
+    if (!markdown) {
+      return
+    }
+
+    const structure = getPlaceholderStructure(result.placeholders)
+    if (!this._controlsDirty && structure === this._renderedStructure) {
+      return
+    }
+
+    const fragment = document.createDocumentFragment()
+    this._renderedSlots.clear()
     for (let i = 0; i < result.placeholders.length; i++) {
       const placeholder = result.placeholders[i]
       const slot = this.createExerciseSlot(placeholder, result)
-      markdown.appendChild(slot)
+      this._renderedSlots.set(placeholder.id, slot)
+      fragment.appendChild(slot)
     }
+    markdown.replaceChildren(fragment)
+    this._renderedStructure = structure
+    this._controlsDirty = false
+  }
+
+  renderControls() {
+    this._controlsDirty = true
+    this.render()
   }
 
   createExerciseSlot(placeholder, result) {
@@ -658,7 +748,7 @@ export class TotExercise extends HTMLElement {
 
   appendMatchControl(parent, placeholder, result) {
     const button = document.createElement('button')
-    const response = this.getMatchResponseText(placeholder)
+    const response = this.getMatchResponseText(placeholder, result)
     const hasContent = placeholder.content.trim() !== ''
     const shouldShowSpace = this.shouldShowMatchSpace(placeholder, result)
     const width = result.matchWidths.get(placeholder.task) || 8
@@ -725,7 +815,7 @@ export class TotExercise extends HTMLElement {
   getMatchButtonClasses(placeholder, result) {
     const classes = ['exercise-match-button']
     const pairedId = this._matchResponses.get(placeholder.id)
-    const pairedResponse = pairedId ? this.getPlaceholderById(pairedId) : null
+    const pairedResponse = pairedId ? result.byId.get(pairedId) : null
     const pairedCorrect = this.getCorrectMatch(placeholder, result)
 
     if (placeholder.content.trim() && pairedCorrect && !pairedCorrect.content.trim()) {
@@ -746,21 +836,21 @@ export class TotExercise extends HTMLElement {
       this._choiceResponses.set(id, option)
     }
 
-    this.render()
+    this.renderControls()
     this.emitUserChange()
   }
 
   selectMatch(placeholder) {
     if (this._selectedMatchId === placeholder.id) {
       this._selectedMatchId = ''
-      this.render()
+      this.renderControls()
       this.emitUserChange()
       return
     }
 
     if (!this._selectedMatchId) {
       this._selectedMatchId = placeholder.id
-      this.render()
+      this.renderControls()
       this.emitUserChange()
       return
     }
@@ -768,7 +858,7 @@ export class TotExercise extends HTMLElement {
     const selected = this.getPlaceholderById(this._selectedMatchId)
     if (!selected || selected.task !== placeholder.task || selected.side === placeholder.side) {
       this._selectedMatchId = placeholder.id
-      this.render()
+      this.renderControls()
       this.emitUserChange()
       return
     }
@@ -778,7 +868,7 @@ export class TotExercise extends HTMLElement {
     this._matchResponses.set(selected.id, placeholder.id)
     this._matchResponses.set(placeholder.id, selected.id)
     this._selectedMatchId = ''
-    this.render()
+    this.renderControls()
     this.emitUserChange()
   }
 
@@ -791,7 +881,7 @@ export class TotExercise extends HTMLElement {
   }
 
   toggleAnswer(id) {
-    const result = buildExerciseMarkdown(this.value, this._slotPrefix)
+    const result = this.getExerciseResult()
     const placeholder = result.byId.get(id)
     const nextShown = !this._answersShown.get(id)
     this._answersShown.set(id, nextShown)
@@ -803,7 +893,7 @@ export class TotExercise extends HTMLElement {
       }
     }
 
-    this.render()
+    this.renderControls()
   }
 
   toggleAllAnswers(placeholders) {
@@ -811,7 +901,7 @@ export class TotExercise extends HTMLElement {
     for (let i = 0; i < placeholders.length; i++) {
       this._answersShown.set(placeholders[i].id, shown)
     }
-    this.render()
+    this.renderControls()
   }
 
   areAllAnswersShown(placeholders) {
@@ -833,7 +923,7 @@ export class TotExercise extends HTMLElement {
       return
     }
 
-    const result = buildExerciseMarkdown(this.value, this._slotPrefix)
+    const result = this.getExerciseResult()
     const placeholder = result.byId.get(id)
     const slot = this.getRenderedSlot(id)
     if (!placeholder || !slot) {
@@ -851,14 +941,7 @@ export class TotExercise extends HTMLElement {
   }
 
   getRenderedSlot(id) {
-    const slots = this.shadowRoot?.querySelectorAll('.exercise-slot') || []
-    for (let i = 0; i < slots.length; i++) {
-      if (slots[i].dataset.exerciseId === id) {
-        return slots[i]
-      }
-    }
-
-    return null
+    return this._renderedSlots.get(id) || null
   }
 
   isPlaceholderCorrect(placeholder, result) {
@@ -913,19 +996,27 @@ export class TotExercise extends HTMLElement {
     return Boolean(paired && paired.content.trim())
   }
 
-  getMatchResponseText(placeholder) {
+  getMatchResponseText(placeholder, result = this.getExerciseResult()) {
     const pairedId = this._matchResponses.get(placeholder.id)
     if (!pairedId) {
       return ''
     }
 
-    const paired = this.getPlaceholderById(pairedId)
+    const paired = result.byId.get(pairedId)
     return paired ? paired.content : ''
   }
 
   getPlaceholderById(id) {
-    const result = buildExerciseMarkdown(this.value, this._slotPrefix)
-    return result.byId.get(id) || null
+    return this.getExerciseResult().byId.get(id) || null
+  }
+
+  getExerciseResult() {
+    const source = this.value
+    if (source !== this._exerciseSource || !this._exerciseResult) {
+      this._exerciseSource = source
+      this._exerciseResult = buildExerciseMarkdown(source, this._slotPrefix)
+    }
+    return this._exerciseResult
   }
 
   cleanState(placeholders) {
@@ -960,7 +1051,7 @@ export class TotExercise extends HTMLElement {
   }
 
   getResponses() {
-    const result = buildExerciseMarkdown(this.value, this._slotPrefix)
+    const result = this.getExerciseResult()
     const responses = []
     for (let i = 0; i < result.placeholders.length; i++) {
       const placeholder = result.placeholders[i]
@@ -1017,7 +1108,12 @@ export class TotExercise extends HTMLElement {
         return
       }
 
-      this._slotMarkdown = getLightDomMarkdown(this)
+      const markdown = getLightDomMarkdown(this)
+      if (markdown === this._slotMarkdown) {
+        return
+      }
+
+      this._slotMarkdown = markdown
       this.render()
     })
     this._mutationObserver.observe(this, {
@@ -1026,6 +1122,15 @@ export class TotExercise extends HTMLElement {
       subtree: true,
     })
   }
+}
+
+function getPlaceholderStructure(placeholders) {
+  let structure = ''
+  for (let i = 0; i < placeholders.length; i++) {
+    const placeholder = placeholders[i]
+    structure += `${placeholder.id}\u0000${placeholder.type}\u0000${placeholder.content}\u0000${placeholder.task}\u0000${placeholder.problem}\u0000${placeholder.side}\u0000${placeholder.key}\u0000${JSON.stringify(placeholder.options)}\u0001`
+  }
+  return structure
 }
 
 function buildExerciseMarkdown(markdown, slotPrefix) {

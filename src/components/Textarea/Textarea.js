@@ -346,10 +346,10 @@ export class TotTextarea extends HTMLElement {
     this._historyPushed = false
     this._historyToken = ''
     this._skipHistoryOnClose = false
+    this._elements = null
     this._handleKeyDown = event => this.handleFullscreenKeyDown(event)
     this._handlePopState = event => this.handlePopState(event)
   }
-
 
   get fullscreen() {
     return this._fullscreen
@@ -364,21 +364,27 @@ export class TotTextarea extends HTMLElement {
   }
 
   get value() {
+    if (this._value !== null) {
+      return this._value
+    }
+
     const textarea = this.getInlineTextarea() || this.getFullscreenTextarea()
     if (textarea) {
       return textarea.value
-    }
-
-    if (this._value !== null) {
-      return this._value
     }
 
     return this.getAttribute('value') || ''
   }
 
   set value(value) {
-    this._value = value === null || value === undefined ? '' : String(value)
+    const nextValue = value === null || value === undefined ? '' : String(value)
+    if (nextValue === this.value && this._value !== null) {
+      return
+    }
+
+    this._value = nextValue
     this.updateTextareaValues()
+    this.updateResetButton()
   }
 
   get label() {
@@ -452,68 +458,54 @@ export class TotTextarea extends HTMLElement {
     }
   }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, oldValue, newValue) {
     if (name === 'value') {
+      this._value = newValue === null ? '' : newValue
+      this.render()
       this._value = null
+      return
     }
+
     this.render()
   }
 
   focus(options) {
-    const textarea = this.getInlineTextarea()
-    if (textarea) {
-      textarea.focus(options)
-    }
+    this.getInlineTextarea()?.focus(options)
   }
 
   blur() {
-    const textarea = this.getInlineTextarea()
-    if (textarea) {
-      textarea.blur()
-    }
+    this.getInlineTextarea()?.blur()
   }
 
   select() {
     const textarea = this.getInlineTextarea() || this.getFullscreenTextarea()
-    if (textarea) {
-      textarea.select()
-    }
+    textarea?.select()
   }
 
   render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const size = this.size
-    const disabled = this.disabled
-    const resize = this.resize
-    const formClasses = ['form-control', `form-control--${size}`]
-    const textareaClasses = ['textarea', `textarea--${size}`, `textarea--resize-${resize}`]
+    this.renderShell()
+    this.updateUi()
+  }
 
-    if (disabled) {
-      textareaClasses.push('textarea--disabled')
-    }
-    if (this.autoSize) {
-      textareaClasses.push('textarea--auto-size')
+  renderShell() {
+    if (this.shadowRoot) {
+      return
     }
 
+    const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${textareaStyle}</style>
-      <label class="${escapeAttribute(formClasses.join(' '))}" part="form-control">
-        <span class="label" part="form-control-label"><slot name="label">${escapeHtml(this.label)}</slot></span>
-        <span class="${escapeAttribute(textareaClasses.join(' '))}" part="base">
-          <textarea
-            class="textarea__control"
-            part="textarea"
-            rows="${escapeAttribute(this.rows)}"
-            placeholder="${escapeAttribute(this.placeholder)}"
-            ${disabled ? 'disabled' : ''}
-          >${escapeHtml(this.value)}</textarea>
-          <button class="textarea__fullscreen-button" part="fullscreen-button" type="button" aria-label="Open fullscreen editor" ${disabled ? 'disabled' : ''}>⛶</button>
+      <label class="form-control" part="form-control">
+        <span class="label" part="form-control-label"><slot name="label"></slot></span>
+        <span class="textarea" part="base">
+          <textarea class="textarea__control" part="textarea"></textarea>
+          <button class="textarea__fullscreen-button" part="fullscreen-button" type="button" aria-label="Open fullscreen editor">⛶</button>
         </span>
-        <span class="help-text" part="form-control-help-text"><slot name="help-text">${escapeHtml(this.helpText)}</slot></span>
+        <span class="help-text" part="form-control-help-text"><slot name="help-text"></slot></span>
       </label>
-      <div class="fullscreen" part="fullscreen" ${this._fullscreen ? '' : 'hidden'}>
+      <div class="fullscreen" part="fullscreen" hidden>
         <section class="fullscreen__panel" role="dialog" aria-modal="true" aria-label="Fullscreen textarea editor">
           <header class="fullscreen__header">
-            <div class="fullscreen__title">${escapeHtml(this.label || 'Textarea')}</div>
+            <div class="fullscreen__title">Textarea</div>
             <div class="fullscreen__actions">
               <button class="fullscreen__button fullscreen__reset-button" part="reset-button" type="button">Reset</button>
               <button class="fullscreen__button fullscreen__close-button" part="close-fullscreen-button" type="button" aria-label="Exit fullscreen editor">
@@ -527,46 +519,73 @@ export class TotTextarea extends HTMLElement {
             </div>
           </header>
           <div class="fullscreen__body">
-            <textarea class="fullscreen__control" part="fullscreen-textarea" placeholder="${escapeAttribute(this.placeholder)}">${escapeHtml(this.value)}</textarea>
+            <textarea class="fullscreen__control" part="fullscreen-textarea"></textarea>
           </div>
         </section>
       </div>
     `
 
-    const inlineTextarea = this.getInlineTextarea()
-    const fullscreenTextarea = this.getFullscreenTextarea()
-    const fullscreenButton = root.querySelector('.textarea__fullscreen-button')
-    const resetButton = root.querySelector('.fullscreen__reset-button')
-    const closeButton = root.querySelector('.fullscreen__close-button')
+    this._elements = {
+      closeButton: root.querySelector('.fullscreen__close-button'),
+      formControl: root.querySelector('.form-control'),
+      fullscreen: root.querySelector('.fullscreen'),
+      fullscreenButton: root.querySelector('.textarea__fullscreen-button'),
+      fullscreenTextarea: root.querySelector('.fullscreen__control'),
+      fullscreenTitle: root.querySelector('.fullscreen__title'),
+      helpTextSlot: root.querySelector('slot[name="help-text"]'),
+      inlineTextarea: root.querySelector('.textarea__control'),
+      labelSlot: root.querySelector('slot[name="label"]'),
+      resetButton: root.querySelector('.fullscreen__reset-button'),
+      textarea: root.querySelector('.textarea'),
+    }
 
+    const inlineTextarea = this._elements.inlineTextarea
+    const fullscreenTextarea = this._elements.fullscreenTextarea
     inlineTextarea.addEventListener('input', () => this.handleTextareaInput(inlineTextarea))
     inlineTextarea.addEventListener('change', () => this.handleTextareaChange(inlineTextarea))
     inlineTextarea.addEventListener('focus', () => this.handleTextareaFocus())
     inlineTextarea.addEventListener('blur', () => this.handleTextareaBlur())
-
     fullscreenTextarea.addEventListener('input', () => this.handleTextareaInput(fullscreenTextarea))
     fullscreenTextarea.addEventListener('change', () => this.handleTextareaChange(fullscreenTextarea))
     fullscreenTextarea.addEventListener('focus', () => this.handleTextareaFocus())
     fullscreenTextarea.addEventListener('blur', () => this.handleTextareaBlur())
-    fullscreenTextarea.addEventListener('keydown', (event) => this.handleFullscreenKeyDown(event))
+    fullscreenTextarea.addEventListener('keydown', event => this.handleFullscreenKeyDown(event))
+    this._elements.fullscreenButton.addEventListener('mousedown', event => event.preventDefault())
+    this._elements.fullscreenButton.addEventListener('click', () => this.openFullscreen())
+    this._elements.resetButton.addEventListener('click', () => this.resetToFocusValue())
+    this._elements.closeButton.addEventListener('click', () => this.closeFullscreen())
+  }
 
-    fullscreenButton.addEventListener('mousedown', (event) => event.preventDefault())
-    fullscreenButton.addEventListener('click', () => this.openFullscreen())
-    resetButton.addEventListener('click', () => this.resetToFocusValue())
-    closeButton.addEventListener('click', () => this.closeFullscreen())
-
-    this.updateResetButton()
-
-    if (this._fullscreen) {
-      requestAnimationFrame(() => {
-        const textarea = this.getFullscreenTextarea()
-        if (textarea) {
-          textarea.focus()
-          textarea.selectionStart = textarea.value.length
-          textarea.selectionEnd = textarea.value.length
-        }
-      })
+  updateUi() {
+    const elements = this._elements
+    if (!elements) {
+      return
     }
+
+    const size = this.size
+    const resize = this.resize
+    const disabled = this.disabled
+    const textareaClasses = ['textarea', `textarea--${size}`, `textarea--resize-${resize}`]
+    if (disabled) {
+      textareaClasses.push('textarea--disabled')
+    }
+    if (this.autoSize) {
+      textareaClasses.push('textarea--auto-size')
+    }
+
+    elements.formControl.className = `form-control form-control--${size}`
+    elements.textarea.className = textareaClasses.join(' ')
+    elements.labelSlot.textContent = this.label
+    elements.helpTextSlot.textContent = this.helpText
+    elements.inlineTextarea.rows = this.rows
+    elements.inlineTextarea.placeholder = this.placeholder
+    elements.inlineTextarea.disabled = disabled
+    elements.fullscreenTextarea.placeholder = this.placeholder
+    elements.fullscreenButton.disabled = disabled
+    elements.fullscreenTitle.textContent = this.label || 'Textarea'
+    elements.fullscreen.hidden = !this._fullscreen
+    this.updateTextareaValues()
+    this.updateResetButton()
   }
 
   openFullscreen() {
@@ -587,6 +606,15 @@ export class TotTextarea extends HTMLElement {
     this.pushFullscreenHistoryState()
     this.render()
     emit(this, 'fullscreen-change', this.getEventDetail())
+
+    requestAnimationFrame(() => {
+      const textarea = this.getFullscreenTextarea()
+      if (textarea) {
+        textarea.focus()
+        textarea.selectionStart = textarea.value.length
+        textarea.selectionEnd = textarea.value.length
+      }
+    })
   }
 
   closeFullscreen(shouldRender = true, skipHistory = false) {
@@ -613,10 +641,7 @@ export class TotTextarea extends HTMLElement {
       emit(this, 'fullscreen-change', this.getEventDetail())
 
       requestAnimationFrame(() => {
-        const textarea = this.getInlineTextarea()
-        if (textarea) {
-          textarea.focus()
-        }
+        this.getInlineTextarea()?.focus()
       })
     }
   }
@@ -729,27 +754,25 @@ export class TotTextarea extends HTMLElement {
     const textareas = [this.getInlineTextarea(), this.getFullscreenTextarea()]
     const value = this._value === null ? this.value : this._value
     for (let i = 0; i < textareas.length; i++) {
-      if (textareas[i] && textareas[i] !== source) {
+      if (textareas[i] && textareas[i] !== source && textareas[i].value !== value) {
         textareas[i].value = value
       }
     }
   }
 
   updateResetButton() {
-    const resetButton = this.shadowRoot?.querySelector('.fullscreen__reset-button')
-    if (!resetButton) {
-      return
+    const resetButton = this._elements?.resetButton
+    if (resetButton) {
+      resetButton.disabled = this.value === this._focusValue
     }
-
-    resetButton.disabled = this.value === this._focusValue
   }
 
   getInlineTextarea() {
-    return this.shadowRoot?.querySelector('.textarea__control')
+    return this._elements?.inlineTextarea || null
   }
 
   getFullscreenTextarea() {
-    return this.shadowRoot?.querySelector('.fullscreen__control')
+    return this._elements?.fullscreenTextarea || null
   }
 
   getEventDetail() {
@@ -900,21 +923,4 @@ function getScrollLockState() {
     }
   }
   return window.__totScrollLockState
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      '\'': '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

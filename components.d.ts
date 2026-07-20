@@ -155,6 +155,272 @@ export type TotInput = {
 }
 
 /**
+ * `<tot-textarea>` - a multiline field based on a native `<textarea>` with an
+ * optional fullscreen editor.
+ */
+export type TotTextarea = {
+  props: {
+    /** @default '' */
+    value: string
+
+    /** Fallback used when the `label` slot is empty. @default '' */
+    label: string
+
+    /** Fallback used when the `help-text` slot is empty. @default '' */
+    helpText: string
+
+    /** @default '' */
+    placeholder: string
+
+    /** @default 'medium' */
+    size: 'small' | 'medium' | 'large'
+
+    /** Native textarea row count. @default 3 */
+    rows: number
+
+    /** `auto` keeps native resizing and enables `field-sizing` when supported. @default 'auto' */
+    resize: 'auto' | 'none'
+
+    /** Enables content-based field sizing when supported. The `autosize` attribute is an alias. @default false */
+    autoSize: boolean
+
+    /** @default false */
+    disabled: boolean
+
+    /** Whether the fullscreen editor is currently open. */
+    readonly fullscreen: boolean
+  }
+
+  /** Focus, blur, and selection methods forward to the current native textarea. */
+  methods: {
+    focus(options?: FocusOptions): void
+    blur(): void
+    select(): void
+    openFullscreen(): void
+    closeFullscreen(): void
+    getInlineTextarea(): HTMLTextAreaElement | null
+    getFullscreenTextarea(): HTMLTextAreaElement | null
+  }
+
+  /**
+   * All events include the current textarea state in `detail`. `reset` is
+   * emitted after the fullscreen Reset action restores the focus-time value.
+   */
+  events: {
+    input: CustomEvent<{
+      fullscreen: boolean
+      resize: 'auto' | 'none'
+      rows: number
+      size: 'small' | 'medium' | 'large'
+      value: string
+    }>
+    change: CustomEvent<{
+      fullscreen: boolean
+      resize: 'auto' | 'none'
+      rows: number
+      size: 'small' | 'medium' | 'large'
+      value: string
+    }>
+    reset: CustomEvent<{
+      fullscreen: boolean
+      resize: 'auto' | 'none'
+      rows: number
+      size: 'small' | 'medium' | 'large'
+      value: string
+    }>
+    'fullscreen-change': CustomEvent<{
+      fullscreen: boolean
+      resize: 'auto' | 'none'
+      rows: number
+      size: 'small' | 'medium' | 'large'
+      value: string
+    }>
+  }
+
+  slots: {
+    label: undefined
+    'help-text': undefined
+  }
+
+  /**
+   * ```text
+   * form-control — complete field wrapper
+   * ├─ form-control-label
+   * ├─ base — bordered textarea surface
+   * │  ├─ textarea — native inline textarea
+   * │  └─ fullscreen-button
+   * ├─ form-control-help-text
+   * └─ fullscreen — fullscreen editor overlay
+   *    ├─ reset-button
+   *    ├─ close-fullscreen-button
+   *    └─ fullscreen-textarea — native fullscreen textarea
+   * ```
+   */
+  parts:
+    | 'form-control'
+    | 'form-control-label'
+    | 'base'
+    | 'textarea'
+    | 'fullscreen-button'
+    | 'form-control-help-text'
+    | 'fullscreen'
+    | 'reset-button'
+    | 'close-fullscreen-button'
+    | 'fullscreen-textarea'
+}
+
+/**
+ * `<tot-markdown>` - a sanitized markdown preview rendered inside a native
+ * `<article>`, with Pandoc extensions, streaming state, named placeholders,
+ * and an optional fullscreen view.
+ */
+export type TotMarkdown = {
+  props: {
+    /** Markdown source. Light-DOM text is used when neither source prop is set. @default '' */
+    value: string
+
+    /** Alias of `value`. @default '' */
+    markdown: string
+
+    /** @default '' */
+    label: string
+
+    /** @default '' */
+    helpText: string
+
+    /** Enables supported Pandoc syntax and `{slot=...}` placeholders. @default false */
+    pandoc: boolean
+
+    /** Shows streaming indicators and a caret after the rendered output. @default false */
+    streaming: boolean
+
+    /** Whether the fullscreen preview is currently open. */
+    readonly fullscreen: boolean
+  }
+
+  methods: {
+    openFullscreen(): void
+    closeFullscreen(): void
+  }
+
+  events: {
+    'fullscreen-change': CustomEvent<{
+      fullscreen: boolean
+      pandoc: boolean
+      streaming: boolean
+      value: string
+    }>
+  }
+
+  /**
+   * Unslotted light-DOM text is the markdown source. In Pandoc mode, any named
+   * slot can replace a matching `[fallback]{slot="name"}` placeholder.
+   */
+  slots: {
+    [name: string]: undefined
+  }
+
+  /**
+   * ```text
+   * form-control — complete preview wrapper
+   * ├─ form-control-label
+   * ├─ base — native article preview
+   * │  ├─ content — rendered markdown
+   * │  ├─ streaming-indicator
+   * │  └─ fullscreen-button
+   * ├─ form-control-help-text
+   * └─ fullscreen — fullscreen preview overlay
+   *    ├─ fullscreen-streaming-indicator
+   *    ├─ close-fullscreen-button
+   *    └─ fullscreen-content — rendered markdown while fullscreen
+   * ```
+   */
+  parts:
+    | 'form-control'
+    | 'form-control-label'
+    | 'base'
+    | 'content'
+    | 'streaming-indicator'
+    | 'fullscreen-button'
+    | 'form-control-help-text'
+    | 'fullscreen'
+    | 'fullscreen-streaming-indicator'
+    | 'close-fullscreen-button'
+    | 'fullscreen-content'
+}
+
+export type TotExerciseResponse = {
+  task: string
+  problem: string
+  type: 'input' | 'choice' | 'match'
+  side: string
+  value:
+    | string
+    | {
+        task: string
+        problem: string
+        side: string
+        content: string
+      }
+    | null
+  correct: boolean
+}
+
+/**
+ * `<tot-exercise>` - an interactive exercise renderer built from Pandoc-style
+ * markdown placeholders and native text inputs and buttons.
+ */
+export type TotExercise = {
+  props: {
+    /** Exercise markdown. Light-DOM text is used when neither source prop is set. @default '' */
+    value: string
+
+    /** Alias of `value`. @default '' */
+    markdown: string
+
+    /** Passed to the nested markdown preview. @default '' */
+    label: string
+
+    /** Passed to the nested markdown preview. @default '' */
+    helpText: string
+
+    /** Shows the nested markdown streaming state. @default false */
+    streaming: boolean
+  }
+
+  methods: {
+    reset(): void
+    getResponses(): TotExerciseResponse[]
+  }
+
+  /** `reset` is followed by `change`; both include the complete response list. */
+  events: {
+    change: CustomEvent<{
+      value: string
+      responses: TotExerciseResponse[]
+    }>
+    reset: CustomEvent<{
+      value: string
+      responses: TotExerciseResponse[]
+    }>
+  }
+
+  /** Unslotted light-DOM text can provide the exercise markdown source. */
+  slots: {
+    default: undefined
+  }
+
+  /**
+   * ```text
+   * base — complete exercise
+   * ├─ markdown — nested `<tot-markdown>` with interactive placeholder controls
+   * └─ footer — validate/hide-all and reset controls
+   * ```
+   */
+  parts: 'base' | 'markdown' | 'footer'
+}
+
+/**
  * `<tot-checkbox>` - a checkbox control based on a native
  * `<input type="checkbox">`.
  */

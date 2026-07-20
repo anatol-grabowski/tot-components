@@ -466,6 +466,61 @@ const markdownStyle = `
   }
 `
 
+const pandocStyleProperties = new Set([
+  'background',
+  'background-color',
+  'border',
+  'border-color',
+  'border-radius',
+  'border-style',
+  'border-width',
+  'color',
+  'display',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'height',
+  'margin',
+  'margin-inline',
+  'max-height',
+  'max-width',
+  'min-height',
+  'min-width',
+  'padding',
+  'padding-inline',
+  'text-align',
+  'text-decoration',
+  'width',
+])
+const pandocInlineHtmlTags = new Set([
+  'A',
+  'ABBR',
+  'B',
+  'BR',
+  'CODE',
+  'DEL',
+  'EM',
+  'I',
+  'IMG',
+  'INS',
+  'KBD',
+  'MARK',
+  'SMALL',
+  'SPAN',
+  'STRONG',
+  'SUB',
+  'SUP',
+  'U',
+])
+const pandocBlockedHtmlTags = new Set([
+  'SCRIPT',
+  'IFRAME',
+  'OBJECT',
+  'EMBED',
+  'META',
+  'LINK',
+])
+
 export class TotMarkdown extends HTMLElement {
   static get observedAttributes() {
     return ['value', 'markdown', 'streaming', 'label', 'help-text', 'pandoc']
@@ -477,6 +532,11 @@ export class TotMarkdown extends HTMLElement {
     this._fullscreen = false
     this._slotMarkdown = ''
     this._mutationObserver = null
+    this._elements = null
+    this._renderTarget = null
+    this._renderedValue = undefined
+    this._renderedPandoc = false
+    this._streamingCaret = null
     this._historyPushed = false
     this._historyToken = ''
     this._skipHistoryOnClose = false
@@ -506,8 +566,11 @@ export class TotMarkdown extends HTMLElement {
   }
 
   set value(value) {
+    const previousValue = this.value
     this._value = value === null || value === undefined ? '' : String(value)
-    this.render()
+    if (this._value !== previousValue) {
+      this.render()
+    }
   }
 
   get markdown() {
@@ -616,45 +679,98 @@ export class TotMarkdown extends HTMLElement {
       </div>
     `
 
-    const fullscreenButton = root.querySelector('.markdown__fullscreen-button')
-    const closeButton = root.querySelector('.fullscreen__close-button')
-    const fullscreen = root.querySelector('.fullscreen')
+    this._elements = {
+      closeButton: root.querySelector('.fullscreen__close-button'),
+      content: root.querySelector('.markdown__content'),
+      fullscreen: root.querySelector('.fullscreen'),
+      fullscreenContent: root.querySelector('.fullscreen__body'),
+      fullscreenIndicator: root.querySelector('.fullscreen__streaming-indicator'),
+      fullscreenTitle: root.querySelector('.fullscreen__title'),
+      helpText: root.querySelector('.help-text'),
+      label: root.querySelector('.label'),
+      panel: root.querySelector('.markdown'),
+      previewButton: root.querySelector('.markdown__fullscreen-button'),
+      previewIndicator: root.querySelector('.markdown__streaming-indicator'),
+    }
 
-    fullscreenButton.addEventListener('click', () => this.openFullscreen())
-    closeButton.addEventListener('click', () => this.closeFullscreen())
-    fullscreen.addEventListener('wheel', event => this.handleFullscreenWheel(event), { passive: false })
-    fullscreen.addEventListener('touchstart', event => this.handleFullscreenTouchStart(event), { passive: true })
-    fullscreen.addEventListener('touchmove', event => this.handleFullscreenTouchMove(event), { passive: false })
+    this._elements.previewButton.addEventListener('click', () => this.openFullscreen())
+    this._elements.closeButton.addEventListener('click', () => this.closeFullscreen())
+    this._elements.fullscreen.addEventListener('wheel', event => this.handleFullscreenWheel(event), { passive: false })
+    this._elements.fullscreen.addEventListener('touchstart', event => this.handleFullscreenTouchStart(event), { passive: true })
+    this._elements.fullscreen.addEventListener('touchmove', event => this.handleFullscreenTouchMove(event), { passive: false })
   }
 
   updateUi() {
-    const root = this.shadowRoot
-    const contentSlotMode = this._fullscreen ? 'fallback' : 'native'
-    const fullscreenSlotMode = this._fullscreen ? 'native' : 'fallback'
-    const contentHtml = renderMarkdown(this.value, { pandoc: this.pandoc, slotMode: contentSlotMode })
-    const fullscreenHtml = renderMarkdown(this.value, { pandoc: this.pandoc, slotMode: fullscreenSlotMode })
-    const streamingCaret = this.streaming ? '<span class="markdown__streaming-caret" aria-hidden="true"></span>' : ''
-    const label = root.querySelector('.label')
-    const helpText = root.querySelector('.help-text')
-    const fullscreenTitle = root.querySelector('.fullscreen__title')
-    const fullscreen = root.querySelector('.fullscreen')
-    const panel = root.querySelector('.markdown')
-    const content = root.querySelector('.markdown__content')
-    const fullscreenContent = root.querySelector('.fullscreen__body')
-    const indicators = root.querySelectorAll('.markdown__streaming-indicator, .fullscreen__streaming-indicator')
+    const elements = this._elements
+    if (!elements) {
+      return
+    }
 
-    label.textContent = this.label
-    label.hidden = this.label === ''
-    helpText.textContent = this.helpText
-    helpText.hidden = this.helpText === ''
-    fullscreenTitle.textContent = this.label || (this.pandoc ? 'Pandoc markdown' : 'Markdown')
-    panel.classList.toggle('markdown--pandoc', this.pandoc)
-    fullscreen.hidden = !this._fullscreen
-    content.innerHTML = `${contentHtml}${streamingCaret}`
-    fullscreenContent.innerHTML = `${fullscreenHtml}${streamingCaret}`
+    const label = this.label
+    const helpText = this.helpText
+    const pandoc = this.pandoc
+    const streaming = this.streaming
+    const target = this._fullscreen ? elements.fullscreenContent : elements.content
 
-    for (let i = 0; i < indicators.length; i++) {
-      indicators[i].hidden = !this.streaming
+    elements.label.textContent = label
+    elements.label.hidden = label === ''
+    elements.helpText.textContent = helpText
+    elements.helpText.hidden = helpText === ''
+    elements.fullscreenTitle.textContent = label || (pandoc ? 'Pandoc markdown' : 'Markdown')
+    elements.panel.classList.toggle('markdown--pandoc', pandoc)
+    elements.fullscreen.hidden = !this._fullscreen
+    elements.previewIndicator.hidden = !streaming
+    elements.fullscreenIndicator.hidden = !streaming
+
+    this.moveRenderedOutput(target)
+    this.updateRenderedOutput(target, pandoc)
+    this.updateStreamingCaret(target, streaming)
+  }
+
+  moveRenderedOutput(target) {
+    if (this._renderTarget === target) {
+      return
+    }
+
+    const source = this._renderTarget
+    if (source) {
+      while (source.firstChild) {
+        target.appendChild(source.firstChild)
+      }
+    }
+    this._renderTarget = target
+  }
+
+  updateRenderedOutput(target, pandoc) {
+    const value = this.value
+    if (value === this._renderedValue && pandoc === this._renderedPandoc) {
+      return
+    }
+
+    target.innerHTML = renderMarkdown(value, {
+      pandoc,
+      slotMode: 'native',
+    })
+    this._renderedValue = value
+    this._renderedPandoc = pandoc
+  }
+
+  updateStreamingCaret(target, streaming) {
+    if (!streaming) {
+      if (this._streamingCaret?.parentNode) {
+        this._streamingCaret.remove()
+      }
+      return
+    }
+
+    if (!this._streamingCaret || !this._streamingCaret.parentNode) {
+      this._streamingCaret = document.createElement('span')
+      this._streamingCaret.className = 'markdown__streaming-caret'
+      this._streamingCaret.setAttribute('aria-hidden', 'true')
+    }
+
+    if (this._streamingCaret.parentNode !== target) {
+      target.appendChild(this._streamingCaret)
     }
   }
 
@@ -757,7 +873,7 @@ export class TotMarkdown extends HTMLElement {
   }
 
   handleFullscreenWheel(event) {
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.fullscreen'), event.deltaY)) {
+    if (!shouldAllowScroll(event, this._elements?.fullscreen, event.deltaY)) {
       event.preventDefault()
     }
   }
@@ -780,7 +896,7 @@ export class TotMarkdown extends HTMLElement {
     const deltaY = this._touchStartY - currentY
     this._touchStartY = currentY
 
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.fullscreen'), deltaY)) {
+    if (!shouldAllowScroll(event, this._elements?.fullscreen, deltaY)) {
       event.preventDefault()
     }
   }
@@ -803,7 +919,12 @@ export class TotMarkdown extends HTMLElement {
         return
       }
 
-      this._slotMarkdown = getLightDomMarkdown(this)
+      const markdown = getLightDomMarkdown(this)
+      if (markdown === this._slotMarkdown) {
+        return
+      }
+
+      this._slotMarkdown = markdown
       this.render()
     })
     this._mutationObserver.observe(this, {
@@ -934,10 +1055,10 @@ function parseFencedCode(lines, startIndex, fence, options = {}, state = {}) {
   let index = startIndex + 1
   const fenceText = fence.marker[0]
   const fenceLength = fence.marker.length
+  const closePattern = new RegExp(`^ {0,3}${escapeRegExp(fenceText)}{${fenceLength},}\\s*$`)
 
   while (index < lines.length) {
     const line = lines[index]
-    const closePattern = new RegExp(`^ {0,3}${escapeRegExp(fenceText)}{${fenceLength},}\\s*$`)
     if (closePattern.test(line)) {
       index += 1
       break
@@ -1081,6 +1202,12 @@ function renderListItem(lines, taskHtml, options = {}, state = {}) {
   }
 
   return `${taskHtml}${html}`
+}
+
+function isTableStart(lines, startIndex) {
+  return startIndex + 1 < lines.length
+    && lines[startIndex].includes('|')
+    && Boolean(getTableAlignments(lines[startIndex + 1]))
 }
 
 function parseTable(lines, startIndex, options = {}, state = {}) {
@@ -1608,32 +1735,6 @@ function sanitizePandocStyle(style) {
     return ''
   }
 
-  const allowed = new Set([
-    'background',
-    'background-color',
-    'border',
-    'border-color',
-    'border-radius',
-    'border-style',
-    'border-width',
-    'color',
-    'display',
-    'font-style',
-    'font-variant',
-    'font-weight',
-    'height',
-    'margin',
-    'margin-inline',
-    'max-height',
-    'max-width',
-    'min-height',
-    'min-width',
-    'padding',
-    'padding-inline',
-    'text-align',
-    'text-decoration',
-    'width',
-  ])
   const declarations = value.split(';')
   const safeDeclarations = []
 
@@ -1646,7 +1747,7 @@ function sanitizePandocStyle(style) {
 
     const name = declaration.slice(0, separator).trim().toLowerCase()
     const propertyValue = declaration.slice(separator + 1).trim()
-    if (!allowed.has(name) || propertyValue === '' || /[<>]/.test(propertyValue)) {
+    if (!pandocStyleProperties.has(name) || propertyValue === '' || /[<>]/.test(propertyValue)) {
       continue
     }
 
@@ -1656,15 +1757,13 @@ function sanitizePandocStyle(style) {
   return safeDeclarations.join('; ')
 }
 
-
 function sanitizePandocRawInlineHtmlTag(html) {
   const value = String(html || '')
   const closing = value.match(/^<\/\s*([a-z][\w:-]*)\s*>$/i)
-  const allowedTags = new Set(['A', 'ABBR', 'B', 'BR', 'CODE', 'DEL', 'EM', 'I', 'IMG', 'INS', 'KBD', 'MARK', 'SMALL', 'SPAN', 'STRONG', 'SUB', 'SUP', 'U'])
 
   if (closing) {
     const tagName = closing[1].toUpperCase()
-    return allowedTags.has(tagName) ? `</${tagName.toLowerCase()}>` : escapeHtml(value)
+    return pandocInlineHtmlTags.has(tagName) ? `</${tagName.toLowerCase()}>` : escapeHtml(value)
   }
 
   const opening = value.match(/^<\s*([a-z][\w:-]*)([\s\S]*?)(\/?)>$/i)
@@ -1673,7 +1772,7 @@ function sanitizePandocRawInlineHtmlTag(html) {
   }
 
   const tagName = opening[1].toUpperCase()
-  if (!allowedTags.has(tagName)) {
+  if (!pandocInlineHtmlTags.has(tagName)) {
     return escapeHtml(value)
   }
 
@@ -1740,7 +1839,6 @@ function sanitizePandocRawHtml(html) {
 }
 
 function sanitizePandocNode(node) {
-  const blockedTags = new Set(['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'META', 'LINK'])
   const children = Array.from(node.childNodes)
 
   for (let i = 0; i < children.length; i++) {
@@ -1749,7 +1847,7 @@ function sanitizePandocNode(node) {
       continue
     }
 
-    if (blockedTags.has(child.tagName)) {
+    if (pandocBlockedHtmlTags.has(child.tagName)) {
       child.remove()
       continue
     }
@@ -1885,7 +1983,7 @@ function isBlockStart(lines, index) {
       || isHorizontalRule(line)
       || /^ {0,3}>/.test(line)
       || matchListItem(line)
-      || parseTable(lines, index, {}, {})
+      || isTableStart(lines, index)
       || getIndent(line) >= 4
   )
 }
