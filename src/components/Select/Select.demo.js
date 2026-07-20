@@ -30,6 +30,33 @@ const manyItems = [
   { value: 'support', label: 'Support' },
 ]
 
+const overflowItems = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'media', label: 'Media' },
+  { value: 'data', label: 'Data' },
+  { value: 'docs', label: 'Docs' },
+  { value: 'settings', label: 'Settings' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'security', label: 'Security' },
+  { value: 'integrations', label: 'Integrations' },
+  { value: 'support', label: 'Support' },
+  { value: 'analytics', label: 'Analytics' },
+  { value: 'reports', label: 'Reports' },
+  { value: 'calendar', label: 'Calendar' },
+  { value: 'tasks', label: 'Tasks' },
+  { value: 'members', label: 'Members' },
+  { value: 'teams', label: 'Teams' },
+  { value: 'projects', label: 'Projects' },
+  { value: 'releases', label: 'Releases' },
+  { value: 'automations', label: 'Automations' },
+  { value: 'notifications', label: 'Notifications' },
+  { value: 'permissions', label: 'Permissions' },
+  { value: 'audit-log', label: 'Audit log' },
+  { value: 'imports', label: 'Imports' },
+  { value: 'exports', label: 'Exports' },
+]
+
 registerDemo({
   id: 'tot-select',
   title: 'Select',
@@ -56,8 +83,28 @@ registerDemo({
         </tot-select>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Multiple select with many selected options</div>
-        <tot-select id="manySelect" label="Sections" placeholder="Pick sections" multiple clearable></tot-select>
+        <div class="demo-label">Removable selected items and count preview</div>
+        <tot-select
+          id="manySelect"
+          label="Sections"
+          help-text="Hover or tap the selected count to preview two scrollable rows."
+          placeholder="Pick sections"
+          max-tag-rows="2"
+          multiple
+          clearable
+        ></tot-select>
+      </div>
+      <div class="stack demo-group">
+        <div class="demo-label">Three-row count preview with scrolling</div>
+        <tot-select
+          id="overflowSelect"
+          label="Workspace areas"
+          help-text="Hover or tap the selected count, then open the list to keep the preview expanded."
+          placeholder="Pick areas"
+          max-tag-rows="3"
+          multiple
+          clearable
+        ></tot-select>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Sizes and attribute configuration</div>
@@ -97,6 +144,7 @@ registerDemo({
     const statusSelect = wrapper.querySelector('#statusSelect')
     const tagSelect = wrapper.querySelector('#tagSelect')
     const manySelect = wrapper.querySelector('#manySelect')
+    const overflowSelect = wrapper.querySelector('#overflowSelect')
     const inlinePrioritySelect = wrapper.querySelector('#inlinePrioritySelect')
     const inlineStatusSelect = wrapper.querySelector('#inlineStatusSelect')
     const inlineTeamSelect = wrapper.querySelector('#inlineTeamSelect')
@@ -106,7 +154,9 @@ registerDemo({
     tagSelect.items = tagItems
     tagSelect.values = ['ux', 'docs']
     manySelect.items = manyItems
-    manySelect.values = ['overview', 'activity', 'media', 'data', 'docs', 'settings']
+    manySelect.values = manyItems.map(item => item.value)
+    overflowSelect.items = overflowItems
+    overflowSelect.values = overflowItems.map(item => item.value)
     inlinePrioritySelect.items = [
       { value: 'low', label: 'Low' },
       { value: 'normal', label: 'Normal', selected: true },

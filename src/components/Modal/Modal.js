@@ -24,7 +24,7 @@ const modalStyle = `
   }
 
   .modal {
-    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    background: var(--tot-modal-background-color, var(--tot-color-neutral-0, #fff));
     border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: var(--tot-border-radius-large, 6px);
     box-shadow: var(--tot-shadow-x-large, 0 4px 16px rgb(15 23 42 / 12%));

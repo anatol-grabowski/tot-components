@@ -8,7 +8,7 @@ const configuredItems = [
   { value: 'cut', label: 'Cut' },
   { value: 'copy', label: 'Copy', checked: true },
   { value: 'paste', label: 'Paste', disabled: true },
-  { value: 'sync', label: 'Syncing', loading: true },
+  { value: 'sync', label: 'Syncing ⏳', disabled: true },
   { type: 'divider' },
   { type: 'label', label: 'Search' },
   {
@@ -68,6 +68,10 @@ registerDemo({
         </tot-menu>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Dense mode</div>
+        <tot-menu id="denseMenu" dense style="max-width: 240px;"></tot-menu>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Dynamic items property</div>
         <tot-menu id="dynamicMenu" style="max-width: 240px;"></tot-menu>
         <div class="row">
@@ -78,8 +82,10 @@ registerDemo({
     `
 
     const configuredMenu = row.querySelector('#configuredMenu')
+    const denseMenu = row.querySelector('#denseMenu')
     const dynamicMenu = row.querySelector('#dynamicMenu')
     configuredMenu.items = configuredItems
+    denseMenu.items = compactItems
     dynamicMenu.items = compactItems
 
     const menus = row.querySelectorAll('tot-menu')

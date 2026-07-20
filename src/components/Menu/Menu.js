@@ -20,9 +20,20 @@ const menuStyle = `
     gap: 0;
     max-height: var(--tot-menu-max-height, none);
     max-width: 100%;
-    min-width: var(--tot-menu-min-width, 12rem);
+    min-width: var(--tot-menu-min-width, 13rem);
     overflow: var(--tot-menu-overflow, visible);
-    padding: var(--tot-menu-padding, .125rem);
+    padding: var(--tot-menu-padding, .25rem);
+  }
+
+  :host([dense]) {
+    --tot-menu-item-gap: var(--tot-spacing-3x-small, .125rem);
+    --tot-menu-item-height: 1.5rem;
+    --tot-menu-item-padding-block: var(--tot-spacing-3x-small, .125rem);
+  }
+
+  :host([dense]) .menu {
+    min-width: var(--tot-menu-dense-min-width, 11rem);
+    padding: var(--tot-menu-dense-padding, .125rem);
   }
 
   :host([embedded]) .menu {
@@ -62,10 +73,10 @@ const menuItemStyle = `
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
-    gap: var(--tot-menu-item-gap, .375rem);
-    grid-template-columns: .875rem minmax(0, 1fr) auto;
-    line-height: 1.25;
-    min-height: var(--tot-menu-item-height, 1.625rem);
+    gap: var(--tot-menu-item-gap, var(--tot-spacing-2x-small, .25rem));
+    grid-template-columns: minmax(0, 1fr) 1rem auto;
+    line-height: var(--tot-line-height-normal, 1.4);
+    min-height: var(--tot-menu-item-height, var(--tot-input-height-small, 1.75rem));
     outline: none;
     padding: var(--tot-menu-item-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem);
     position: relative;
@@ -100,6 +111,7 @@ const menuItemStyle = `
     opacity: .55;
   }
 
+  .item__state,
   .item__check,
   .item__loader,
   .item__submenu-caret {
@@ -109,16 +121,30 @@ const menuItemStyle = `
     line-height: 1;
   }
 
-  .item__check,
-  .item__loader {
+  .item__state {
     color: var(--tot-color-primary-700, #0369a1);
-    min-width: 1rem;
+    height: 1rem;
+    width: 1rem;
   }
 
-  .item:not(.item--checked) .item__check {
-    visibility: hidden;
+  .item__check,
+  .item__loader,
+  .item__submenu-caret {
+    height: 1rem;
+    width: 1rem;
   }
 
+  .item__check svg,
+  .item__loader svg,
+  .item__submenu-caret svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
+  }
+
+  .item:not(.item--checked) .item__check,
   .item__loader {
     display: none;
   }
@@ -131,6 +157,16 @@ const menuItemStyle = `
     display: inline-flex;
   }
 
+  .item__loader svg {
+    animation: menu-item-spin .8s linear infinite;
+  }
+
+  @keyframes menu-item-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .item__label {
     min-width: 0;
     overflow: hidden;
@@ -141,7 +177,6 @@ const menuItemStyle = `
   .item__submenu-caret {
     color: var(--tot-color-neutral-500, #64748b);
     display: none;
-    font-size: .85em;
   }
 
   .item--has-submenu .item__submenu-caret {
@@ -217,6 +252,14 @@ export class TotMenu extends HTMLElement {
   set items(value) {
     this._items = parseItems(value)
     this.render()
+  }
+
+  get dense() {
+    return this.hasAttribute('dense')
+  }
+
+  set dense(value) {
+    setBooleanAttribute(this, 'dense', value)
   }
 
   connectedCallback() {
@@ -624,10 +667,25 @@ export class TotMenuItem extends HTMLElement {
         aria-disabled="${disabled || loading ? 'true' : 'false'}"
         ${checked ? 'aria-checked="true"' : ''}
       >
-        <span class="item__check" aria-hidden="true">✓</span>
-        <span class="item__loader" aria-hidden="true">⏳</span>
         <span class="item__label"><slot></slot></span>
-        <span class="item__submenu-caret" aria-hidden="true">❯</span>
+        <span class="item__state" aria-hidden="true">
+          <span class="item__check">
+            <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path d="m3.5 8.2 2.8 2.8 6.2-6.2"></path>
+            </svg>
+          </span>
+          <span class="item__loader">
+            <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" focusable="false">
+              <circle cx="8" cy="8" r="5.5" opacity=".25"></circle>
+              <path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5"></path>
+            </svg>
+          </span>
+        </span>
+        <span class="item__submenu-caret" aria-hidden="true">
+          <svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="m6 4 4 4-4 4"></path>
+          </svg>
+        </span>
       </div>
       <span class="submenu"><slot name="submenu"></slot></span>
     `

@@ -373,6 +373,9 @@ export type TotSelect = {
     /** @default false */
     multiple: boolean
 
+    /** Maximum selected-tag rows in the count preview. @default 3 */
+    maxTagRows: 2 | 3
+
     /** Shows a clear button while a value is selected. @default false */
     clearable: boolean
 
@@ -412,11 +415,11 @@ export type TotSelect = {
    * ├─ label
    * ├─ control — combobox trigger
    * │  ├─ prefix
-   * │  ├─ display-value
-   * │  │  ├─ tag — repeated selected value in multiple mode
-   * │  │  └─ tag-count — selected-value summary
+   * │  ├─ display-value — selected value or natural-width tags; overflow previews from the count
+   * │  │  └─ tag — repeated removable selected value in multiple mode
    * │  ├─ suffix
    * │  ├─ actions
+   * │  │  ├─ selection-count — selected total and overflow-preview trigger
    * │  │  └─ clear-button
    * │  └─ caret
    * ├─ panel
@@ -436,9 +439,9 @@ export type TotSelect = {
     | 'prefix'
     | 'display-value'
     | 'tag'
-    | 'tag-count'
     | 'suffix'
     | 'actions'
+    | 'selection-count'
     | 'clear-button'
     | 'caret'
     | 'panel'

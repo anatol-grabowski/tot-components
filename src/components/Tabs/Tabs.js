@@ -10,13 +10,17 @@ const tabsStyle = `
 
   .tabs {
     --tot-tabs-gap: 2px;
-    --tot-tabs-active-lift: 2px;
-    --tot-tabs-active-spill: var(--tot-tabs-current-edge-spacing);
+    --tot-tabs-active-lift: var(--tot-tabs-active-lift-default, .125rem);
+    --tot-tabs-active-spill: var(--tot-tabs-active-spill-medium, .25rem);
     --tot-tabs-border-width: var(--tot-panel-border-width, 1px);
-    --tot-tabs-current-height: var(--tot-tabs-height-medium, var(--tot-tabs-height, var(--tot-input-height-medium, 2.25rem)));
+    --tot-tabs-current-height: var(
+      --tot-tabs-height-medium,
+      var(--tot-tabs-height, calc(var(--tot-input-height-medium, 2.25rem) - .125rem))
+    );
     --tot-tabs-current-font-size: var(--tot-input-font-size-medium, .875rem);
     --tot-tabs-current-spacing: var(--tot-spacing-2x-small, .25rem);
     --tot-tabs-current-edge-spacing: calc(var(--tot-tabs-current-spacing) + var(--tot-spacing-3x-small, .125rem));
+    --tot-tabs-tab-background: var(--tot-color-neutral-50, #f8fafc);
 
     background: var(--tot-panel-background-color, #fff);
     color: var(--tot-input-color, #1e293b);
@@ -35,13 +39,15 @@ const tabsStyle = `
   }
 
   .tabs--small {
-    --tot-tabs-current-height: var(--tot-tabs-height-small, var(--tot-input-height-small, 1.75rem));
+    --tot-tabs-active-spill: var(--tot-tabs-active-spill-small, .1875rem);
+    --tot-tabs-current-height: var(--tot-tabs-height-small, calc(var(--tot-input-height-small, 1.75rem) - .125rem));
     --tot-tabs-current-font-size: var(--tot-input-font-size-small, .75rem);
     --tot-tabs-current-spacing: var(--tot-spacing-3x-small, .125rem);
   }
 
   .tabs--large {
-    --tot-tabs-current-height: var(--tot-tabs-height-large, var(--tot-input-height-large, 2.75rem));
+    --tot-tabs-active-spill: var(--tot-tabs-active-spill-large, .375rem);
+    --tot-tabs-current-height: var(--tot-tabs-height-large, calc(var(--tot-input-height-large, 2.75rem) - .125rem));
     --tot-tabs-current-font-size: var(--tot-input-font-size-large, 1rem);
     --tot-tabs-current-spacing: var(--tot-spacing-x-small, .5rem);
   }
@@ -50,7 +56,7 @@ const tabsStyle = `
     background: var(--tot-panel-border-color, #e2e8f0);
     bottom: 0;
     content: '';
-    height: var(--tot-panel-border-width, 1px);
+    height: var(--tot-tabs-border-width);
     left: 0;
     pointer-events: none;
     position: absolute;
@@ -81,8 +87,8 @@ const tabsStyle = `
 
   .tab-inner {
     align-items: center;
-    background: var(--tot-color-neutral-50, #f8fafc);
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    background: var(--tot-tabs-tab-background);
+    border: var(--tot-tabs-border-width) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: var(--tot-border-radius-medium, 4px) var(--tot-border-radius-medium, 4px) 0 0;
     display: flex;
     flex: 0 0 auto;
@@ -130,8 +136,9 @@ const tabsStyle = `
     right: var(--tot-tab-sticky-offset, 0px);
   }
 
-  button:hover:not(:disabled) .tab-inner {
-    background: var(--tot-color-neutral-100, #f1f5f9);
+  button:hover:not(:disabled) {
+    --tot-tabs-tab-background: var(--tot-color-neutral-100, #f1f5f9);
+
     color: var(--tot-input-color-hover, #0f172a);
   }
 
@@ -146,7 +153,9 @@ const tabsStyle = `
   }
 
   button[aria-selected='true'] {
-    background: var(--tot-panel-background-color, #fff);
+    --tot-tabs-tab-background: var(--tot-panel-background-color, #fff);
+
+    background: var(--tot-tabs-tab-background);
     color: var(--tot-color-primary-700, #0369a1);
     font-weight: var(--tot-font-weight-semibold, 600);
     height: 100%;
@@ -155,13 +164,19 @@ const tabsStyle = `
   }
 
   button[aria-selected='true'] .tab-inner {
-    background: var(--tot-panel-background-color, #fff);
     border-bottom: 0;
-    height: calc(100% - var(--tot-tabs-active-spill));
+    height: calc(100% - var(--tot-tabs-active-spill) + var(--tot-tabs-border-width));
   }
 
   button[aria-selected='true']::before,
   button[aria-selected='true']::after {
+    background: radial-gradient(
+      circle var(--tot-tabs-active-spill) at var(--tot-tabs-curve-origin-x) 0,
+      transparent calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
+      var(--tot-panel-border-color, #e2e8f0) calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
+      var(--tot-panel-border-color, #e2e8f0) var(--tot-tabs-active-spill),
+      var(--tot-tabs-tab-background) var(--tot-tabs-active-spill)
+    );
     bottom: 0;
     content: '';
     height: var(--tot-tabs-active-spill);
@@ -172,25 +187,15 @@ const tabsStyle = `
   }
 
   button[aria-selected='true']::before {
-    background: radial-gradient(
-      circle var(--tot-tabs-active-spill) at 0 0,
-      transparent calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
-      var(--tot-panel-border-color, #e2e8f0) calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
-      var(--tot-panel-border-color, #e2e8f0) var(--tot-tabs-active-spill),
-      var(--tot-panel-background-color, #fff) var(--tot-tabs-active-spill)
-    );
-    left: calc(-1 * var(--tot-tabs-active-spill));
+    --tot-tabs-curve-origin-x: 0;
+
+    left: calc(-1 * var(--tot-tabs-active-spill) + var(--tot-tabs-border-width));
   }
 
   button[aria-selected='true']::after {
-    background: radial-gradient(
-      circle var(--tot-tabs-active-spill) at 100% 0,
-      transparent calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
-      var(--tot-panel-border-color, #e2e8f0) calc(var(--tot-tabs-active-spill) - var(--tot-tabs-border-width)),
-      var(--tot-panel-border-color, #e2e8f0) var(--tot-tabs-active-spill),
-      var(--tot-panel-background-color, #fff) var(--tot-tabs-active-spill)
-    );
-    right: calc(-1 * var(--tot-tabs-active-spill));
+    --tot-tabs-curve-origin-x: 100%;
+
+    right: calc(-1 * var(--tot-tabs-active-spill) + var(--tot-tabs-border-width));
   }
 
   button[data-sticky][aria-selected='true'] {
@@ -512,6 +517,10 @@ export class TotTabs extends HTMLElement {
       this.updateStickyOffsets(holder)
     })
     this._resizeObserver.observe(holder)
+    const buttons = holder.querySelectorAll('button')
+    for (let i = 0; i < buttons.length; i++) {
+      this._resizeObserver.observe(buttons[i])
+    }
   }
 
   disconnectResizeObserver() {
@@ -533,6 +542,7 @@ export class TotTabs extends HTMLElement {
       this.updateStickyOffsets(holder)
     })
   }
+
 
   updateStickyOffsets(holder = this.shadowRoot?.querySelector('.tabs')) {
     if (!holder) {

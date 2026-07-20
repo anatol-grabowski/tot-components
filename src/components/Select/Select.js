@@ -33,17 +33,29 @@ const selectStyle = `
   }
 
   .select {
+    --select-height: var(--tot-input-height-medium, 2.25rem);
+    --select-spacing: var(--tot-spacing-2x-small, .25rem);
+    --select-edge-spacing: calc(var(--select-spacing) + var(--tot-spacing-3x-small, .125rem));
+    --select-font-size: var(--tot-input-font-size-medium, .875rem);
+    --select-tag-height: calc(
+      1.15em
+      + var(--tot-spacing-3x-small, .125rem)
+      + var(--tot-spacing-3x-small, .125rem)
+    );
+    --select-tag-row-padding: max(0px, calc((var(--select-content-height) - var(--select-tag-height)) / 2));
+    --select-content-height: calc(
+      var(--select-height)
+      - var(--tot-input-border-width, 1px)
+      - var(--tot-input-border-width, 1px)
+    );
+
     max-width: 100%;
+    min-height: var(--select-height);
     min-width: 0;
     position: relative;
   }
 
   .control {
-    --select-height: var(--tot-input-height-medium, 2.25rem);
-    --select-spacing: var(--tot-spacing-2x-small, .25rem);
-    --select-edge-spacing: calc(var(--select-spacing) + var(--tot-spacing-3x-small, .125rem));
-    --select-font-size: var(--tot-input-font-size-medium, .875rem);
-
     align-items: center;
     background: var(--tot-input-background-color, #fff);
     border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
@@ -73,13 +85,13 @@ const selectStyle = `
     width: 100%;
   }
 
-  .select--small .control {
+  .select--small {
     --select-height: var(--tot-input-height-small, 1.75rem);
     --select-spacing: var(--tot-spacing-3x-small, .125rem);
     --select-font-size: var(--tot-input-font-size-small, .75rem);
   }
 
-  .select--large .control {
+  .select--large {
     --select-height: var(--tot-input-height-large, 2.75rem);
     --select-spacing: var(--tot-spacing-x-small, .5rem);
     --select-font-size: var(--tot-input-font-size-large, 1rem);
@@ -130,16 +142,103 @@ const selectStyle = `
     display: inline-flex;
   }
 
+  .select__value-shell {
+    flex: 1 1 auto;
+    height: var(--select-content-height);
+    min-width: 0;
+    position: relative;
+  }
+
   .select__value {
     align-items: center;
     display: flex;
-    flex: 1 1 auto;
     gap: var(--tot-spacing-2x-small, .25rem);
+    inset: 0;
     line-height: inherit;
     min-width: 0;
     overflow: hidden;
+    position: absolute;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .select--multiple .control {
+    align-items: flex-start;
+    height: var(--select-height);
+  }
+
+  .select--multiple .select__prefix,
+  .select--multiple .select__suffix,
+  .select--multiple .select__actions,
+  .select--multiple .select__caret {
+    height: var(--select-content-height);
+  }
+
+  .select--multiple .select__value {
+    flex-wrap: nowrap;
+    height: var(--select-content-height);
+    max-height: var(--select-content-height);
+    overflow: hidden;
+  }
+
+  .select--tag-rows-2 {
+    --select-tag-row-count: 2;
+  }
+
+  .select--tag-rows-3 {
+    --select-tag-row-count: 3;
+  }
+
+  .select--tags-overflow:not(.select--tags-expanded) .select__value {
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 1.25rem), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 1.25rem), transparent 100%);
+  }
+
+  .select--tags-expanded .control {
+    align-items: flex-end;
+    background: var(--tot-input-background-color-focus, var(--tot-input-background-color, #fff));
+    height: auto;
+    inset: auto 0 0;
+    position: absolute;
+    z-index: calc(var(--tot-z-index-dropdown, 1000) + 1);
+  }
+
+  .select--tags-expanded .select__value-shell {
+    height: auto;
+    max-height: calc(
+      var(--select-tag-row-count, 3) * var(--select-content-height)
+      + (var(--select-tag-row-count, 3) - 1) * var(--tot-spacing-2x-small, .25rem)
+    );
+    min-height: var(--select-content-height);
+    direction: rtl;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--tot-color-neutral-400, #94a3b8) transparent;
+    scrollbar-width: thin;
+  }
+
+  .select--tags-expanded .select__value-shell::-webkit-scrollbar {
+    width: .45rem;
+  }
+
+  .select--tags-expanded .select__value-shell::-webkit-scrollbar-thumb {
+    background: var(--tot-color-neutral-400, #94a3b8);
+    border-radius: var(--tot-border-radius-pill, 999px);
+  }
+
+  .select--tags-expanded .select__value {
+    align-content: flex-end;
+    direction: ltr;
+    display: flex;
+    flex-wrap: wrap-reverse;
+    height: auto;
+    max-height: none;
+    min-height: var(--select-content-height);
+    overflow: visible;
+    padding-block: var(--select-tag-row-padding);
+    position: static;
+    white-space: normal;
   }
 
   .select__value--placeholder {
@@ -147,25 +246,118 @@ const selectStyle = `
   }
 
   .select__tag {
+    -webkit-appearance: none;
+    appearance: none;
     align-items: center;
     background: var(--tot-color-neutral-50, #f8fafc);
     border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: var(--tot-border-radius-small, 3px);
     color: var(--tot-input-color, #1e293b);
+    cursor: pointer;
     display: inline-flex;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
+    font: inherit;
     line-height: 1.15;
     max-width: 9rem;
     min-width: 0;
     overflow: hidden;
     padding: var(--tot-spacing-3x-small, .125rem) var(--tot-spacing-2x-small, .25rem);
-    text-overflow: ellipsis;
+    position: relative;
     white-space: nowrap;
   }
 
-  .select__tag--count {
-    color: var(--tot-color-neutral-700, #334155);
+  .select__tag[hidden] {
+    display: none;
+  }
+
+
+  .select__tag:hover:not(:disabled) {
+    background: var(--tot-color-neutral-100, #f1f5f9);
+  }
+
+  .select__tag:focus-visible {
+    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+    outline-offset: -1px;
+  }
+
+  .select__tag:disabled {
+    cursor: not-allowed;
+  }
+
+  .select__tag-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .select__tag-remove {
+    align-items: center;
+    background: inherit;
+    border-radius: inherit;
+    display: inline-flex;
+    height: 1em;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    right: var(--tot-spacing-3x-small, .125rem);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1em;
+  }
+
+  .select__tag-remove svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
+  }
+
+  .select__tag:hover:not(:disabled) .select__tag-remove,
+  .select__tag:focus-visible .select__tag-remove {
+    opacity: 1;
+  }
+
+  .select__tag:disabled .select__tag-remove {
+    display: none;
+  }
+
+  .select__selection-count {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: var(--tot-border-radius-small, 3px);
+    color: var(--tot-input-icon-color, #64748b);
+    cursor: default;
     flex: 0 0 auto;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    padding: 0;
+    touch-action: manipulation;
+  }
+
+  .select--tags-overflow .select__selection-count:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .select--tags-overflow .select__selection-count:hover:not(:disabled) {
+    color: var(--tot-input-icon-color-hover, #475569);
+  }
+
+  .select__selection-count:focus-visible {
+    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+    outline-offset: var(--tot-focus-ring-offset, 1px);
+  }
+
+  .select__selection-count:disabled {
+    cursor: not-allowed;
+  }
+
+  .select__selection-count[hidden] {
+    display: none;
   }
 
   .select__actions {
@@ -237,7 +429,8 @@ const selectStyle = `
     margin-top: var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem));
     min-width: 100%;
     position: absolute;
-    top: 100%;
+    top: calc(100% + var(--select-tag-expansion, 0px));
+    width: 100%;
     z-index: var(--tot-z-index-dropdown, 1000);
   }
 
@@ -259,9 +452,10 @@ const selectStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
     max-height: min(var(--tot-select-panel-max-height, 16rem), 60vh);
-    max-width: min(var(--tot-dropdown-max-width, 28rem), 100vw);
+    min-width: 100%;
     overflow: auto;
     padding: var(--tot-menu-padding, .125rem);
+    width: 100%;
   }
 
   .option {
@@ -368,6 +562,7 @@ export class TotSelect extends HTMLElement {
       'clearable',
       'disabled',
       'multiple',
+      'max-tag-rows',
       'size',
       'open',
       'hoist',
@@ -383,9 +578,19 @@ export class TotSelect extends HTMLElement {
     this._selectedValues = null
     this._hasPrefix = false
     this._hasSuffix = false
+    this._tagsExpanded = false
+    this._tagsOverflow = false
+    this._selectionCountPointerType = ''
     this._positionFrame = 0
+    this._tagMeasureFrame = 0
+    this._controlResizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => this.handleControlResize())
+      : null
     this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
-    this._handleWindowChange = () => this.schedulePanelPosition()
+    this._handleWindowChange = () => {
+      this.scheduleTagMeasurement()
+      this.schedulePanelPosition()
+    }
   }
 
   get items() {
@@ -495,6 +700,14 @@ export class TotSelect extends HTMLElement {
     setBooleanAttribute(this, 'multiple', value)
   }
 
+  get maxTagRows() {
+    return getSupportedNumber(this.getAttribute('max-tag-rows'), [2, 3], 3)
+  }
+
+  set maxTagRows(value) {
+    this.setAttribute('max-tag-rows', String(getSupportedNumber(value, [2, 3], 3)))
+  }
+
   get size() {
     return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
   }
@@ -530,16 +743,22 @@ export class TotSelect extends HTMLElement {
     document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.removeEventListener('resize', this._handleWindowChange)
     document.removeEventListener('scroll', this._handleWindowChange, true)
+    this._controlResizeObserver?.disconnect()
     cancelAnimationFrame(this._positionFrame)
+    cancelAnimationFrame(this._tagMeasureFrame)
   }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, _oldValue, newValue) {
     if (name === 'items') {
       this._items = null
     }
 
     if (name === 'value' || name === 'values') {
       this._selectedValues = null
+    }
+
+    if (name === 'open' && newValue === null) {
+      this._tagsExpanded = false
     }
 
     this.requestRender()
@@ -567,7 +786,9 @@ export class TotSelect extends HTMLElement {
 
   render() {
     const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    this._controlResizeObserver?.disconnect()
     const previousScrollTop = root.querySelector('.panel__surface')?.scrollTop || 0
+    const previousTagScrollTop = root.querySelector('.select__value-shell')?.scrollTop || 0
     const previousFocusedValue = root.activeElement?.classList?.contains('option')
       ? root.activeElement.dataset.value
       : ''
@@ -587,10 +808,19 @@ export class TotSelect extends HTMLElement {
     const valueContent = this.getDisplayValueContent(selectedOptions, selectedValues)
     const hasValue = selectedValues.length > 0
     const showClearButton = this.clearable && hasValue
+    const showSelectionCount = this.multiple && hasValue
+    const showActions = showSelectionCount || showClearButton
     const valueClasses = ['select__value']
 
     this._hasPrefix = hasPrefix
     this._hasSuffix = hasSuffix
+
+    if (this.multiple) {
+      selectClasses.push('select--multiple', `select--tag-rows-${this.maxTagRows}`)
+      if (this._tagsExpanded) {
+        selectClasses.push('select--tags-expanded')
+      }
+    }
 
     if (open) {
       selectClasses.push('select--open')
@@ -633,9 +863,18 @@ export class TotSelect extends HTMLElement {
             tabindex="${disabled ? '-1' : '0'}"
           >
             <span class="select__prefix" part="prefix"><slot name="prefix"></slot></span>
-            <span class="${escapeAttribute(valueClasses.join(' '))}" part="display-value">${valueContent}</span>
+            <span class="select__value-shell"><span class="${escapeAttribute(valueClasses.join(' '))}" part="display-value">${valueContent}</span></span>
             <span class="select__suffix" part="suffix"><slot name="suffix"></slot></span>
-            <span class="select__actions" part="actions" ${showClearButton ? '' : 'hidden'}>
+            <span class="select__actions" part="actions" ${showActions ? '' : 'hidden'}>
+              <button
+                class="select__selection-count"
+                part="selection-count"
+                type="button"
+                aria-label="Preview ${selectedValues.length} selected items"
+                aria-expanded="${this._tagsExpanded ? 'true' : 'false'}"
+                ${showSelectionCount ? '' : 'hidden'}
+                ${disabled ? 'disabled' : ''}
+              >(${selectedValues.length})</button>
               <button class="select__button select__clear-button" part="clear-button" type="button" aria-label="Clear selection" ${showClearButton ? '' : 'hidden'} ${disabled ? 'disabled' : ''}>×</button>
             </span>
             <span class="select__caret" part="caret" aria-hidden="true">
@@ -656,7 +895,11 @@ export class TotSelect extends HTMLElement {
       </div>
     `
 
+    const select = root.querySelector('.select')
     const control = root.querySelector('.control')
+    const valueShell = root.querySelector('.select__value-shell')
+    const displayValue = root.querySelector('.select__value')
+    const selectionCount = root.querySelector('.select__selection-count')
     const clearButton = root.querySelector('.select__clear-button')
     const labelSlot = root.querySelector('slot[name="label"]')
     const prefixSlot = root.querySelector('slot[name="prefix"]')
@@ -668,13 +911,26 @@ export class TotSelect extends HTMLElement {
     panelSurface.scrollTop = previousScrollTop
     requestAnimationFrame(() => {
       panelSurface.scrollTop = previousScrollTop
+      if (this._tagsExpanded && valueShell) {
+        valueShell.scrollTop = previousTagScrollTop || valueShell.scrollHeight
+      }
       if (open && previousFocusedValue) {
         this.focusOption(previousFocusedValue)
       }
     })
 
+    this._controlResizeObserver?.observe(control)
     control.addEventListener('click', () => this.handleControlClick())
     control.addEventListener('keydown', (event) => this.handleControlKeyDown(event))
+    selectionCount.addEventListener('pointerenter', (event) => this.handleSelectionCountPointerEnter(event))
+    selectionCount.addEventListener('pointerdown', (event) => {
+      this._selectionCountPointerType = event.pointerType
+    })
+    selectionCount.addEventListener('click', (event) => this.handleSelectionCountClick(event))
+    selectionCount.addEventListener('keydown', (event) => this.handleSelectionCountKeyDown(event))
+    select.addEventListener('pointerleave', () => this.handleTagPreviewPointerLeave())
+    select.addEventListener('focusout', () => this.handleTagPreviewFocusOut())
+    displayValue.addEventListener('click', (event) => this.handleTagClick(event))
     clearButton.addEventListener('mousedown', (event) => event.preventDefault())
     clearButton.addEventListener('click', (event) => this.handleClear(event))
     labelSlot.addEventListener('slotchange', () => this.syncTextVisibility('label'))
@@ -684,6 +940,7 @@ export class TotSelect extends HTMLElement {
     listbox.addEventListener('click', (event) => this.handleOptionClick(event))
     listbox.addEventListener('keydown', (event) => this.handleListboxKeyDown(event))
 
+    this.scheduleTagMeasurement()
     if (open) {
       this.schedulePanelPosition()
     }
@@ -735,14 +992,16 @@ export class TotSelect extends HTMLElement {
       return escapeHtml(labels.join(', '))
     }
 
-    const visibleCount = labels.length > 3 ? 2 : labels.length
     const parts = []
-    for (let i = 0; i < visibleCount; i++) {
-      parts.push(`<span class="select__tag" part="tag">${escapeHtml(labels[i])}</span>`)
-    }
-
-    if (labels.length > visibleCount) {
-      parts.push(`<span class="select__tag select__tag--count" part="tag-count">${labels.length} selected</span>`)
+    for (let i = 0; i < labels.length; i++) {
+      parts.push(`<button
+        class="select__tag"
+        part="tag"
+        type="button"
+        data-value="${escapeAttribute(selectedValues[i])}"
+        aria-label="Remove ${escapeAttribute(labels[i])}"
+        ${this.disabled ? 'disabled' : ''}
+      ><span class="select__tag-label">${escapeHtml(labels[i])}</span><span class="select__tag-remove" aria-hidden="true"><svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" focusable="false"><path d="M4.5 4.5l7 7m0-7-7 7"></path></svg></span></button>`)
     }
 
     return parts.join('')
@@ -756,8 +1015,219 @@ export class TotSelect extends HTMLElement {
     this.open = !this.open
   }
 
-  handleControlKeyDown(event) {
+  handleTagClick(event) {
+    const tag = event.target?.closest?.('.select__tag')
+    if (!tag) {
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
     if (this.disabled) {
+      return
+    }
+
+    this.toggleValue(tag.dataset.value)
+    requestAnimationFrame(() => this.focus())
+  }
+
+  handleSelectionCountPointerEnter(event) {
+    if (event.pointerType === 'touch' || !supportsHover() || !this.multiple || this.disabled) {
+      return
+    }
+
+    this.updateTagOverflow()
+    if (this._tagsOverflow) {
+      this.setTagsExpanded(true)
+    }
+  }
+
+  handleSelectionCountClick(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    const pointerType = this._selectionCountPointerType
+    this._selectionCountPointerType = ''
+    if (!this.multiple || this.disabled || (supportsHover() && pointerType === 'mouse')) {
+      return
+    }
+
+    this.updateTagOverflow()
+    if (this._tagsOverflow) {
+      this.setTagsExpanded(!this._tagsExpanded)
+    }
+  }
+
+  handleSelectionCountKeyDown(event) {
+    if (event.key === 'Escape' && this._tagsExpanded) {
+      this.setTagsExpanded(false, true)
+      event.preventDefault()
+    }
+  }
+
+  handleTagPreviewPointerLeave() {
+    if (!this.open) {
+      this.setTagsExpanded(false)
+    }
+  }
+
+  handleTagPreviewFocusOut() {
+    requestAnimationFrame(() => {
+      const select = this.shadowRoot?.querySelector('.select')
+      if (!this.open && select && !select.contains(this.shadowRoot?.activeElement)) {
+        this.setTagsExpanded(false)
+      }
+    })
+  }
+
+  setTagsExpanded(expanded, force = false) {
+    const nextExpanded = Boolean(expanded && this.multiple && this._tagsOverflow && !this.disabled)
+    if (!force && !nextExpanded && this.open) {
+      return
+    }
+
+    if (this._tagsExpanded === nextExpanded) {
+      this.updateTagExpansionMetrics()
+      return
+    }
+
+    this._tagsExpanded = nextExpanded
+    const select = this.shadowRoot?.querySelector('.select')
+    if (select) {
+      select.classList.toggle('select--tags-expanded', nextExpanded)
+    }
+
+    const count = this.shadowRoot?.querySelector('.select__selection-count')
+    if (count) {
+      const selectedCount = this.selectedValues.length
+      const action = nextExpanded ? 'Hide' : 'Preview'
+      count.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false')
+      count.setAttribute('aria-label', `${action} ${selectedCount} selected items`)
+      if (this._tagsOverflow) {
+        count.title = `${action} selected items`
+      }
+    }
+
+    const tags = this.shadowRoot?.querySelectorAll('.select__tag') || []
+    if (nextExpanded) {
+      for (let i = 0; i < tags.length; i++) {
+        tags[i].hidden = false
+      }
+    } else {
+      this.scheduleTagMeasurement()
+    }
+
+    requestAnimationFrame(() => {
+      const valueShell = this.shadowRoot?.querySelector('.select__value-shell')
+      if (nextExpanded && valueShell) {
+        valueShell.scrollTop = valueShell.scrollHeight
+      }
+      this.updateTagExpansionMetrics()
+    })
+  }
+
+  scheduleTagMeasurement() {
+    cancelAnimationFrame(this._tagMeasureFrame)
+    this._tagMeasureFrame = requestAnimationFrame(() => this.updateTagOverflow())
+  }
+
+  updateTagOverflow() {
+    if (!this.multiple || !this.shadowRoot) {
+      this._tagsOverflow = false
+      this.setTagsExpanded(false, true)
+      return
+    }
+
+    const select = this.shadowRoot.querySelector('.select')
+    const value = this.shadowRoot.querySelector('.select__value')
+    const count = this.shadowRoot.querySelector('.select__selection-count')
+    const tags = value ? value.querySelectorAll('.select__tag') : []
+
+    if (!select || !value || tags.length === 0) {
+      this._tagsOverflow = false
+      select?.classList.remove('select--tags-overflow')
+      if (count) {
+        count.setAttribute('aria-expanded', 'false')
+        count.setAttribute('aria-label', `${this.selectedValues.length} selected items`)
+        count.removeAttribute('title')
+      }
+      this.setTagsExpanded(false, true)
+      return
+    }
+
+    for (let i = 0; i < tags.length; i++) {
+      tags[i].hidden = false
+    }
+
+    const gap = Number.parseFloat(getComputedStyle(value).columnGap) || 0
+    const availableWidth = value.clientWidth
+    let visibleCount = 0
+    let usedWidth = 0
+
+    for (let i = 0; i < tags.length; i++) {
+      const nextWidth = usedWidth + (visibleCount > 0 ? gap : 0) + tags[i].offsetWidth
+      if (nextWidth > availableWidth + .5) {
+        break
+      }
+      usedWidth = nextWidth
+      visibleCount += 1
+    }
+
+    const overflow = visibleCount < tags.length
+    this._tagsOverflow = overflow
+    select.classList.toggle('select--tags-overflow', overflow)
+
+    if (count) {
+      const expanded = this._tagsExpanded && overflow
+      const selectedCount = this.selectedValues.length
+      count.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+      if (overflow) {
+        const action = expanded ? 'Hide' : 'Preview'
+        count.setAttribute('aria-label', `${action} ${selectedCount} selected items`)
+        count.title = `${action} selected items`
+      } else {
+        count.setAttribute('aria-label', `${selectedCount} selected items`)
+        count.removeAttribute('title')
+      }
+    }
+
+    if (!this._tagsExpanded) {
+      const firstClippedIndex = Math.min(visibleCount, tags.length - 1)
+      for (let i = firstClippedIndex + 1; i < tags.length; i++) {
+        tags[i].hidden = true
+      }
+    }
+
+    if (!overflow) {
+      this.setTagsExpanded(false, true)
+    } else if (this._tagsExpanded) {
+      this.setTagsExpanded(true)
+    } else {
+      this.updateTagExpansionMetrics()
+    }
+  }
+
+  updateTagExpansionMetrics() {
+    const select = this.shadowRoot?.querySelector('.select')
+    const control = this.getControl()
+    if (!select || !control) {
+      return
+    }
+
+    let expansion = 0
+    if (this._tagsExpanded) {
+      const selectRect = select.getBoundingClientRect()
+      const controlRect = control.getBoundingClientRect()
+      expansion = Math.max(0, Math.ceil(controlRect.bottom - selectRect.bottom))
+    }
+
+    select.style.setProperty('--select-tag-expansion', `${expansion}px`)
+    if (this.open) {
+      this.schedulePanelPosition()
+    }
+  }
+
+  handleControlKeyDown(event) {
+    if (this.disabled || event.target !== event.currentTarget) {
       return
     }
 
@@ -926,6 +1396,13 @@ export class TotSelect extends HTMLElement {
     return this.shadowRoot?.querySelector('.control')
   }
 
+  handleControlResize() {
+    this.scheduleTagMeasurement()
+    if (this.open) {
+      this.schedulePanelPosition()
+    }
+  }
+
   handleDocumentPointerDown(event) {
     if (!this.open) {
       return
@@ -963,11 +1440,14 @@ export class TotSelect extends HTMLElement {
     }
 
     panel.style.minWidth = `${Math.ceil(controlRect.width)}px`
+    panel.style.width = `${Math.ceil(controlRect.width)}px`
+
+    const anchorBottom = controlRect.bottom
 
     if (!this.hoist) {
       panel.style.left = '0px'
       panel.style.marginTop = 'var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem))'
-      panel.style.top = '100%'
+      panel.style.top = 'calc(100% + var(--select-tag-expansion, 0px))'
       return
     }
 
@@ -976,7 +1456,7 @@ export class TotSelect extends HTMLElement {
     const panelRect = panel.getBoundingClientRect()
     const maxLeft = Math.max(margin, window.innerWidth - panelRect.width - margin)
     let left = Math.min(Math.max(margin, controlRect.left), maxLeft)
-    let top = controlRect.bottom + gap
+    let top = anchorBottom + gap
 
     if (top + panelRect.height > window.innerHeight - margin && controlRect.top - panelRect.height - gap >= margin) {
       top = controlRect.top - panelRect.height - gap
@@ -1019,6 +1499,10 @@ export class TotSelect extends HTMLElement {
     }
     return false
   }
+}
+
+function supportsHover() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(hover: hover)').matches
 }
 
 function getRelativeOption(options, active, step) {
@@ -1188,6 +1672,16 @@ function parseJson(value, fallback) {
   } catch (error) {
     return fallback
   }
+}
+
+function getSupportedNumber(value, supportedValues, fallback) {
+  const number = Number(value)
+  for (let i = 0; i < supportedValues.length; i++) {
+    if (supportedValues[i] === number) {
+      return number
+    }
+  }
+  return fallback
 }
 
 function getSupportedValue(value, supportedValues, fallback) {

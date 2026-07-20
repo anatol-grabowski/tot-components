@@ -8,7 +8,7 @@ deploy:
 	npx vercel --prod
 
 watch:
-	./scripts/watch-tot-cmp-zip.py
+	python3 ./scripts/watch-tot-cmp-zip.py
 
 purge:
 	@echo "Purging jsdelivr cache for all files in src/..."

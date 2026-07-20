@@ -19,6 +19,7 @@ const buttonStyle = `
     --button-color-hover: var(--tot-input-color-hover, #0f172a);
     --button-outline-background-color-hover: color-mix(in srgb, var(--button-border-color) 10%, transparent);
     --button-outline-background-color-active: color-mix(in srgb, var(--button-border-color) 18%, transparent);
+    --button-padding-inline: var(--tot-input-spacing-medium, .75rem);
 
     -webkit-appearance: none;
     appearance: none;
@@ -34,7 +35,7 @@ const buttonStyle = `
     min-width: 0;
     width: 100%;
     min-height: var(--tot-input-height-medium, 2.25rem);
-    padding: 0 var(--tot-input-spacing-medium, .75rem);
+    padding: 0 var(--button-padding-inline);
     position: relative;
     text-align: center;
     text-decoration: none;
@@ -114,14 +115,16 @@ const buttonStyle = `
   }
 
   .button--small {
+    --button-padding-inline: var(--tot-input-spacing-small, .5rem);
+
     min-height: var(--tot-input-height-small, 1.75rem);
-    padding: 0 var(--tot-input-spacing-small, .5rem);
     font-size: var(--tot-button-font-size-small, var(--tot-input-font-size-small, .75rem));
   }
 
   .button--large {
+    --button-padding-inline: var(--tot-input-spacing-large, 1rem);
+
     min-height: var(--tot-input-height-large, 2.75rem);
-    padding: 0 var(--tot-input-spacing-large, 1rem);
     font-size: var(--tot-button-font-size-large, var(--tot-input-font-size-large, 1rem));
   }
 
@@ -180,6 +183,10 @@ const buttonStyle = `
     height: 100%;
     stroke: currentColor;
     width: 100%;
+  }
+
+  .button--caret {
+    padding-inline-end: max(0px, calc(var(--button-padding-inline) - var(--tot-spacing-2x-small, .25rem)));
   }
 
   .button--caret .button__caret {
