@@ -14,56 +14,51 @@ const fieldsStyle = `
   }
 
   .fields {
-    --fields-font-size: var(--tot-input-font-size-small, .8125rem);
-    --fields-gap: var(--tot-spacing-2x-small, .25rem);
-    --fields-input-height: 1.65rem;
-    --fields-input-padding-block: .0625rem;
-    --fields-input-padding-inline: var(--tot-spacing-2x-small, .375rem);
-    --fields-remove-size: 1.4rem;
-    --fields-tile-min-height: 1.4rem;
-    --fields-tile-padding-block: .0625rem;
-    --fields-tile-padding-inline: .4rem;
+    --tot-fields-font-size: var(--tot-input-font-size-small, .8125rem);
+    --tot-fields-gap: var(--tot-spacing-2x-small, .25rem);
+    --tot-fields-remove-size: 1.4rem;
+    --tot-fields-tile-min-height: 1.4rem;
+    --tot-fields-tile-padding-block: .0625rem;
+    --tot-fields-tile-padding-inline: .4rem;
 
     color: var(--tot-input-color, #1e293b);
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--fields-font-size);
-    gap: var(--fields-gap);
+    font-size: var(--tot-fields-font-size);
+    gap: var(--tot-fields-gap);
     line-height: var(--tot-line-height-dense, 1.35);
     max-width: 100%;
     min-width: 0;
   }
 
   .fields--medium {
-    --fields-font-size: var(--tot-input-font-size-medium, .875rem);
-    --fields-gap: var(--tot-spacing-x-small, .5rem);
-    --fields-input-height: var(--tot-input-height-medium, 2.25rem);
-    --fields-input-padding-block: .125rem;
-    --fields-input-padding-inline: var(--tot-input-spacing-medium, .75rem);
-    --fields-remove-size: 1.75rem;
-    --fields-tile-min-height: 1.75rem;
-    --fields-tile-padding-block: .125rem;
-    --fields-tile-padding-inline: .55rem;
+    --tot-fields-font-size: var(--tot-input-font-size-medium, .875rem);
+    --tot-fields-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-fields-remove-size: 1.75rem;
+    --tot-fields-tile-min-height: 1.75rem;
+    --tot-fields-tile-padding-block: .125rem;
+    --tot-fields-tile-padding-inline: .55rem;
   }
 
   .fields--large {
-    --fields-font-size: var(--tot-input-font-size-large, 1rem);
-    --fields-gap: var(--tot-spacing-x-small, .5rem);
-    --fields-input-height: var(--tot-input-height-large, 2.75rem);
-    --fields-input-padding-block: .1875rem;
-    --fields-input-padding-inline: var(--tot-input-spacing-large, 1rem);
-    --fields-remove-size: 2rem;
-    --fields-tile-min-height: 2.1rem;
-    --fields-tile-padding-block: .1875rem;
-    --fields-tile-padding-inline: .7rem;
+    --tot-fields-font-size: var(--tot-input-font-size-large, 1rem);
+    --tot-fields-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-fields-remove-size: 2rem;
+    --tot-fields-tile-min-height: 2.1rem;
+    --tot-fields-tile-padding-block: .1875rem;
+    --tot-fields-tile-padding-inline: .7rem;
   }
 
+
+  .fields__rows {
+    display: contents;
+  }
 
   .fields--readonly {
     align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--fields-gap);
+    gap: var(--tot-fields-gap);
   }
 
   .field-tile {
@@ -76,10 +71,10 @@ const fieldsStyle = `
     display: inline-flex;
     font-weight: var(--tot-font-weight-normal, 400);
     max-width: min(100%, 20rem);
-    min-height: var(--fields-tile-min-height);
+    min-height: var(--tot-fields-tile-min-height);
     min-width: 0;
     overflow: hidden;
-    padding: var(--fields-tile-padding-block) var(--fields-tile-padding-inline);
+    padding: var(--tot-fields-tile-padding-block) var(--tot-fields-tile-padding-inline);
     user-select: none;
     -webkit-user-select: none;
     vertical-align: middle;
@@ -101,67 +96,21 @@ const fieldsStyle = `
   .field-row {
     align-items: center;
     display: grid;
-    gap: var(--fields-gap);
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--fields-remove-size);
+    gap: var(--tot-fields-gap);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--tot-fields-remove-size);
     max-width: 100%;
     min-width: 0;
   }
 
   .field-input {
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--tot-input-background-color, #fff);
-    border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
-    border-radius: var(--tot-input-border-radius-small, var(--tot-border-radius-small, 3px));
-    color: var(--tot-input-color, #1e293b);
-    font: inherit;
-    height: var(--fields-input-height);
-    letter-spacing: var(--tot-input-letter-spacing, normal);
-    line-height: var(--tot-input-line-height, 1.25);
+    display: block;
     max-width: 100%;
-    min-height: var(--fields-input-height);
     min-width: 0;
-    outline: none;
-    padding: var(--fields-input-padding-block) var(--fields-input-padding-inline);
-    transition:
-      var(--tot-transition-fast, 150ms) background-color,
-      var(--tot-transition-fast, 150ms) border-color,
-      var(--tot-transition-fast, 150ms) box-shadow,
-      var(--tot-transition-fast, 150ms) color;
     width: 100%;
   }
 
-  .field-input::placeholder {
-    color: var(--tot-input-placeholder-color, #64748b);
-    opacity: 1;
-  }
-
-  .field-input:hover:not(:disabled) {
-    background: var(--tot-input-background-color-hover, #fff);
-    border-color: var(--tot-input-border-color-hover, #94a3b8);
-    color: var(--tot-input-color-hover, #0f172a);
-  }
-
-  .field-input:focus:not(:disabled) {
-    background: var(--tot-input-background-color-focus, #fff);
-    border-color: var(--tot-input-border-color-focus, var(--tot-color-primary-600, #0284c7));
-    box-shadow: 0 0 0 var(--tot-input-focus-ring-offset, 0) var(--tot-input-focus-ring-color, hsl(198.6 88.7% 48.4% / 40%));
-    color: var(--tot-input-color-focus, #0f172a);
-    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: 0;
-  }
-
-  .field-input:disabled {
-    background: var(--tot-input-background-color-disabled, #f1f5f9);
-    border-color: var(--tot-input-border-color-disabled, #cbd5e1);
-    color: var(--tot-input-color-disabled, #64748b);
-    cursor: not-allowed;
-    opacity: .75;
-    -webkit-text-fill-color: var(--tot-input-color-disabled, #64748b);
-  }
-
-  .field-input:disabled::placeholder {
-    color: var(--tot-input-placeholder-color-disabled, #94a3b8);
+  .field-input::part(control) {
+    border-radius: var(--tot-input-border-radius-small, var(--tot-border-radius-small, 3px));
   }
 
   .field-remove {
@@ -177,7 +126,7 @@ const fieldsStyle = `
     font: inherit;
     font-size: .95em;
     font-weight: var(--tot-font-weight-bold, 700);
-    height: var(--fields-remove-size);
+    height: var(--tot-fields-remove-size);
     justify-content: center;
     line-height: 1;
     opacity: 0;
@@ -187,7 +136,7 @@ const fieldsStyle = `
       var(--tot-transition-fast, 150ms) background-color,
       var(--tot-transition-fast, 150ms) color,
       var(--tot-transition-fast, 150ms) opacity;
-    width: var(--fields-remove-size);
+    width: var(--tot-fields-remove-size);
   }
 
   .field-remove:hover:not(:disabled) {
@@ -238,23 +187,34 @@ export class TotFields extends HTMLElement {
     super()
     this._rows = null
     this._activeRowIndex = -1
-    this._isRendering = false
-    this._handleRootClick = (event) => this.handleClick(event)
-    this._handleRootFocusIn = (event) => this.handleFocusIn(event)
-    this._handleRootFocusOut = (event) => this.handleFocusOut(event)
-    this._handleRootInput = (event) => this.handleInput(event)
-    this._handleRootKeyDown = (event) => this.handleKeyDown(event)
-    this._handleRootChange = (event) => this.handleNativeChange(event)
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${fieldsStyle}</style>
+      <div class="fields fields--small" part="base" role="list">
+        <div class="fields__rows"></div>
+      </div>
+    `
+
+    this._baseElement = root.querySelector('.fields')
+    this._rowsElement = root.querySelector('.fields__rows')
+
+    this._baseElement.addEventListener('click', event => this._handleClick(event))
+    this._baseElement.addEventListener('focusin', event => this._handleFocusIn(event))
+    this._baseElement.addEventListener('focusout', event => this._handleFocusOut(event))
+    this._baseElement.addEventListener('input', event => this._handleInput(event))
+    this._baseElement.addEventListener('keydown', event => this._handleKeyDown(event))
+    this._baseElement.addEventListener('change', event => this._handleNativeChange(event))
+    this._baseElement.addEventListener('mousedown', event => this._handleMouseDown(event))
   }
 
   get fields() {
-    return rowsToFields(this.getRows())
+    return rowsToFields(this._getRows())
   }
 
   set fields(value) {
     this._rows = normalizeRows(fieldsToRows(value))
     this._activeRowIndex = -1
-    this.render()
+    this._renderRows()
   }
 
   get keyPlaceholder() {
@@ -298,7 +258,7 @@ export class TotFields extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this._syncAll()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -306,20 +266,37 @@ export class TotFields extends HTMLElement {
       return
     }
 
-    if (this._isRendering) {
-      return
-    }
-
     if (name === 'fields') {
       this._rows = null
       this._activeRowIndex = -1
+      this._renderRows()
+      return
     }
 
-    if (name === 'disabled' || name === 'readonly') {
+    if (name === 'readonly') {
       this._activeRowIndex = -1
+      this._syncClasses()
+      this._renderRows()
+      return
     }
 
-    this.render()
+    if (name === 'disabled') {
+      this._activeRowIndex = -1
+      this._syncClasses()
+      this._syncDisabledState()
+      this._updateActiveRow()
+      return
+    }
+
+    if (name === 'key-placeholder' || name === 'value-placeholder') {
+      this._syncPlaceholders()
+      return
+    }
+
+    if (name === 'size') {
+      this._syncClasses()
+      this._syncInputSize()
+    }
   }
 
   focus(options) {
@@ -329,124 +306,173 @@ export class TotFields extends HTMLElement {
     }
   }
 
-  render() {
-    if (!this.isConnected && !this.shadowRoot) {
-      return
+  removeRowAt(index) {
+    if (this.disabled || this.readonly) {
+      return false
     }
 
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const rows = this.getRows()
-    const disabled = this.disabled
-    const readonly = this.readonly
+    const rows = this._getRows()
+    if (!Number.isInteger(index) || index < 0 || index >= rows.length || isEmptyRow(rows[index])) {
+      return false
+    }
+
+    const removedRow = rows.splice(index, 1)[0]
+    this._rows = normalizeRows(rows)
+    this._activeRowIndex = Math.min(index, this._rows.length - 1)
+    this._renderRows()
+    this._restoreFocus(this._activeRowIndex, 'key')
+
+    emit(this, 'change', {
+      action: 'remove',
+      index,
+      field: cloneRow(removedRow),
+      fields: this.fields,
+    })
+    return true
+  }
+
+  getBase() {
+    return this._baseElement
+  }
+
+  getInput(index, fieldName) {
+    return this._getInputControl(index, fieldName)?.getInput() || null
+  }
+
+  _syncAll() {
+    this._syncClasses()
+    this._renderRows()
+  }
+
+  _syncClasses() {
     const size = this.size
-    const classes = ['fields', `fields--${size}`]
-    const rowHtml = []
+    this._baseElement.classList.remove(
+      'fields--small',
+      'fields--medium',
+      'fields--large',
+    )
+    this._baseElement.classList.add(`fields--${size}`)
+    this._baseElement.classList.toggle('fields--disabled', this.disabled)
+    this._baseElement.classList.toggle('fields--readonly', this.readonly)
+  }
 
-    if (disabled) {
-      classes.push('fields--disabled')
-    }
+  _renderRows() {
+    const rows = this._getRows()
+    const fragment = document.createDocumentFragment()
 
-    if (readonly) {
-      classes.push('fields--readonly')
-    }
-
-    if (readonly) {
+    if (this.readonly) {
       const readonlyRows = getNonEmptyRows(rows)
       for (let i = 0; i < readonlyRows.length; i++) {
-        rowHtml.push(this.renderReadonlyRow(readonlyRows[i], i))
+        fragment.append(this._createReadonlyRow(readonlyRows[i], i))
       }
     } else {
       for (let i = 0; i < rows.length; i++) {
-        rowHtml.push(this.renderRow(rows[i], i, disabled))
+        fragment.append(this._createEditableRow(rows[i], i))
       }
     }
 
-    this._isRendering = true
-    root.innerHTML = `<style>${fieldsStyle}</style>
-      <div class="${escapeAttribute(classes.join(' '))}" part="base" role="list">
-        ${rowHtml.join('')}
-      </div>
-    `
-    this._isRendering = false
+    this._rowsElement.replaceChildren(fragment)
+    this._syncPlaceholders()
+    this._syncDisabledState()
+    this._updateActiveRow()
+  }
 
-    root.removeEventListener('click', this._handleRootClick)
-    root.removeEventListener('focusin', this._handleRootFocusIn)
-    root.removeEventListener('focusout', this._handleRootFocusOut)
-    root.removeEventListener('input', this._handleRootInput)
-    root.removeEventListener('keydown', this._handleRootKeyDown)
-    root.removeEventListener('change', this._handleRootChange)
-    root.addEventListener('click', this._handleRootClick)
-    root.addEventListener('focusin', this._handleRootFocusIn)
-    root.addEventListener('focusout', this._handleRootFocusOut)
-    root.addEventListener('input', this._handleRootInput)
-    root.addEventListener('keydown', this._handleRootKeyDown)
-    root.addEventListener('change', this._handleRootChange)
+  _createReadonlyRow(row, index) {
+    const element = document.createElement('span')
+    element.className = 'field-tile'
+    element.dataset.index = String(index)
+    element.setAttribute('part', 'field')
+    element.setAttribute('role', 'listitem')
+    element.title = `${row.key}: ${row.value}`
 
-    const removeButtons = root.querySelectorAll('.field-remove')
-    for (let i = 0; i < removeButtons.length; i++) {
-      removeButtons[i].addEventListener('mousedown', (event) => event.preventDefault())
+    const text = document.createElement('span')
+    text.className = 'field-tile__text'
+    text.setAttribute('part', 'field-text')
+
+    const key = document.createElement('span')
+    key.className = 'field-tile__key'
+    key.setAttribute('part', 'field-key')
+    key.textContent = row.key
+
+    text.append(key, document.createTextNode(`: ${row.value}`))
+    element.append(text)
+    return element
+  }
+
+  _createEditableRow(row, index) {
+    const element = document.createElement('div')
+    element.className = 'field-row'
+    element.dataset.index = String(index)
+    element.setAttribute('part', 'row')
+    element.setAttribute('role', 'listitem')
+    element.classList.toggle('field-row--empty', isEmptyRow(row))
+
+    const keyInput = this._createInput('key', row.key)
+    const valueInput = this._createInput('value', row.value)
+    const remove = document.createElement('button')
+    remove.className = 'field-remove'
+    remove.type = 'button'
+    remove.tabIndex = -1
+    remove.setAttribute('part', 'remove')
+    remove.setAttribute('aria-label', 'Remove field')
+    remove.textContent = '×'
+
+    element.append(keyInput, valueInput, remove)
+    return element
+  }
+
+  _createInput(fieldName, value) {
+    const input = document.createElement('tot-input')
+    input.className = `field-input field-input--${fieldName}`
+    input.dataset.field = fieldName
+    input.setAttribute('part', `${fieldName}-input`)
+    input.size = this.size
+    input.type = 'text'
+    input.value = value
+    return input
+  }
+
+  _syncPlaceholders() {
+    const keys = this._rowsElement.querySelectorAll('.field-input--key')
+    const values = this._rowsElement.querySelectorAll('.field-input--value')
+    for (let i = 0; i < keys.length; i++) {
+      keys[i].placeholder = this.keyPlaceholder
+    }
+    for (let i = 0; i < values.length; i++) {
+      values[i].placeholder = this.valuePlaceholder
     }
   }
 
-  renderReadonlyRow(row, index) {
-    const label = `${row.key}: ${row.value}`
-    return `<span class="field-tile" data-index="${index}" part="field" role="listitem" title="${escapeAttribute(label)}">
-      <span class="field-tile__text" part="field-text"><span class="field-tile__key" part="field-key">${escapeHtml(row.key)}</span>: ${escapeHtml(row.value)}</span>
-    </span>`
+  _syncInputSize() {
+    const inputs = this._rowsElement.querySelectorAll('.field-input')
+    for (let i = 0; i < inputs.length; i++) {
+      inputs[i].size = this.size
+    }
   }
 
-  renderRow(row, index, disabled) {
-    const empty = isEmptyRow(row)
-    const classes = ['field-row']
+  _syncDisabledState() {
+    const disabled = this.disabled
+    const rows = this._rowsElement.querySelectorAll('.field-row')
+    for (let i = 0; i < rows.length; i++) {
+      const inputs = rows[i].querySelectorAll('.field-input')
+      for (let j = 0; j < inputs.length; j++) {
+        inputs[j].disabled = disabled
+      }
 
-    if (empty) {
-      classes.push('field-row--empty')
+      const remove = rows[i].querySelector('.field-remove')
+      if (remove) {
+        remove.disabled = disabled || rows[i].classList.contains('field-row--empty')
+      }
     }
-
-    if (!disabled && !empty && index === this._activeRowIndex) {
-      classes.push('field-row--active')
-    }
-
-    return `<div class="${escapeAttribute(classes.join(' '))}" data-index="${index}" part="row" role="listitem">
-      <input
-        class="field-input field-input--key"
-        data-field="key"
-        part="key-input"
-        type="text"
-        value="${escapeAttribute(row.key)}"
-        placeholder="${escapeAttribute(this.keyPlaceholder)}"
-        autocomplete="off"
-        ${disabled ? 'disabled' : ''}
-      >
-      <input
-        class="field-input field-input--value"
-        data-field="value"
-        part="value-input"
-        type="text"
-        value="${escapeAttribute(row.value)}"
-        placeholder="${escapeAttribute(this.valuePlaceholder)}"
-        autocomplete="off"
-        ${disabled ? 'disabled' : ''}
-      >
-      <button
-        class="field-remove"
-        type="button"
-        part="remove"
-        aria-label="Remove field"
-        tabindex="-1"
-        ${disabled || empty ? 'disabled' : ''}
-      >×</button>
-    </div>`
   }
 
-  handleInput(event) {
+  _handleInput(event) {
     const input = closestElement(event.target, '.field-input')
     if (!input) {
       return
     }
 
     event.stopPropagation()
-
     if (this.disabled || this.readonly) {
       return
     }
@@ -458,7 +484,7 @@ export class TotFields extends HTMLElement {
     }
 
     const fieldName = input.dataset.field === 'value' ? 'value' : 'key'
-    const rows = this.getRows()
+    const rows = this._getRows()
     const previousLength = rows.length
     const selection = getInputSelection(input)
 
@@ -472,33 +498,37 @@ export class TotFields extends HTMLElement {
     this._activeRowIndex = focusedIndex
 
     if (shouldRender) {
-      this.render()
-      this.restoreFocus(focusedIndex, fieldName, selection)
+      this._renderRows()
+      this._restoreFocus(focusedIndex, fieldName, selection)
     } else {
-      this.updateActiveRow()
+      rowElement.classList.toggle('field-row--empty', isEmptyRow(editedField))
+      const remove = rowElement.querySelector('.field-remove')
+      if (remove) {
+        remove.disabled = this.disabled || isEmptyRow(editedField)
+      }
+      this._updateActiveRow()
     }
 
-    emit(this, 'change', this.getEventDetail('edit', rowIndex, fieldName, editedField))
+    emit(this, 'change', this._getEventDetail('edit', rowIndex, fieldName, editedField))
   }
 
-  handleNativeChange(event) {
+  _handleNativeChange(event) {
     if (closestElement(event.target, '.field-input')) {
       event.stopPropagation()
     }
   }
 
-  handleFocusIn(event) {
+  _handleFocusIn(event) {
     const input = closestElement(event.target, '.field-input')
     if (!input || this.disabled || this.readonly) {
       return
     }
 
-    const rowElement = closestElement(input, '.field-row')
-    this._activeRowIndex = getElementIndex(rowElement)
-    this.updateActiveRow()
+    this._activeRowIndex = getElementIndex(closestElement(input, '.field-row'))
+    this._updateActiveRow()
   }
 
-  handleFocusOut(event) {
+  _handleFocusOut(event) {
     if (this.disabled || this.readonly) {
       return
     }
@@ -509,10 +539,10 @@ export class TotFields extends HTMLElement {
     }
 
     this._activeRowIndex = -1
-    this.updateActiveRow()
+    this._updateActiveRow()
   }
 
-  handleKeyDown(event) {
+  _handleKeyDown(event) {
     if (event.key !== 'Enter') {
       return
     }
@@ -525,13 +555,12 @@ export class TotFields extends HTMLElement {
     event.preventDefault()
     event.stopPropagation()
 
-    const rowElement = closestElement(input, '.field-row')
-    const rowIndex = getElementIndex(rowElement)
+    const rowIndex = getElementIndex(closestElement(input, '.field-row'))
     const fieldName = input.dataset.field === 'value' ? 'value' : 'key'
-    this.focusNextRow(rowIndex, fieldName)
+    this._focusNextRow(rowIndex, fieldName)
   }
 
-  handleClick(event) {
+  _handleClick(event) {
     if (this.disabled || this.readonly) {
       return
     }
@@ -540,113 +569,80 @@ export class TotFields extends HTMLElement {
     if (removeButton) {
       event.preventDefault()
       event.stopPropagation()
-      const rowElement = closestElement(removeButton, '.field-row')
-      this.removeRowAt(getElementIndex(rowElement))
+      this.removeRowAt(getElementIndex(closestElement(removeButton, '.field-row')))
       return
     }
 
     const rowElement = closestElement(event.target, '.field-row')
-    if (!rowElement) {
-      this._activeRowIndex = -1
-      this.updateActiveRow()
-      return
-    }
-
-    this._activeRowIndex = getElementIndex(rowElement)
-    this.updateActiveRow()
+    this._activeRowIndex = rowElement ? getElementIndex(rowElement) : -1
+    this._updateActiveRow()
   }
 
-  focusNextRow(rowIndex, fieldName) {
-    const rows = this.getRows()
+  _handleMouseDown(event) {
+    if (closestElement(event.target, '.field-remove')) {
+      event.preventDefault()
+    }
+  }
+
+  _focusNextRow(rowIndex, fieldName) {
+    const rows = this._getRows()
     const nextIndex = rowIndex + 1
     if (nextIndex >= rows.length) {
       return false
     }
 
-    const input = this.getInput(nextIndex, fieldName)
+    const input = this._getInputControl(nextIndex, fieldName)
     if (!input) {
       return false
     }
 
     this._activeRowIndex = isEmptyRow(rows[nextIndex]) ? -1 : nextIndex
-    this.updateActiveRow()
+    this._updateActiveRow()
     input.focus()
-    try {
-      input.select()
-    } catch (_error) {
-      // Ignore input types that do not expose selections.
-    }
+    input.select()
     return true
   }
 
-  removeRowAt(index) {
-    if (this.disabled || this.readonly) {
-      return false
+  _getRows() {
+    if (!this._rows) {
+      this._rows = normalizeRows(fieldsToRows(this.getAttribute('fields')))
     }
-
-    const rows = this.getRows()
-    if (index < 0 || index >= rows.length || isEmptyRow(rows[index])) {
-      return false
-    }
-
-    const removedRow = rows.splice(index, 1)[0]
-    this._rows = normalizeRows(rows)
-    this._activeRowIndex = Math.min(index, this._rows.length - 1)
-    this.render()
-    this.restoreFocus(this._activeRowIndex, 'key')
-
-    emit(this, 'change', {
-      action: 'remove',
-      index,
-      field: cloneRow(removedRow),
-      fields: this.fields,
-      rows: getNonEmptyRows(this.getRows()),
-    })
-    return true
+    return cloneRows(this._rows)
   }
 
-  getRows() {
-    if (this._rows) {
-      return cloneRows(this._rows)
-    }
-
-    return normalizeRows(fieldsToRows(this.getAttribute('fields')))
-  }
-
-  getInput(index, fieldName) {
-    return this.shadowRoot?.querySelector(`.field-row[data-index="${index}"] .field-input[data-field="${fieldName}"]`)
-  }
-
-  restoreFocus(index, fieldName, selection) {
+  _restoreFocus(index, fieldName, selection) {
     const input = this.getInput(index, fieldName)
     if (!input) {
       return
     }
 
     input.focus()
-
     if (!selection) {
       return
     }
 
     try {
       input.setSelectionRange(selection.start, selection.end)
-    } catch (_error) {
-      // Ignore input types that do not expose selections.
+    } catch {
     }
   }
 
-  updateActiveRow() {
-    const rows = this.shadowRoot?.querySelectorAll('.field-row') || []
-    const activeAllowed = !this.disabled
+  _getInputControl(index, fieldName) {
+    const normalizedField = fieldName === 'value' ? 'value' : 'key'
+    return this._rowsElement.querySelector(`.field-row[data-index="${index}"] .field-input[data-field="${normalizedField}"]`)
+  }
+
+  _updateActiveRow() {
+    const rows = this._rowsElement.querySelectorAll('.field-row')
+    const activeAllowed = !this.disabled && !this.readonly
     for (let i = 0; i < rows.length; i++) {
-      const empty = isEmptyDomRow(rows[i])
+      const empty = rows[i].classList.contains('field-row--empty')
       rows[i].classList.toggle('field-row--active', activeAllowed && !empty && i === this._activeRowIndex)
     }
   }
 
-  getEventDetail(action, index, fieldName, field) {
-    const rows = this.getRows()
+  _getEventDetail(action, index, fieldName, field) {
+    const rows = this._getRows()
     const safeIndex = Math.max(0, Math.min(index, rows.length - 1))
     return {
       action,
@@ -654,7 +650,6 @@ export class TotFields extends HTMLElement {
       index,
       field: cloneRow(field || rows[safeIndex] || createEmptyRow()),
       fields: rowsToFields(rows),
-      rows: getNonEmptyRows(rows),
     }
   }
 }
@@ -759,9 +754,6 @@ function isEmptyRow(row) {
   return !String(row?.key || '').trim() && !String(row?.value || '').trim()
 }
 
-function isEmptyDomRow(rowElement) {
-  return rowElement.classList.contains('field-row--empty')
-}
 
 function cloneRows(rows) {
   const result = []
@@ -814,10 +806,11 @@ function getSupportedValue(value, supportedValues, fallback) {
 }
 
 function getInputSelection(input) {
+  const nativeInput = input?.getInput?.() || input
   try {
     return {
-      start: input.selectionStart,
-      end: input.selectionEnd,
+      start: nativeInput.selectionStart,
+      end: nativeInput.selectionEnd,
     }
   } catch (_error) {
     return null
@@ -865,19 +858,4 @@ function setNullableAttribute(element, name, value) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
 
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
-}

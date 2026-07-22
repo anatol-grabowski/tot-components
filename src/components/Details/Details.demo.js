@@ -8,24 +8,24 @@ registerDemo({
     wrapper.className = 'stack'
     wrapper.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Basic</div>
+        <div class="demo-label">Native disclosure behavior</div>
         <tot-details summary="Toggle me" open>
-          A compact disclosure component for showing and hiding related content.
+          A compact disclosure component based on native details and summary elements.
         </tot-details>
         <tot-details summary="Disabled" disabled>
-          This content cannot be opened from the header while disabled.
+          This content cannot be opened from the summary while disabled.
         </tot-details>
       </div>
       <div class="stack demo-group details-demo-group">
         <div class="demo-label">Accordion behavior in user code</div>
         <tot-details summary="First" open>
-          Close other items by listening for the show event on the group container.
+          Close other items by listening for the bubbling toggle event.
         </tot-details>
         <tot-details summary="Second">
-          This component stays independent; the group behavior is added by the demo.
+          Each component stays independent; the group behavior is added by the demo.
         </tot-details>
         <tot-details summary="Third">
-          Events bubble, so outer code can coordinate multiple details elements.
+          Read the open property from the event target to distinguish opening and closing.
         </tot-details>
       </div>
       <div class="stack demo-group">
@@ -42,23 +42,14 @@ registerDemo({
     const detailsElements = wrapper.querySelectorAll('tot-details')
     for (let i = 0; i < detailsElements.length; i++) {
       const details = detailsElements[i]
-      details.addEventListener('show', (event) => {
-        logEvent(details, 'show', event.detail)
-      })
-      details.addEventListener('after-show', (event) => {
-        logEvent(details, 'after-show', event.detail)
-      })
-      details.addEventListener('hide', (event) => {
-        logEvent(details, 'hide', event.detail)
-      })
-      details.addEventListener('after-hide', (event) => {
-        logEvent(details, 'after-hide', event.detail)
+      details.addEventListener('toggle', event => {
+        logEvent(details, 'toggle', { open: event.target.open })
       })
     }
 
     const group = wrapper.querySelector('.details-demo-group')
-    group.addEventListener('show', (event) => {
-      if (event.target.localName !== 'tot-details') {
+    group.addEventListener('toggle', event => {
+      if (event.target.localName !== 'tot-details' || !event.target.open) {
         return
       }
 

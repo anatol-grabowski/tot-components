@@ -24,7 +24,6 @@ const detailsStyle = `
     appearance: none;
     align-items: center;
     background: transparent;
-    border: 0;
     color: inherit;
     cursor: pointer;
     display: flex;
@@ -32,13 +31,18 @@ const detailsStyle = `
     gap: var(--tot-spacing-x-small, .5rem);
     justify-content: space-between;
     line-height: 1.35;
+    list-style: none;
     min-height: var(--tot-input-height-medium, 2.25rem);
     padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
     text-align: start;
     width: 100%;
   }
 
-  .details__header:hover:not(:disabled) {
+  .details__header::-webkit-details-marker {
+    display: none;
+  }
+
+  .details__header:hover {
     background: var(--tot-color-neutral-50, #f8fafc);
   }
 
@@ -47,9 +51,13 @@ const detailsStyle = `
     outline-offset: calc(-1 * var(--tot-focus-ring-offset, 1px));
   }
 
-  .details__header:disabled {
+  .details--disabled .details__header {
     cursor: not-allowed;
     opacity: .65;
+  }
+
+  .details--disabled .details__header:hover {
+    background: transparent;
   }
 
   .details__summary {
@@ -87,36 +95,60 @@ const detailsStyle = `
     width: 100%;
   }
 
-  .details:not(.details--open) .details__expand-icon,
-  .details--open .details__collapse-icon {
+  .details:not([open]) .details__expand-icon,
+  .details[open] .details__collapse-icon {
     display: inline-flex;
   }
 
   .details__content {
     border-top: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
     color: var(--tot-color-neutral-800, #1e293b);
-    display: none;
     line-height: var(--tot-line-height-normal, 1.4);
     padding: var(--tot-spacing-small, .75rem);
-  }
-
-  .details--open .details__content {
-    display: block;
   }
 `
 
 export class TotDetails extends HTMLElement {
   static get observedAttributes() {
-    return [
-      'open',
-      'summary',
-      'disabled',
-    ]
+    return ['open', 'summary', 'disabled']
   }
 
   constructor() {
     super()
-    this._afterTimer = null
+    this._lastReportedOpen = false
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${detailsStyle}</style>
+      <details class="details" part="base">
+        <summary class="details__header" part="header">
+          <span class="details__summary" part="summary"><slot name="summary"></slot></span>
+          <span class="details__summary-icon" part="summary-icon" aria-hidden="true">
+            <span class="details__expand-icon" part="expand-icon">
+              <slot name="expand-icon">
+                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">
+                  <path d="m6.25 4.5 3.5 3.5-3.5 3.5"></path>
+                </svg>
+              </slot>
+            </span>
+            <span class="details__collapse-icon" part="collapse-icon">
+              <slot name="collapse-icon">
+                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">
+                  <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
+                </svg>
+              </slot>
+            </span>
+          </span>
+        </summary>
+        <div class="details__content" part="content"><slot></slot></div>
+      </details>
+    `
+
+    this._detailsElement = root.querySelector('.details')
+    this._summaryElement = root.querySelector('.details__header')
+    this._summarySlot = root.querySelector('slot[name="summary"]')
+
+    this._detailsElement.addEventListener('toggle', () => this._handleToggle())
+    this._summaryElement.addEventListener('click', event => this._handleSummaryClick(event))
   }
 
   get open() {
@@ -124,7 +156,7 @@ export class TotDetails extends HTMLElement {
   }
 
   set open(value) {
-    this.setOpen(value === true || value === '' || value === 'open', true)
+    setBooleanAttribute(this, 'open', value)
   }
 
   get summary() {
@@ -144,11 +176,8 @@ export class TotDetails extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
-  }
-
-  disconnectedCallback() {
-    this.clearAfterTimer()
+    this._syncAll()
+    this._lastReportedOpen = this.open
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -156,139 +185,90 @@ export class TotDetails extends HTMLElement {
       return
     }
 
-    this.render()
+    if (name === 'open') {
+      this._syncOpen()
+    } else if (name === 'summary') {
+      this._syncSummary()
+    } else if (name === 'disabled') {
+      this._syncDisabled()
+    }
   }
 
   show() {
-    this.setOpen(true, true)
+    this.open = true
   }
 
   hide() {
-    this.setOpen(false, true)
-  }
-
-  focus(options) {
-    const button = this.getHeaderButton()
-    if (button) {
-      button.focus(options)
-    }
-  }
-
-  blur() {
-    const button = this.getHeaderButton()
-    if (button) {
-      button.blur()
-    }
-  }
-
-  render() {
-    const root = this.getRoot()
-    const open = this.open
-    const disabled = this.disabled
-    const summary = this.summary
-    const classes = [
-      'details',
-    ]
-
-    if (open) {
-      classes.push('details--open')
-    }
-
-    if (disabled) {
-      classes.push('details--disabled')
-    }
-
-    root.innerHTML = `<style>${detailsStyle}</style>
-      <div class="${escapeAttribute(classes.join(' '))}" part="base">
-        <button
-          class="details__header"
-          part="header"
-          type="button"
-          aria-expanded="${open ? 'true' : 'false'}"
-          ${disabled ? 'disabled' : ''}
-        >
-          <span class="details__summary" part="summary"><slot name="summary">${escapeHtml(summary)}</slot></span>
-          <span class="details__summary-icon" part="summary-icon" aria-hidden="true">
-            <span class="details__expand-icon">
-              <slot name="expand-icon">
-                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                  <path d="m6.25 4.5 3.5 3.5-3.5 3.5"></path>
-                </svg>
-              </slot>
-            </span>
-            <span class="details__collapse-icon">
-              <slot name="collapse-icon">
-                <svg viewBox="0 0 16 16" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                  <path d="m4.5 6.25 3.5 3.5 3.5-3.5"></path>
-                </svg>
-              </slot>
-            </span>
-          </span>
-        </button>
-        <div class="details__content" part="content" aria-hidden="${open ? 'false' : 'true'}">
-          <slot></slot>
-        </div>
-      </div>
-    `
-
-    const button = this.getHeaderButton()
-    button.addEventListener('click', () => {
-      this.toggle()
-    })
+    this.open = false
   }
 
   toggle() {
+    if (!this.disabled) {
+      this.open = !this.open
+    }
+  }
+
+  focus(options) {
+    this._summaryElement.focus(options)
+  }
+
+  blur() {
+    this._summaryElement.blur()
+  }
+
+  getDetails() {
+    return this._detailsElement
+  }
+
+  getSummary() {
+    return this._summaryElement
+  }
+
+  _syncAll() {
+    this._syncOpen()
+    this._syncSummary()
+    this._syncDisabled()
+  }
+
+  _syncOpen() {
+    if (this._detailsElement.open !== this.open) {
+      this._detailsElement.open = this.open
+    }
+  }
+
+  _syncSummary() {
+    this._summarySlot.textContent = this.summary
+  }
+
+  _syncDisabled() {
+    const disabled = this.disabled
+    this._detailsElement.classList.toggle('details--disabled', disabled)
+    this._summaryElement.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+    this._summaryElement.tabIndex = disabled ? -1 : 0
+  }
+
+  _handleToggle() {
+    const open = this._detailsElement.open
+    if (this.open !== open) {
+      setBooleanAttribute(this, 'open', open)
+    }
+
+    if (open === this._lastReportedOpen) {
+      return
+    }
+
+    this._lastReportedOpen = open
+    this.dispatchEvent(new Event('toggle', {
+      bubbles: true,
+      composed: true,
+    }))
+  }
+
+  _handleSummaryClick(event) {
     if (this.disabled) {
-      return
-    }
-
-    this.setOpen(!this.open, true)
-  }
-
-  setOpen(value, emitEvents) {
-    const nextOpen = value === true || value === '' || value === 'open'
-    if (nextOpen === this.open) {
-      return
-    }
-
-    setBooleanAttribute(this, 'open', nextOpen)
-
-    if (emitEvents) {
-      this.emitOpenEvents(nextOpen)
+      event.preventDefault()
     }
   }
-
-  emitOpenEvents(open) {
-    this.clearAfterTimer()
-    emit(this, open ? 'show' : 'hide')
-    this._afterTimer = window.setTimeout(() => {
-      emit(this, open ? 'after-show' : 'after-hide')
-      this._afterTimer = null
-    }, 150)
-  }
-
-  clearAfterTimer() {
-    if (this._afterTimer !== null) {
-      window.clearTimeout(this._afterTimer)
-      this._afterTimer = null
-    }
-  }
-
-  getHeaderButton() {
-    return this.shadowRoot?.querySelector('.details__header')
-  }
-
-  getRoot() {
-    return this.shadowRoot || this.attachShadow({ mode: 'open' })
-  }
-}
-
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
-    detail: detail || {},
-  }))
 }
 
 function setBooleanAttribute(element, name, value) {
@@ -305,21 +285,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

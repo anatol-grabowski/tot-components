@@ -84,11 +84,14 @@ registerDemo({
 })
 
 function logExerciseEvents(exercise, logEvent) {
-  exercise.addEventListener('change', (event) => {
-    logEvent(exercise, 'change', event.detail)
+  exercise.addEventListener('change', () => {
+    logEvent(exercise, 'change', { responses: exercise.responses })
   })
-  exercise.addEventListener('reset', (event) => {
-    logEvent(exercise, 'reset', event.detail)
+  exercise.addEventListener('validate', () => {
+    logEvent(exercise, 'validate', { responses: exercise.responses })
+  })
+  exercise.addEventListener('reset', () => {
+    logEvent(exercise, 'reset', { responses: exercise.responses })
   })
 }
 

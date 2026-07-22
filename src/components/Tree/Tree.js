@@ -28,8 +28,7 @@ const treeStyle = `
     outline: none;
   }
 
-  :host([indent-guides]) .tree,
-  :host([guides]) .tree {
+  :host([indent-guides]) .tree {
     --tree-indent-guide-width: var(--tot-tree-indent-guide-width, 1px);
   }
 
@@ -38,19 +37,19 @@ const treeStyle = `
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
-  .tree--virtual {
-    max-height: var(--tot-tree-virtual-max-height, 16rem);
+  .tree--windowed {
+    max-height: var(--tot-tree-max-height, 16rem);
     overflow: auto;
     position: relative;
     scrollbar-gutter: stable;
   }
 
-  .tree__virtual-spacer {
+  .tree__scroll-space {
     min-width: 100%;
     position: relative;
   }
 
-  .tree__virtual-window {
+  .tree__items {
     left: 0;
     position: absolute;
     right: 0;
@@ -69,7 +68,7 @@ const treeStyle = `
     display: grid;
     font: inherit;
     gap: var(--tot-tree-item-gap, .25rem);
-    grid-template-columns: 1rem auto minmax(0, 1fr);
+    grid-template-columns: 1rem auto minmax(0, 1fr) auto;
     height: var(--tree-row-height);
     min-height: 0;
     min-width: 0;
@@ -110,7 +109,8 @@ const treeStyle = `
   }
 
   .tree-row__expand,
-  .tree-row__icon {
+  .tree-row__prefix,
+  .tree-row__suffix {
     align-items: center;
     display: inline-flex;
     justify-content: center;
@@ -119,6 +119,7 @@ const treeStyle = `
   }
 
   .tree-row__expand {
+    grid-column: 1;
     color: var(--tot-tree-expand-color, var(--tot-color-neutral-500, #64748b));
     font-size: .9em;
     height: 1rem;
@@ -136,17 +137,29 @@ const treeStyle = `
     transform: rotate(90deg);
   }
 
-  .tree-row__icon {
-    color: var(--tot-tree-icon-color, var(--tot-color-neutral-500, #64748b));
+  .tree-row__prefix,
+  .tree-row__suffix {
+    color: var(--tot-tree-affix-color, var(--tot-color-neutral-500, #64748b));
     font-size: .95em;
   }
 
-  .tree-row:not(.tree-row--has-icon) .tree-row__icon {
+  .tree-row__prefix {
+    grid-column: 2;
+  }
+
+  .tree-row__suffix {
+    grid-column: 4;
+    justify-self: end;
+  }
+
+  .tree-row:not(.tree-row--has-prefix) .tree-row__prefix,
+  .tree-row:not(.tree-row--has-suffix) .tree-row__suffix {
     display: none;
   }
 
   .tree-row__label {
     display: block;
+    grid-column: 3;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -195,7 +208,7 @@ const treeItemStyle = `
     display: grid;
     font: inherit;
     gap: var(--tot-tree-item-gap, .25rem);
-    grid-template-columns: 1rem auto minmax(0, 1fr);
+    grid-template-columns: 1rem auto minmax(0, 1fr) auto;
     min-height: var(--tot-tree-item-min-height, 1.55rem);
     min-width: 0;
     outline: none;
@@ -238,7 +251,8 @@ const treeItemStyle = `
   }
 
   .tree-item__expand,
-  .tree-item__icon {
+  .tree-item__prefix,
+  .tree-item__suffix {
     align-items: center;
     display: inline-flex;
     justify-content: center;
@@ -247,6 +261,7 @@ const treeItemStyle = `
   }
 
   .tree-item__expand {
+    grid-column: 1;
     color: var(--tot-tree-expand-color, var(--tot-color-neutral-500, #64748b));
     font-size: .9em;
     height: 1rem;
@@ -264,17 +279,29 @@ const treeItemStyle = `
     transform: rotate(90deg);
   }
 
-  .tree-item__icon {
-    color: var(--tot-tree-icon-color, var(--tot-color-neutral-500, #64748b));
+  .tree-item__prefix,
+  .tree-item__suffix {
+    color: var(--tot-tree-affix-color, var(--tot-color-neutral-500, #64748b));
     font-size: .95em;
   }
 
-  .tree-item:not(.tree-item--has-icon) .tree-item__icon {
+  .tree-item__prefix {
+    grid-column: 2;
+  }
+
+  .tree-item__suffix {
+    grid-column: 4;
+    justify-self: end;
+  }
+
+  .tree-item:not(.tree-item--has-prefix) .tree-item__prefix,
+  .tree-item:not(.tree-item--has-suffix) .tree-item__suffix {
     display: none;
   }
 
   .tree-item__label {
     display: block;
+    grid-column: 3;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -306,14 +333,11 @@ export class TotTree extends HTMLElement {
     return [
       'aria-label',
       'buffer',
-      'guides',
       'indent-guides',
       'items',
       'item-height',
-      'row-height',
-      'selected',
+      'selected-values',
       'selection',
-      'virtual',
     ]
   }
 
@@ -326,33 +350,63 @@ export class TotTree extends HTMLElement {
     this._typeToSelect = ''
     this._typeToSelectTimer = 0
     this._activeValue = ''
+    this._renderMode = ''
+    this._virtualFrame = 0
+    this._focusFrame = 0
+    this._virtualRange = ''
+    this._lightDomObserver = null
+    this._resizeObserver = null
     this._handleRootClick = (event) => this.handleClick(event)
     this._handleRootKeyDown = (event) => this.handleKeyDown(event)
     this._handleRootFocusIn = (event) => this.handleFocusIn(event)
     this._handleSlotChange = () => this.handleSlotChange()
-    this._handleVirtualScroll = () => this.updateVirtualRows()
+    this._handleVirtualScroll = () => this.scheduleVirtualRowsUpdate()
+    this._handleItemToggle = (event) => this.handleItemToggle(event)
   }
 
   get items() {
-    if (this._items === null) {
-      this._items = parseItems(this.getAttribute('items'))
-    }
-    return cloneItems(this._items)
+    return cloneItems(this.getItemsData())
   }
 
   set items(value) {
     this._items = parseItems(value)
     this._expandedValues = null
-    this.render()
+    if (this.isConnected) {
+      this.renderContent()
+    }
+  }
+
+  getItemsData() {
+    if (this._items === null) {
+      this._items = parseItems(this.getAttribute('items'))
+    }
+    return this._items
   }
 
   get itemHeight() {
-    const value = Number(this.getAttribute('item-height') || this.getAttribute('row-height'))
+    const value = Number(this.getAttribute('item-height'))
     return Number.isFinite(value) && value > 0 ? value : 24
   }
 
   set itemHeight(value) {
     setNullableAttribute(this, 'item-height', value)
+  }
+
+  get buffer() {
+    const value = Number(this.getAttribute('buffer'))
+    return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 6
+  }
+
+  set buffer(value) {
+    setNullableAttribute(this, 'buffer', value)
+  }
+
+  get indentGuides() {
+    return this.hasAttribute('indent-guides')
+  }
+
+  set indentGuides(value) {
+    setBooleanAttribute(this, 'indent-guides', value)
   }
 
   get selection() {
@@ -363,65 +417,41 @@ export class TotTree extends HTMLElement {
     this.setAttribute('selection', getSupportedValue(value, selectionModes, 'single'))
   }
 
-  get selected() {
-    return this.selectedValues
-  }
-
-  set selected(value) {
-    this.selectedValues = value
-  }
-
   get selectedValues() {
     if (this._selectedValues !== null) {
       return this._selectedValues.slice()
     }
 
-    if (this.hasAttribute('selected')) {
-      return parseSelected(this.getAttribute('selected'))
+    if (this.hasAttribute('selected-values')) {
+      return parseSelected(this.getAttribute('selected-values'))
     }
 
-    if (this.isVirtual()) {
-      return getSelectedValuesFromData(this.items)
-    }
-
-    return getSelectedValuesFromItems(this.getTreeItems())
+    return getSelectedValuesFromItems(this._getTreeItems())
   }
 
   set selectedValues(value) {
     const values = parseSelected(value)
     this._selectedValues = values
+
+    if (!this.isConnected || !this.shadowRoot) {
+      this.updateSelectedAttribute(values)
+      return
+    }
+
     this.applySelectedValues(values, true)
-  }
-
-  get selectedItems() {
-    if (this.isVirtualRendered()) {
-      const selected = new Set(this.selectedValues)
-      const rows = this.getAllVirtualRows()
-      const selectedItems = []
-      for (let i = 0; i < rows.length; i++) {
-        if (selected.has(rows[i].value)) {
-          selectedItems.push(rows[i].item)
-        }
-      }
-      return selectedItems
-    }
-
-    const items = this.getTreeItems()
-    const selected = []
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].selected) {
-        selected.push(items[i])
-      }
-    }
-    return selected
   }
 
   connectedCallback() {
     this.render()
+    this.startLightDomObserver()
+    this.startResizeObserver()
   }
 
   disconnectedCallback() {
     window.clearTimeout(this._typeToSelectTimer)
+    this.stopLightDomObserver()
+    this.stopResizeObserver()
+    this.cancelScheduledUpdates()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -433,12 +463,12 @@ export class TotTree extends HTMLElement {
       this._items = null
       this._expandedValues = null
       if (this.isConnected) {
-        this.render()
+        this.renderContent()
       }
       return
     }
 
-    if (name === 'selected') {
+    if (name === 'selected-values') {
       if (this._isUpdatingSelected) {
         return
       }
@@ -452,122 +482,198 @@ export class TotTree extends HTMLElement {
 
     if (name === 'selection') {
       if (this.isConnected) {
+        this.syncTreeState()
         this.applySelectionRules(true)
         this.updateTreeItems()
       }
       return
     }
 
-    if (name === 'item-height' || name === 'row-height' || name === 'buffer') {
-      if (this.isConnected && this.isVirtualRendered()) {
+    if (name === 'item-height' || name === 'buffer') {
+      if (this.isConnected && this._isVirtualRendered()) {
         this.updateVirtualRows()
       }
       return
     }
 
-    if (this.isConnected) {
-      this.render()
+    if (name === 'aria-label') {
+      this.syncTreeState()
     }
   }
 
   render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const label = this.getAttribute('aria-label') || 'Tree'
-    const hasDefaultSlotContent = this.hasDefaultSlotContent()
-    const virtual = this.isVirtual() && !hasDefaultSlotContent
-    const multiselectable = this.selection === 'multiple'
-    const classes = ['tree']
+    let root = this.shadowRoot
+    if (!root) {
+      root = this.attachShadow({ mode: 'open' })
+      root.innerHTML = `<style>${treeStyle}</style>
+        <div class="tree" part="base" role="tree" tabindex="-1"></div>
+      `
 
-    if (virtual) {
-      classes.push('tree--virtual')
+      const holder = root.querySelector('.tree')
+      holder.addEventListener('click', this._handleRootClick)
+      holder.addEventListener('keydown', this._handleRootKeyDown)
+      holder.addEventListener('focusin', this._handleRootFocusIn)
+      holder.addEventListener('toggle', this._handleItemToggle)
     }
 
-    root.innerHTML = `<style>${treeStyle}</style>
-      <div
-        class="${escapeAttribute(classes.join(' '))}"
-        part="base"
-        role="tree"
-        aria-label="${escapeAttribute(label)}"
-        aria-multiselectable="${multiselectable ? 'true' : 'false'}"
-      ></div>
-    `
+    this.syncTreeState()
+    this.renderContent()
+  }
 
-    const holder = root.querySelector('.tree')
-    holder.addEventListener('click', this._handleRootClick)
-    holder.addEventListener('keydown', this._handleRootKeyDown)
-    holder.addEventListener('focusin', this._handleRootFocusIn)
-    holder.addEventListener('expand', () => this.updateTreeItems())
-    holder.addEventListener('collapse', () => this.updateTreeItems())
+  renderContent() {
+    const holder = this.getBase()
+    if (!holder) {
+      return
+    }
 
-    if (virtual) {
-      holder.addEventListener('scroll', this._handleVirtualScroll)
-      holder.innerHTML = `
-        <div class="tree__virtual-spacer" part="virtual-spacer">
-          <div class="tree__virtual-window" part="virtual-window"></div>
-        </div>
-      `
+    const mode = this.getRenderMode()
+    holder.removeEventListener('scroll', this._handleVirtualScroll)
+    holder.classList.toggle('tree--windowed', mode === 'windowed')
+    holder.replaceChildren()
+    this._renderMode = mode
+    this._virtualRange = ''
+
+    if (mode === 'windowed') {
+      const spacer = document.createElement('div')
+      spacer.className = 'tree__scroll-space'
+      spacer.part = 'scroll-space'
+      const windowElement = document.createElement('div')
+      windowElement.className = 'tree__items'
+      windowElement.part = 'items'
+      spacer.append(windowElement)
+      holder.append(spacer)
+      holder.addEventListener('scroll', this._handleVirtualScroll, { passive: true })
       this.updateTreeItems()
       return
     }
 
-    if (hasDefaultSlotContent) {
-      const slot = document.createElement('slot')
-      slot.addEventListener('slotchange', this._handleSlotChange)
-      holder.append(slot)
-    } else {
-      this.renderItems(holder, this.items)
-    }
+    const slot = document.createElement('slot')
+    slot.addEventListener('slotchange', this._handleSlotChange)
+    holder.append(slot)
 
     this.updateTreeItems()
   }
 
-  renderItems(holder, items) {
-    for (let i = 0; i < items.length; i++) {
-      holder.append(this.createItemElement(items[i]))
+  syncTreeState() {
+    const holder = this.getBase()
+    if (!holder) {
+      return
     }
+
+    holder.setAttribute('aria-label', this.getAttribute('aria-label') || 'Tree')
+    holder.setAttribute('aria-multiselectable', this.selection === 'multiple' ? 'true' : 'false')
   }
 
-  createItemElement(item) {
-    const element = document.createElement('tot-tree-item')
-    element.value = item.value
-
-    if (item.expanded) {
-      element.expanded = true
+  getRenderMode() {
+    if (this.hasDefaultSlotContent()) {
+      return 'slotted'
     }
 
-    if (item.selected) {
-      element.selected = true
+    return 'windowed'
+  }
+
+  startLightDomObserver() {
+    this.stopLightDomObserver()
+    if (typeof MutationObserver !== 'function') {
+      return
     }
 
-    if (item.disabled) {
-      element.disabled = true
+    this._lightDomObserver = new MutationObserver(() => {
+      const mode = this.getRenderMode()
+      if (mode !== this._renderMode) {
+        this.renderContent()
+      } else {
+        this.updateTreeItems()
+      }
+    })
+    this._lightDomObserver.observe(this, {
+      childList: true,
+    })
+  }
+
+  stopLightDomObserver() {
+    if (!this._lightDomObserver) {
+      return
     }
 
-    if (item.icon) {
-      const icon = document.createElement('span')
-      icon.slot = 'icon'
-      icon.textContent = item.icon
-      element.append(icon)
+    this._lightDomObserver.disconnect()
+    this._lightDomObserver = null
+  }
+
+  startResizeObserver() {
+    this.stopResizeObserver()
+    if (typeof ResizeObserver !== 'function') {
+      return
     }
 
-    const label = document.createElement('span')
-    label.slot = 'label'
-    label.textContent = item.label
-    element.append(label)
-
-    for (let i = 0; i < item.items.length; i++) {
-      element.append(this.createItemElement(item.items[i]))
+    const holder = this.getBase()
+    if (!holder) {
+      return
     }
 
-    return element
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._isVirtualRendered()) {
+        this.scheduleVirtualRowsUpdate()
+      }
+    })
+    this._resizeObserver.observe(holder)
+  }
+
+  stopResizeObserver() {
+    if (!this._resizeObserver) {
+      return
+    }
+
+    this._resizeObserver.disconnect()
+    this._resizeObserver = null
+  }
+
+  focus(options) {
+    if (this._isVirtualRendered()) {
+      const rows = this.getEnabledVirtualRows()
+      const active = this.getActiveVirtualRow(rows) || rows[0]
+      if (active) {
+        this.focusVirtualRow(active.value, options)
+        return
+      }
+    } else {
+      const items = this._getEnabledVisibleItems()
+      const active = this.getActiveItem(items) || items[0]
+      if (active) {
+        active.focus(options)
+        return
+      }
+    }
+
+    this.getBase()?.focus(options)
   }
 
   handleSlotChange() {
+    const mode = this.getRenderMode()
+    if (mode !== this._renderMode) {
+      this.renderContent()
+      return
+    }
+
     this.updateTreeItems()
   }
 
+  handleItemToggle(event) {
+    const item = getTreeItemFromEvent(event)
+    if (!item || getOwningTreeFromEvent(event) !== this) {
+      return
+    }
+
+    event.stopPropagation()
+    this.updateTreeItems()
+    emit(this, 'toggle', {
+      value: item.value,
+      expanded: item.expanded,
+    })
+  }
+
   handleClick(event) {
-    if (this.isVirtualRendered()) {
+    if (this._isVirtualRendered()) {
       this.handleVirtualClick(event)
       return
     }
@@ -586,8 +692,7 @@ export class TotTree extends HTMLElement {
     const expandClicked = isExpandClick(event)
     if (expandClicked || (this.selection === 'leaf' && item.hasChildren)) {
       if (item.hasChildren) {
-        item.setExpanded(!item.expanded, true)
-        this.updateTreeItems()
+        item._setExpanded(!item.expanded, true)
       }
       event.preventDefault()
       return
@@ -634,7 +739,7 @@ export class TotTree extends HTMLElement {
   }
 
   handleFocusIn(event) {
-    if (this.isVirtualRendered()) {
+    if (this._isVirtualRendered()) {
       const target = getVirtualRowFromEvent(event)
       if (target) {
         this._activeValue = target.dataset.value || ''
@@ -651,7 +756,7 @@ export class TotTree extends HTMLElement {
   }
 
   handleKeyDown(event) {
-    if (this.isVirtualRendered()) {
+    if (this._isVirtualRendered()) {
       this.handleVirtualKeyDown(event)
       return
     }
@@ -660,7 +765,7 @@ export class TotTree extends HTMLElement {
       return
     }
 
-    const visibleItems = this.getEnabledVisibleItems()
+    const visibleItems = this._getEnabledVisibleItems()
     if (visibleItems.length === 0) {
       return
     }
@@ -684,23 +789,20 @@ export class TotTree extends HTMLElement {
     } else if (event.key === 'ArrowRight') {
       handled = true
       if (active.hasChildren && !active.expanded) {
-        active.setExpanded(true, true)
-        this.updateTreeItems()
+        active._setExpanded(true, true)
       } else if (active.hasChildren) {
         next = this.getFirstVisibleChild(active)
       }
     } else if (event.key === 'ArrowLeft') {
       handled = true
       if (active.hasChildren && active.expanded) {
-        active.setExpanded(false, true)
-        this.updateTreeItems()
+        active._setExpanded(false, true)
       } else {
         next = getParentTreeItem(active)
       }
     } else if (event.key === 'Enter' || event.key === ' ') {
       if (this.selection === 'leaf' && active.hasChildren) {
-        active.setExpanded(!active.expanded, true)
-        this.updateTreeItems()
+        active._setExpanded(!active.expanded, true)
       } else if (this.isSelectable(active)) {
         this.selectItem(active, true)
       }
@@ -787,39 +889,24 @@ export class TotTree extends HTMLElement {
     }
 
     if (selection === 'multiple') {
-      item.selected = !item.selected
+      item._setSelected(!item.selected)
     } else {
-      const items = this.getTreeItems()
+      const items = this._getTreeItems()
       for (let i = 0; i < items.length; i++) {
-        items[i].selected = items[i] === item
+        items[i]._setSelected(items[i] === item)
       }
     }
 
-    const nextValues = getSelectedValuesFromItems(this.getTreeItems())
+    const nextValues = getSelectedValuesFromItems(this._getTreeItems())
     this._selectedValues = nextValues
     this.updateSelectedAttribute(nextValues)
     this.updateTreeItems()
 
-    if (!emitEvents) {
-      return
-    }
-
-    emit(this, 'select', {
-      item,
-      value: item.value,
-      label: item.label,
-      selected: item.selected,
-      selectedValues: nextValues.slice(),
-    })
-
-    if (!arraysEqual(previousValues, nextValues)) {
-      emit(this, 'change', {
-        item,
-        value: item.value,
-        label: item.label,
-        selected: item.selected,
-        selectedValues: nextValues.slice(),
-      })
+    if (emitEvents && !arraysEqual(previousValues, nextValues)) {
+      this.dispatchEvent(new Event('change', {
+        bubbles: true,
+        composed: true,
+      }))
     }
   }
 
@@ -844,48 +931,32 @@ export class TotTree extends HTMLElement {
       nextValues = [row.value]
     }
 
-    nextValues = normalizeSelectedForData(nextValues, this.items, selection)
+    nextValues = normalizeSelectedForData(nextValues, this.getItemsData(), selection)
     this._selectedValues = nextValues
     this._activeValue = row.value
     this.updateSelectedAttribute(nextValues)
     this.updateVirtualRows()
 
-    if (!emitEvents) {
-      return
-    }
-
-    const selected = nextValues.indexOf(row.value) !== -1
-    emit(this, 'select', {
-      item: row.item,
-      value: row.value,
-      label: row.label,
-      selected,
-      selectedValues: nextValues.slice(),
-    })
-
-    if (!arraysEqual(previousValues, nextValues)) {
-      emit(this, 'change', {
-        item: row.item,
-        value: row.value,
-        label: row.label,
-        selected,
-        selectedValues: nextValues.slice(),
-      })
+    if (emitEvents && !arraysEqual(previousValues, nextValues)) {
+      this.dispatchEvent(new Event('change', {
+        bubbles: true,
+        composed: true,
+      }))
     }
   }
 
   applySelectedValues(values, updateAttribute) {
-    if (this.isVirtualRendered()) {
+    if (this._isVirtualRendered()) {
       this.applyVirtualSelectedValues(values, updateAttribute)
       return
     }
 
-    const selectedValues = normalizeSelectedForMode(values, this.getTreeItems(), this.selection)
+    const selectedValues = normalizeSelectedForMode(values, this._getTreeItems(), this.selection)
     const selectedSet = new Set(selectedValues)
-    const items = this.getTreeItems()
+    const items = this._getTreeItems()
 
     for (let i = 0; i < items.length; i++) {
-      items[i].selected = selectedSet.has(items[i].value)
+      items[i]._setSelected(selectedSet.has(items[i].value))
     }
 
     this._selectedValues = selectedValues
@@ -896,7 +967,7 @@ export class TotTree extends HTMLElement {
   }
 
   applyVirtualSelectedValues(values, updateAttribute) {
-    const selectedValues = normalizeSelectedForData(values, this.items, this.selection)
+    const selectedValues = normalizeSelectedForData(values, this.getItemsData(), this.selection)
     this._selectedValues = selectedValues
     if (updateAttribute) {
       this.updateSelectedAttribute(selectedValues)
@@ -905,19 +976,19 @@ export class TotTree extends HTMLElement {
   }
 
   applySelectionRules(updateAttribute) {
-    const selectedValues = this.isVirtualRendered()
+    const selectedValues = this._isVirtualRendered()
       ? this.selectedValues
-      : getSelectedValuesFromItems(this.getTreeItems())
+      : getSelectedValuesFromItems(this._getTreeItems())
     this.applySelectedValues(selectedValues, updateAttribute)
   }
 
   updateTreeItems() {
-    if (this.isVirtualRendered()) {
+    if (this._isVirtualRendered()) {
       this.updateVirtualTree()
       return
     }
 
-    const items = this.getTreeItems()
+    const items = this._getTreeItems()
 
     if (this._selectedValues !== null) {
       this.applySelectedValuesWithoutLoop(this._selectedValues)
@@ -927,28 +998,28 @@ export class TotTree extends HTMLElement {
     }
 
     const active = this.getActiveItem(items)
-    const visibleItems = this.getEnabledVisibleItems()
+    const visibleItems = this._getEnabledVisibleItems()
     const focusable = active && this.isItemVisible(active) && !active.disabled
       ? active
       : visibleItems[0]
 
     for (let i = 0; i < items.length; i++) {
-      items[i].setInTree(true)
-      items[i].setFocusable(items[i] === focusable)
+      items[i]._setInTree(true)
+      items[i]._setFocusable(items[i] === focusable)
       items[i].style.setProperty('--tree-item-level', String(getTreeItemLevel(items[i])))
     }
   }
 
   updateVirtualTree() {
     if (this._selectedValues !== null) {
-      this._selectedValues = normalizeSelectedForData(this._selectedValues, this.items, this.selection)
+      this._selectedValues = normalizeSelectedForData(this._selectedValues, this.getItemsData(), this.selection)
     } else {
-      this._selectedValues = normalizeSelectedForData(getSelectedValuesFromData(this.items), this.items, this.selection)
+      this._selectedValues = []
       this.updateSelectedAttribute(this._selectedValues)
     }
 
     if (this._expandedValues === null) {
-      this._expandedValues = getExpandedValuesFromData(this.items)
+      this._expandedValues = getExpandedValuesFromData(this.getItemsData())
     }
 
     const rows = this.getEnabledVirtualRows()
@@ -962,21 +1033,21 @@ export class TotTree extends HTMLElement {
   }
 
   applySelectedValuesWithoutLoop(values) {
-    const items = this.getTreeItems()
+    const items = this._getTreeItems()
     const selectedValues = normalizeSelectedForMode(values, items, this.selection)
     const selectedSet = new Set(selectedValues)
 
     for (let i = 0; i < items.length; i++) {
-      items[i].selected = selectedSet.has(items[i].value)
+      items[i]._setSelected(selectedSet.has(items[i].value))
     }
 
     this._selectedValues = selectedValues
   }
 
   updateFocusableItem(item) {
-    const items = this.getTreeItems()
+    const items = this._getTreeItems()
     for (let i = 0; i < items.length; i++) {
-      items[i].setFocusable(items[i] === item)
+      items[i]._setFocusable(items[i] === item)
     }
   }
 
@@ -985,7 +1056,7 @@ export class TotTree extends HTMLElement {
     item.focus()
   }
 
-  focusVirtualRow(value) {
+  focusVirtualRow(value, options) {
     if (!value) {
       return
     }
@@ -993,17 +1064,22 @@ export class TotTree extends HTMLElement {
     this._activeValue = value
     this.scrollVirtualRowIntoView(value)
     this.updateVirtualRows()
-    window.requestAnimationFrame(() => {
-      const holder = this.getTreeHolder()
+
+    if (this._focusFrame) {
+      cancelAnimationFrame(this._focusFrame)
+    }
+    this._focusFrame = requestAnimationFrame(() => {
+      this._focusFrame = 0
+      const holder = this.getBase()
       const row = holder?.querySelector(`[data-value="${cssEscape(value)}"]`)
       if (row) {
-        row.focus()
+        row.focus(options)
       }
     })
   }
 
   scrollVirtualRowIntoView(value) {
-    const holder = this.getTreeHolder()
+    const holder = this.getBase()
     if (!holder) {
       return
     }
@@ -1027,26 +1103,43 @@ export class TotTree extends HTMLElement {
     }
   }
 
-  updateVirtualRows() {
-    const holder = this.getTreeHolder()
-    if (!holder || !holder.classList.contains('tree--virtual')) {
+  scheduleVirtualRowsUpdate() {
+    if (this._virtualFrame) {
       return
     }
 
-    const spacer = holder.querySelector('.tree__virtual-spacer')
-    const windowElement = holder.querySelector('.tree__virtual-window')
+    this._virtualFrame = requestAnimationFrame(() => {
+      this._virtualFrame = 0
+      this.updateVirtualRows(false)
+    })
+  }
+
+  updateVirtualRows(force = true) {
+    const holder = this.getBase()
+    if (!holder || !holder.classList.contains('tree--windowed')) {
+      return
+    }
+
+    const spacer = holder.querySelector('.tree__scroll-space')
+    const windowElement = holder.querySelector('.tree__items')
     if (!spacer || !windowElement) {
       return
     }
 
     const rows = this.getVisibleVirtualRows()
     const itemHeight = this.itemHeight
-    const buffer = this.virtualBuffer
+    const buffer = this.buffer
     const viewportHeight = holder.clientHeight || Math.min(rows.length * itemHeight, 256)
     const scrollTop = holder.scrollTop || 0
     const start = Math.max(0, Math.floor(scrollTop / itemHeight) - buffer)
     const visibleCount = Math.max(1, Math.ceil(viewportHeight / itemHeight) + buffer * 2)
     const end = Math.min(rows.length, start + visibleCount)
+    const range = `${start}:${end}:${rows.length}:${itemHeight}`
+    if (!force && range === this._virtualRange) {
+      return
+    }
+    this._virtualRange = range
+
     const active = this.getActiveVirtualRow(rows)
     const activeValue = active ? active.value : rows[0]?.value || ''
 
@@ -1075,8 +1168,12 @@ export class TotTree extends HTMLElement {
       classes.push('tree-row--leaf')
     }
 
-    if (row.icon) {
-      classes.push('tree-row--has-icon')
+    if (row.prefix) {
+      classes.push('tree-row--has-prefix')
+    }
+
+    if (row.suffix) {
+      classes.push('tree-row--has-suffix')
     }
 
     const element = document.createElement('button')
@@ -1100,8 +1197,9 @@ export class TotTree extends HTMLElement {
 
     element.innerHTML = `
       <span class="tree-row__expand" part="expand-button" aria-hidden="true">›</span>
-      <span class="tree-row__icon" part="icon">${escapeHtml(row.icon)}</span>
+      <span class="tree-row__prefix" part="prefix">${escapeHtml(row.prefix)}</span>
       <span class="tree-row__label" part="label">${escapeHtml(row.label)}</span>
+      <span class="tree-row__suffix" part="suffix">${escapeHtml(row.suffix)}</span>
     `
     return element
   }
@@ -1122,10 +1220,8 @@ export class TotTree extends HTMLElement {
     this._activeValue = row.value
 
     if (emitEvents) {
-      emit(this, nextExpanded ? 'expand' : 'collapse', {
-        item: row.item,
+      emit(this, 'toggle', {
         value: row.value,
-        label: row.label,
         expanded: nextExpanded,
       })
     }
@@ -1133,7 +1229,7 @@ export class TotTree extends HTMLElement {
     this.updateVirtualRows()
   }
 
-  getTreeItems() {
+  _getTreeItems() {
     const root = this.shadowRoot
     if (!root) {
       return []
@@ -1160,8 +1256,8 @@ export class TotTree extends HTMLElement {
     return items
   }
 
-  getVisibleItems() {
-    const items = this.getTreeItems()
+  _getVisibleItems() {
+    const items = this._getTreeItems()
     const visible = []
     for (let i = 0; i < items.length; i++) {
       if (this.isItemVisible(items[i])) {
@@ -1171,8 +1267,8 @@ export class TotTree extends HTMLElement {
     return visible
   }
 
-  getEnabledVisibleItems() {
-    const visible = this.getVisibleItems()
+  _getEnabledVisibleItems() {
+    const visible = this._getVisibleItems()
     const enabled = []
     for (let i = 0; i < visible.length; i++) {
       if (!visible[i].disabled) {
@@ -1185,20 +1281,10 @@ export class TotTree extends HTMLElement {
   getVisibleVirtualRows() {
     const selectedSet = new Set(this.selectedValues)
     const expandedSet = new Set(this.getExpandedValues())
-    return flattenDataItems(this.items, {
+    return flattenDataItems(this.getItemsData(), {
       expandedSet,
       selectedSet,
       visibleOnly: true,
-    })
-  }
-
-  getAllVirtualRows() {
-    const selectedSet = new Set(this.selectedValues)
-    const expandedSet = new Set(this.getExpandedValues())
-    return flattenDataItems(this.items, {
-      expandedSet,
-      selectedSet,
-      visibleOnly: false,
     })
   }
 
@@ -1215,7 +1301,7 @@ export class TotTree extends HTMLElement {
 
   getExpandedValues() {
     if (this._expandedValues === null) {
-      this._expandedValues = getExpandedValuesFromData(this.items)
+      this._expandedValues = getExpandedValuesFromData(this.getItemsData())
     }
     return this._expandedValues.slice()
   }
@@ -1273,7 +1359,7 @@ export class TotTree extends HTMLElement {
 
   getTypeAheadVirtualRow(rows, key) {
     window.clearTimeout(this._typeToSelectTimer)
-    this._typeToSelect += key.toLocaleLowerCase()
+    this._typeToSelect += normalizeSearchText(key)
     this._typeToSelectTimer = window.setTimeout(() => {
       this._typeToSelect = ''
     }, 700)
@@ -1282,7 +1368,7 @@ export class TotTree extends HTMLElement {
     const start = active ? findRowIndex(rows, active.value) + 1 : 0
     for (let i = 0; i < rows.length; i++) {
       const index = (start + i) % rows.length
-      const label = rows[index].label.toLocaleLowerCase()
+      const label = normalizeSearchText(rows[index].label)
       if (label.startsWith(this._typeToSelect)) {
         return rows[index]
       }
@@ -1328,7 +1414,7 @@ export class TotTree extends HTMLElement {
 
   getActiveItem(items) {
     for (let i = 0; i < items.length; i++) {
-      if (items[i].isFocused()) {
+      if (items[i]._isFocused()) {
         return items[i]
       }
     }
@@ -1357,7 +1443,7 @@ export class TotTree extends HTMLElement {
 
   getTypeAheadItem(items, key) {
     window.clearTimeout(this._typeToSelectTimer)
-    this._typeToSelect += key.toLocaleLowerCase()
+    this._typeToSelect += normalizeSearchText(key)
     this._typeToSelectTimer = window.setTimeout(() => {
       this._typeToSelect = ''
     }, 700)
@@ -1366,7 +1452,7 @@ export class TotTree extends HTMLElement {
     const start = active ? items.indexOf(active) + 1 : 0
     for (let i = 0; i < items.length; i++) {
       const index = (start + i) % items.length
-      const label = items[index].label.toLocaleLowerCase()
+      const label = normalizeSearchText(items[index].label)
       if (label.startsWith(this._typeToSelect)) {
         return items[index]
       }
@@ -1375,30 +1461,33 @@ export class TotTree extends HTMLElement {
     return null
   }
 
-  get virtualBuffer() {
-    const value = Number(this.getAttribute('buffer'))
-    return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 6
-  }
-
-  getTreeHolder() {
+  getBase() {
     return this.shadowRoot?.querySelector('.tree') || null
   }
 
-  isVirtual() {
-    return this.hasAttribute('virtual')
+  _isVirtualRendered() {
+    const holder = this.getBase()
+    return Boolean(holder && holder.classList.contains('tree--windowed'))
   }
 
-  isVirtualRendered() {
-    const holder = this.getTreeHolder()
-    return Boolean(holder && holder.classList.contains('tree--virtual'))
+  cancelScheduledUpdates() {
+    if (this._virtualFrame) {
+      cancelAnimationFrame(this._virtualFrame)
+      this._virtualFrame = 0
+    }
+
+    if (this._focusFrame) {
+      cancelAnimationFrame(this._focusFrame)
+      this._focusFrame = 0
+    }
   }
 
   updateSelectedAttribute(values) {
     this._isUpdatingSelected = true
     if (!values || values.length === 0) {
-      this.removeAttribute('selected')
+      this.removeAttribute('selected-values')
     } else {
-      this.setAttribute('selected', JSON.stringify(values))
+      this.setAttribute('selected-values', JSON.stringify(values))
     }
     this._isUpdatingSelected = false
   }
@@ -1424,7 +1513,9 @@ export class TotTreeItem extends HTMLElement {
       'disabled',
       'expanded',
       'label',
+      'prefix',
       'selected',
+      'suffix',
       'value',
     ]
   }
@@ -1434,8 +1525,6 @@ export class TotTreeItem extends HTMLElement {
     this._mutationObserver = null
     this._isNormalizing = false
     this._isInTree = false
-    this._lastHasChildren = null
-    this._lastHasIcon = null
     this._handleSlotChange = () => this.handleSlotChange()
   }
 
@@ -1452,14 +1541,14 @@ export class TotTreeItem extends HTMLElement {
   }
 
   set expanded(value) {
-    this.setExpanded(value, false)
+    this._setExpanded(value, false)
   }
 
   get selected() {
     return this.hasAttribute('selected')
   }
 
-  set selected(value) {
+  _setSelected(value) {
     setBooleanAttribute(this, 'selected', value)
   }
 
@@ -1484,6 +1573,22 @@ export class TotTreeItem extends HTMLElement {
     setNullableAttribute(this, 'label', value)
   }
 
+  get prefix() {
+    return this.getAttribute('prefix') || ''
+  }
+
+  set prefix(value) {
+    setNullableAttribute(this, 'prefix', value)
+  }
+
+  get suffix() {
+    return this.getAttribute('suffix') || ''
+  }
+
+  set suffix(value) {
+    setNullableAttribute(this, 'suffix', value)
+  }
+
   get hasChildren() {
     return getDirectChildItems(this).length > 0
   }
@@ -1496,48 +1601,61 @@ export class TotTreeItem extends HTMLElement {
 
   disconnectedCallback() {
     this.stopObserving()
+    this._setInTree(false)
+    this._setFocusable(true)
   }
 
-  attributeChangedCallback(oldName, oldValue, newValue) {
+  attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue === newValue) {
       return
     }
 
     if (this.isConnected) {
-      this.render()
+      this.syncState()
+      scheduleOwningTreeUpdate(this)
     }
   }
 
   focus(options) {
-    const row = this.getRow()
+    const row = this.getButton()
     if (row) {
       row.focus(options)
     }
   }
 
   blur() {
-    const row = this.getRow()
+    const row = this.getButton()
     if (row) {
       row.blur()
     }
   }
 
-  isFocused() {
-    return this.shadowRoot?.activeElement === this.getRow()
+  _isFocused() {
+    return this.shadowRoot?.activeElement === this.getButton()
   }
 
-  setFocusable(value) {
-    const row = this.getRow()
+  _setFocusable(value) {
+    const row = this.getButton()
     if (row) {
       row.tabIndex = value ? 0 : -1
     }
   }
 
-  setInTree(value) {
+  _setInTree(value) {
     this._isInTree = Boolean(value)
+    const base = this._getBase()
+    if (!base) {
+      return
+    }
+
+    if (this._isInTree) {
+      base.setAttribute('aria-level', String(getTreeItemLevel(this) + 1))
+    } else {
+      base.removeAttribute('aria-level')
+    }
   }
 
-  setExpanded(value, emitEvents) {
+  _setExpanded(value, emitEvents) {
     const nextExpanded = Boolean(value)
     if (nextExpanded === this.expanded) {
       return
@@ -1546,76 +1664,87 @@ export class TotTreeItem extends HTMLElement {
     setBooleanAttribute(this, 'expanded', nextExpanded)
 
     if (emitEvents) {
-      emit(this, nextExpanded ? 'expand' : 'collapse', {
-        item: this,
+      emit(this, 'toggle', {
         value: this.value,
-        label: this.label,
         expanded: nextExpanded,
       })
     }
   }
 
   render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    let root = this.shadowRoot
+    if (!root) {
+      root = this.attachShadow({ mode: 'open' })
+      root.innerHTML = `<style>${treeItemStyle}</style>
+        <div class="tree-item" part="base" role="treeitem">
+          <button class="tree-item__row" part="item" type="button" tabindex="0">
+            <span class="tree-item__expand" part="expand-button" aria-hidden="true">›</span>
+            <span class="tree-item__prefix" part="prefix"><slot name="prefix"><span class="tree-item__prefix-fallback"></span></slot></span>
+            <span class="tree-item__label" part="label"><slot name="label"><span class="tree-item__fallback"></span></slot></span>
+            <span class="tree-item__suffix" part="suffix"><slot name="suffix"><span class="tree-item__suffix-fallback"></span></slot></span>
+          </button>
+          <div class="tree-item__children" part="children" role="group">
+            <slot></slot>
+          </div>
+        </div>
+      `
+
+      const slots = root.querySelectorAll('slot')
+      for (let i = 0; i < slots.length; i++) {
+        slots[i].addEventListener('slotchange', this._handleSlotChange)
+      }
+    }
+
+    this.syncState()
+  }
+
+  syncState() {
+    const base = this._getBase()
+    const row = this.getButton()
+    if (!base || !row) {
+      return
+    }
+
     const disabled = this.disabled
     const expanded = this.expanded
     const selected = this.selected
     const hasChildren = this.hasChildren
-    const hasIcon = this.hasNamedSlotContent('icon')
-    const classes = ['tree-item']
+    const hasPrefix = Boolean(this.prefix) || this.hasNamedSlotContent('prefix')
+    const hasSuffix = Boolean(this.suffix) || this.hasNamedSlotContent('suffix')
 
-    if (expanded) {
-      classes.push('tree-item--expanded')
+    base.classList.toggle('tree-item--expanded', expanded)
+    base.classList.toggle('tree-item--selected', selected)
+    base.classList.toggle('tree-item--disabled', disabled)
+    base.classList.toggle('tree-item--leaf', !hasChildren)
+    base.classList.toggle('tree-item--has-prefix', hasPrefix)
+    base.classList.toggle('tree-item--has-suffix', hasSuffix)
+    base.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+    base.setAttribute('aria-selected', selected ? 'true' : 'false')
+
+    if (hasChildren) {
+      base.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+    } else {
+      base.removeAttribute('aria-expanded')
     }
 
-    if (selected) {
-      classes.push('tree-item--selected')
+    if (this._isInTree) {
+      base.setAttribute('aria-level', String(getTreeItemLevel(this) + 1))
+    } else {
+      base.removeAttribute('aria-level')
     }
 
-    if (disabled) {
-      classes.push('tree-item--disabled')
+    row.disabled = disabled
+    const fallback = this.shadowRoot.querySelector('.tree-item__fallback')
+    const prefixFallback = this.shadowRoot.querySelector('.tree-item__prefix-fallback')
+    const suffixFallback = this.shadowRoot.querySelector('.tree-item__suffix-fallback')
+    if (fallback) {
+      fallback.textContent = this.getAttribute('label') || ''
     }
-
-    if (!hasChildren) {
-      classes.push('tree-item--leaf')
+    if (prefixFallback) {
+      prefixFallback.textContent = this.prefix
     }
-
-    if (hasIcon) {
-      classes.push('tree-item--has-icon')
-    }
-
-    this._lastHasChildren = hasChildren
-    this._lastHasIcon = hasIcon
-
-    root.innerHTML = `<style>${treeItemStyle}</style>
-      <div
-        class="${escapeAttribute(classes.join(' '))}"
-        part="base"
-        role="treeitem"
-        aria-disabled="${disabled ? 'true' : 'false'}"
-        aria-selected="${selected ? 'true' : 'false'}"
-        ${hasChildren ? `aria-expanded="${expanded ? 'true' : 'false'}"` : ''}
-      >
-        <button
-          class="tree-item__row"
-          part="item"
-          type="button"
-          tabindex="${this._isInTree ? '-1' : '0'}"
-          ${disabled ? 'disabled' : ''}
-        >
-          <span class="tree-item__expand" part="expand-button" aria-hidden="true">›</span>
-          <span class="tree-item__icon" part="icon"><slot name="icon"></slot></span>
-          <span class="tree-item__label" part="label"><slot name="label">${escapeHtml(this.getAttribute('label') || '')}</slot></span>
-        </button>
-        <div class="tree-item__children" part="children" role="group">
-          <slot></slot>
-        </div>
-      </div>
-    `
-
-    const slots = root.querySelectorAll('slot')
-    for (let i = 0; i < slots.length; i++) {
-      slots[i].addEventListener('slotchange', this._handleSlotChange)
+    if (suffixFallback) {
+      suffixFallback.textContent = this.suffix
     }
   }
 
@@ -1625,11 +1754,8 @@ export class TotTreeItem extends HTMLElement {
     }
 
     this.normalizeLightDom()
-    const hasChildren = this.hasChildren
-    const hasIcon = this.hasNamedSlotContent('icon')
-    if (hasChildren !== this._lastHasChildren || hasIcon !== this._lastHasIcon) {
-      this.render()
-    }
+    this.syncState()
+    scheduleOwningTreeUpdate(this)
   }
 
   startObserving() {
@@ -1639,7 +1765,8 @@ export class TotTreeItem extends HTMLElement {
         return
       }
       this.normalizeLightDom()
-      this.render()
+      this.syncState()
+      scheduleOwningTreeUpdate(this)
     })
     this._mutationObserver.observe(this, {
       childList: true,
@@ -1713,9 +1840,33 @@ export class TotTreeItem extends HTMLElement {
     return false
   }
 
-  getRow() {
-    return this.shadowRoot?.querySelector('.tree-item__row')
+  _getBase() {
+    return this.shadowRoot?.querySelector('.tree-item') || null
   }
+
+  getButton() {
+    return this.shadowRoot?.querySelector('.tree-item__row') || null
+  }
+
+}
+
+function scheduleOwningTreeUpdate(item) {
+  const root = item.getRootNode()
+  const shadowTree = typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot && root.host.localName === 'tot-tree'
+    ? root.host
+    : null
+  const tree = item.closest('tot-tree') || shadowTree
+  if (!tree || tree._itemUpdateQueued) {
+    return
+  }
+
+  tree._itemUpdateQueued = true
+  queueMicrotask(() => {
+    tree._itemUpdateQueued = false
+    if (tree.isConnected) {
+      tree.updateTreeItems()
+    }
+  })
 }
 
 function parseItems(value) {
@@ -1734,44 +1885,26 @@ function parseItems(value) {
 
   const items = []
   for (let i = 0; i < source.length; i++) {
-    const normalized = normalizeItem(source[i])
-    if (normalized) {
-      items.push(normalized)
+    const item = source[i]
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      continue
     }
+
+    if (typeof item.value !== 'string' || !item.value || typeof item.label !== 'string') {
+      continue
+    }
+
+    items.push({
+      disabled: Boolean(item.disabled),
+      expanded: Boolean(item.expanded),
+      prefix: typeof item.prefix === 'string' ? item.prefix : '',
+      suffix: typeof item.suffix === 'string' ? item.suffix : '',
+      items: parseItems(item.items),
+      label: item.label,
+      value: item.value,
+    })
   }
   return items
-}
-
-function normalizeItem(item) {
-  if (typeof item === 'string') {
-    return {
-      disabled: false,
-      expanded: false,
-      icon: '',
-      items: [],
-      label: item,
-      selected: false,
-      value: item,
-    }
-  }
-
-  if (!item || typeof item !== 'object') {
-    return null
-  }
-
-  const label = String(item.label ?? item.text ?? item.name ?? item.value ?? item.id ?? '')
-  const value = String(item.value ?? item.id ?? label)
-  const children = item.items ?? item.children ?? item.nodes ?? []
-
-  return {
-    disabled: Boolean(item.disabled),
-    expanded: Boolean(item.expanded || item.open),
-    icon: item.icon === null || item.icon === undefined ? '' : String(item.icon),
-    items: parseItems(children),
-    label,
-    selected: Boolean(item.selected || item.checked),
-    value,
-  }
 }
 
 function cloneItems(items) {
@@ -1783,46 +1916,23 @@ function parseSelected(value) {
     return []
   }
 
-  if (Array.isArray(value)) {
-    const result = []
-    for (let i = 0; i < value.length; i++) {
-      const normalized = normalizeSelectedValue(value[i])
-      if (normalized !== '') {
-        result.push(normalized)
-      }
-    }
-    return uniqueStrings(result)
-  }
-
-  if (value instanceof Set) {
-    return parseSelected(Array.from(value))
-  }
-
+  let source = value
   if (typeof value === 'string') {
-    const parsed = parseJson(value, null)
-    if (Array.isArray(parsed)) {
-      return parseSelected(parsed)
-    }
-
-    const parts = value.split(',')
-    const selected = []
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].trim()
-      if (part) {
-        selected.push(part)
-      }
-    }
-    return uniqueStrings(selected)
+    source = parseJson(value, [])
   }
 
-  return [String(value)]
-}
-
-function normalizeSelectedValue(value) {
-  if (value === null || value === undefined) {
-    return ''
+  if (!Array.isArray(source)) {
+    return []
   }
-  return String(value)
+
+  const selected = []
+  for (let i = 0; i < source.length; i++) {
+    const value = source[i]
+    if (typeof value === 'string' && value && selected.indexOf(value) === -1) {
+      selected.push(value)
+    }
+  }
+  return selected
 }
 
 function normalizeSelectedForMode(values, items, selection) {
@@ -1905,21 +2015,6 @@ function getSelectedValuesFromItems(items) {
   return uniqueStrings(selected)
 }
 
-function getSelectedValuesFromData(items) {
-  const selected = []
-  collectSelectedValuesFromData(items, selected)
-  return uniqueStrings(selected)
-}
-
-function collectSelectedValuesFromData(items, selected) {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].selected) {
-      selected.push(items[i].value)
-    }
-    collectSelectedValuesFromData(items[i].items, selected)
-  }
-}
-
 function getExpandedValuesFromData(items) {
   const expanded = []
   collectExpandedValuesFromData(items, expanded)
@@ -1951,7 +2046,8 @@ function flattenDataItems(items, options) {
         disabled: item.disabled,
         expanded,
         hasChildren,
-        icon: item.icon,
+        prefix: item.prefix,
+        suffix: item.suffix,
         item,
         label: item.label,
         level,
@@ -2096,6 +2192,13 @@ function arraysEqual(first, second) {
     }
   }
   return true
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
 }
 
 function getSupportedValue(value, values, fallback) {

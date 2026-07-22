@@ -36,12 +36,6 @@ registerDemo({
     labels[4].labels = ['Archived', 'Reference', 'Shared', 'Final']
 
     for (let i = 0; i < labels.length; i++) {
-      labels[i].addEventListener('add', (event) => {
-        logEvent(labels[i], 'add', event.detail)
-      })
-      labels[i].addEventListener('remove', (event) => {
-        logEvent(labels[i], 'remove', event.detail)
-      })
       labels[i].addEventListener('change', (event) => {
         logEvent(labels[i], 'change', event.detail)
       })

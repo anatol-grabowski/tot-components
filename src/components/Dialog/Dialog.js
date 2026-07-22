@@ -1,126 +1,43 @@
+import { TotModal } from '../Modal/Modal.js'
+
 const dialogStyle = `
-  :host {
-    display: contents;
-  }
-
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
   .overlay {
     align-items: center;
-    background: var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%));
-    display: flex;
-    inset: 0;
     justify-content: center;
-    overscroll-behavior: contain;
     padding: max(var(--tot-spacing-small, .75rem), env(safe-area-inset-top)) max(var(--tot-spacing-small, .75rem), env(safe-area-inset-right)) max(var(--tot-spacing-small, .75rem), env(safe-area-inset-bottom)) max(var(--tot-spacing-small, .75rem), env(safe-area-inset-left));
-    position: fixed;
-    z-index: var(--tot-z-index-dialog, 1200);
   }
 
-  .overlay[hidden] {
-    display: none;
-  }
-
-  .dialog {
+  .modal {
     background: var(--tot-dialog-background-color, var(--tot-color-neutral-0, #fff));
     border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: var(--tot-border-radius-large, 8px);
-    box-shadow: var(--tot-shadow-x-large, 0 4px 16px rgb(15 23 42 / 12%));
-    color: var(--tot-input-color, #1e293b);
-    display: grid;
-    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-input-font-size-medium, .875rem);
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: auto;
     max-height: min(var(--tot-dialog-max-height, 90dvh), calc(100dvh - 2 * var(--tot-spacing-small, .75rem)));
     max-width: calc(100vw - 2 * var(--tot-spacing-small, .75rem));
     min-width: min(var(--tot-dialog-min-width, 18rem), calc(100vw - 2 * var(--tot-spacing-small, .75rem)));
-    overflow: hidden;
     width: var(--tot-dialog-width, 28rem);
   }
 
-  .dialog__header {
-    align-items: center;
-    background: var(--tot-navbar-background-color, var(--tot-color-neutral-100, #f1f5f9));
-    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
-    display: flex;
-    gap: var(--tot-spacing-small, .75rem);
-    justify-content: space-between;
+  .modal__header {
     min-height: var(--tot-input-height-medium, 2.25rem);
     padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
   }
 
-  .dialog__title {
-    color: var(--tot-input-color, #1e293b);
-    font-size: var(--tot-input-font-size-medium, .875rem);
-    font-weight: var(--tot-font-weight-semibold, 500);
+  .modal__title {
     line-height: var(--tot-line-height-dense, 1.4);
-    min-width: 0;
-    overflow-wrap: anywhere;
   }
 
-  .dialog__close {
-    -webkit-appearance: none;
-    appearance: none;
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: var(--tot-border-radius-small, 3px);
-    color: var(--tot-input-icon-color, #64748b);
-    cursor: pointer;
-    display: inline-flex;
-    flex: 0 0 auto;
-    font: inherit;
-    font-size: 1.25em;
-    height: 1.75rem;
-    justify-content: center;
-    line-height: 1;
-    padding: 0;
-    width: 1.75rem;
-  }
-
-  .dialog__close:hover {
-    color: var(--tot-input-icon-color-hover, #475569);
-  }
-
-  .dialog__close:focus-visible {
-    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: var(--tot-focus-ring-offset, 1px);
-  }
-
-  .dialog__close[hidden] {
+  .modal__close[hidden] {
     display: none;
   }
 
-  .dialog__body {
-    line-height: var(--tot-line-height-dense, 1.4);
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior: contain;
-    padding: var(--tot-spacing-small, .75rem);
-  }
-
-  .dialog__body ::slotted(*) {
+  .modal__body ::slotted(*) {
     margin-top: 0;
   }
 
-  .dialog__footer {
-    align-items: center;
-    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
-    display: flex;
-    flex-wrap: wrap;
+  .modal__footer {
     gap: var(--tot-spacing-x-small, .5rem);
     justify-content: flex-end;
-    padding: var(--tot-spacing-x-small, .5rem) var(--tot-spacing-small, .75rem);
-  }
-
-  .dialog__footer[hidden] {
-    display: none;
-  }
-
-  .dialog__footer ::slotted(*) {
-    margin: 0;
   }
 
   .dialog__fallback-actions {
@@ -135,12 +52,13 @@ const dialogStyle = `
   }
 `
 
-export class TotDialog extends HTMLElement {
+const confirmVariants = ['default', 'primary', 'danger', 'create']
+
+export class TotDialog extends TotModal {
   static get observedAttributes() {
     return [
-      'header',
+      ...TotModal.observedAttributes,
       'content',
-      'open',
       'confirm-label',
       'cancellabel',
       'cancel-label',
@@ -151,26 +69,30 @@ export class TotDialog extends HTMLElement {
       'hide-confirm',
       'hide-footer',
       'no-close',
-      'close-on-overlay',
-      'closeonoverlay',
     ]
   }
 
   constructor() {
     super()
-    this._wasOpen = false
-    this._previouslyFocused = null
-    this._handleKeyDown = event => this.handleKeyDown(event)
-    this._touchStartY = 0
-    this._overlayPointerStarted = false
-  }
 
-  get header() {
-    return this.getAttribute('header') || ''
-  }
+    const style = document.createElement('style')
+    style.textContent = dialogStyle
+    this.shadowRoot.appendChild(style)
 
-  set header(value) {
-    setNullableAttribute(this, 'header', value)
+    this._baseElement.setAttribute('aria-labelledby', 'dialog-title')
+    this._titleElement.id = 'dialog-title'
+    this._defaultSlot = this.shadowRoot.querySelector('.modal__body slot:not([name])')
+    this._footerSlot.innerHTML = `
+      <span class="dialog__fallback-actions" part="actions">
+        <tot-button class="dialog__cancel" part="cancel-button"></tot-button>
+        <tot-button class="dialog__confirm" part="confirm-button"></tot-button>
+      </span>
+    `
+    this._cancelButton = this.shadowRoot.querySelector('.dialog__cancel')
+    this._confirmButton = this.shadowRoot.querySelector('.dialog__confirm')
+
+    this._cancelButton.addEventListener('click', () => this.cancel())
+    this._confirmButton.addEventListener('click', () => this.confirm())
   }
 
   get content() {
@@ -179,14 +101,6 @@ export class TotDialog extends HTMLElement {
 
   set content(value) {
     setNullableAttribute(this, 'content', value)
-  }
-
-  get open() {
-    return this.hasAttribute('open')
-  }
-
-  set open(value) {
-    setBooleanAttribute(this, 'open', value)
   }
 
   get confirmLabel() {
@@ -245,252 +159,159 @@ export class TotDialog extends HTMLElement {
     setBooleanAttribute(this, 'no-close', value)
   }
 
-  get closeOnOverlay() {
-    if (this.hasAttribute('close-on-overlay')) {
-      return this.getAttribute('close-on-overlay') !== 'false'
+  attributeChangedCallback(name, oldValue, newValue) {
+    super.attributeChangedCallback(name, oldValue, newValue)
+    if (oldValue === newValue) {
+      return
     }
 
-    if (this.hasAttribute('closeonoverlay')) {
-      return this.getAttribute('closeonoverlay') !== 'false'
+    if (name === 'content') {
+      this._syncBodyFallback()
+    } else if (name === 'no-close') {
+      this._syncCloseButton()
+    } else if (name === 'hide-footer') {
+      this._syncFooter()
+    } else if (name === 'hide-cancel') {
+      this._syncCancelVisibility()
+    } else if (name === 'hide-confirm') {
+      this._syncConfirmVisibility()
+    } else if (name === 'cancel-label' || name === 'cancellabel') {
+      this._syncCancelLabel()
+    } else if (name === 'confirm-label' || name === 'confirmlabel') {
+      this._syncConfirmLabel()
+    } else if (name === 'confirm-variant' || name === 'confirmvariant') {
+      this._syncConfirmVariant()
     }
-
-    return true
-  }
-
-  set closeOnOverlay(value) {
-    if (value === false || value === 'false') {
-      this.setAttribute('close-on-overlay', 'false')
-    } else {
-      this.setAttribute('close-on-overlay', '')
-    }
-  }
-
-  connectedCallback() {
-    this.render()
-    this.syncOpenState()
-  }
-
-  disconnectedCallback() {
-    if (this._wasOpen) {
-      this.deactivateDialog()
-      this._wasOpen = false
-    }
-  }
-
-  attributeChangedCallback() {
-    this.render()
-    this.syncOpenState()
-  }
-
-  show() {
-    this.open = true
-  }
-
-  hide() {
-    this.open = false
   }
 
   confirm() {
-    const proceed = emitCancelable(this, 'confirm', this.getEventDetail('confirm'))
-    if (proceed) {
-      this.hide()
-    }
-    return proceed
+    this._hide('confirm')
   }
 
   cancel(reason = 'cancel') {
-    const proceed = emitCancelable(this, 'cancel', this.getEventDetail(reason))
-    if (proceed) {
-      this.hide()
-    }
-    return proceed
+    this._hide(String(reason || 'cancel'))
   }
 
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
-    const confirmVariant = getSupportedValue(this.confirmVariant, ['default', 'primary', 'danger', 'create'], 'primary')
-
-    root.innerHTML = `<style>${dialogStyle}</style>
-      <div class="overlay" part="overlay" ${open ? '' : 'hidden'}>
-        <section class="dialog" part="base" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
-          <header class="dialog__header" part="header">
-            <div class="dialog__title" id="dialog-title" part="title"><slot name="header">${escapeHtml(this.header)}</slot></div>
-            <button class="dialog__close" part="close-button" type="button" aria-label="Close" ${this.noClose ? 'hidden' : ''}>×</button>
-          </header>
-          <div class="dialog__body" part="body"><slot name="body"><slot>${escapeHtml(this.content)}</slot></slot></div>
-          <footer class="dialog__footer" part="footer" ${this.hideFooter ? 'hidden' : ''}>
-            <slot name="footer">
-              <span class="dialog__fallback-actions">
-                <tot-button class="dialog__cancel" label="${escapeAttribute(this.cancelLabel)}" ${this.hideCancel ? 'hidden' : ''}></tot-button>
-                <tot-button class="dialog__confirm" variant="${escapeAttribute(confirmVariant)}" label="${escapeAttribute(this.confirmLabel)}" ${this.hideConfirm ? 'hidden' : ''}></tot-button>
-              </span>
-            </slot>
-          </footer>
-        </section>
-      </div>
-    `
-
-    const overlay = root.querySelector('.overlay')
-    const closeButton = root.querySelector('.dialog__close')
-    const cancelButton = root.querySelector('.dialog__cancel')
-    const confirmButton = root.querySelector('.dialog__confirm')
-
-    overlay.addEventListener('pointerdown', (event) => {
-      this._overlayPointerStarted = event.target === overlay
-    })
-    overlay.addEventListener('pointercancel', () => {
-      this._overlayPointerStarted = false
-    })
-    overlay.addEventListener('click', (event) => {
-      const shouldClose = this._overlayPointerStarted && event.target === overlay
-      this._overlayPointerStarted = false
-      if (shouldClose && this.closeOnOverlay) {
-        this.cancel('overlay')
-      }
-    })
-    overlay.addEventListener('wheel', (event) => this.handleOverlayWheel(event), { passive: false })
-    overlay.addEventListener('touchstart', (event) => this.handleOverlayTouchStart(event), { passive: true })
-    overlay.addEventListener('touchmove', (event) => this.handleOverlayTouchMove(event), { passive: false })
-    closeButton.addEventListener('click', () => this.cancel('close'))
-    cancelButton.addEventListener('click', () => this.cancel('cancel'))
-    confirmButton.addEventListener('click', () => this.confirm())
+  getCancelButton() {
+    return this._cancelButton
   }
 
-  syncOpenState() {
-    const open = this.open
-    if (open === this._wasOpen) {
-      return
-    }
-
-    if (open) {
-      this.activateDialog()
-    } else {
-      this.deactivateDialog()
-    }
-
-    this._wasOpen = open
+  getConfirmButton() {
+    return this._confirmButton
   }
 
-  activateDialog() {
-    this._previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    document.addEventListener('keydown', this._handleKeyDown)
-    emit(this, 'show', this.getEventDetail('show'))
-
-    requestAnimationFrame(() => {
-      const dialog = this.shadowRoot?.querySelector('.dialog')
-      const footerSlot = this.shadowRoot?.querySelector('slot[name="footer"]')
-      const assignedFooter = footerSlot ? footerSlot.assignedElements({ flatten: true }) : []
-      let focusTarget = findFocusable(assignedFooter)
-
-      if (!focusTarget && !this.hideConfirm) {
-        focusTarget = this.shadowRoot?.querySelector('.dialog__confirm')
-      }
-
-      if (!focusTarget) {
-        focusTarget = dialog
-      }
-
-      if (focusTarget instanceof HTMLElement) {
-        focusTarget.focus()
-      }
-    })
+  _syncAll() {
+    super._syncAll()
+    this._syncBodyFallback()
+    this._syncCloseButton()
+    this._syncFooter()
+    this._syncCancelVisibility()
+    this._syncConfirmVisibility()
+    this._syncCancelLabel()
+    this._syncConfirmLabel()
+    this._syncConfirmVariant()
   }
 
-  deactivateDialog() {
-    document.removeEventListener('keydown', this._handleKeyDown)
-
-    const previouslyFocused = this._previouslyFocused
-    this._previouslyFocused = null
-    if (previouslyFocused && document.contains(previouslyFocused)) {
-      previouslyFocused.focus()
-    }
-
-    emit(this, 'hide', this.getEventDetail('hide'))
+  _syncBodyFallback() {
+    this._defaultSlot.textContent = this.content
   }
 
-  handleKeyDown(event) {
-    if (!this.open || event.key !== 'Escape') {
-      return
-    }
-
-    event.preventDefault()
-    this.cancel('escape')
+  _syncCloseButton() {
+    this._closeButton.hidden = this.noClose
   }
 
-  handleOverlayWheel(event) {
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.overlay'), event.deltaY)) {
-      event.preventDefault()
-    }
+  _syncFooter() {
+    this._footerElement.hidden = this.hideFooter
   }
 
-  handleOverlayTouchStart(event) {
-    if (event.touches.length !== 1) {
-      return
-    }
-
-    this._touchStartY = event.touches[0].clientY
+  _syncCancelVisibility() {
+    this._cancelButton.hidden = this.hideCancel
   }
 
-  handleOverlayTouchMove(event) {
-    if (event.touches.length !== 1) {
-      event.preventDefault()
-      return
-    }
-
-    const currentY = event.touches[0].clientY
-    const deltaY = this._touchStartY - currentY
-    this._touchStartY = currentY
-
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.overlay'), deltaY)) {
-      event.preventDefault()
-    }
+  _syncConfirmVisibility() {
+    this._confirmButton.hidden = this.hideConfirm
   }
 
-  getEventDetail(reason) {
-    return {
-      open: this.open,
-      header: this.header,
-      content: this.content,
-      reason,
+  _syncCancelLabel() {
+    setNullableAttribute(this._cancelButton, 'label', this.cancelLabel)
+  }
+
+  _syncConfirmLabel() {
+    setNullableAttribute(this._confirmButton, 'label', this.confirmLabel)
+  }
+
+  _syncConfirmVariant() {
+    setNullableAttribute(this._confirmButton, 'variant', getSupportedValue(this.confirmVariant, confirmVariants, 'primary'))
+  }
+
+  _requestClose(reason) {
+    this.cancel(reason)
+  }
+
+  _getInitialFocusTarget() {
+    const assignedFooter = this._footerSlot.assignedElements({ flatten: true })
+    const customFooterTarget = findFocusable(assignedFooter)
+    if (customFooterTarget) {
+      return customFooterTarget
     }
+
+    if (!this.hideConfirm) {
+      return this._confirmButton
+    }
+
+    if (!this.noClose) {
+      return this._closeButton
+    }
+
+    return this._baseElement
+  }
+
+  _emitHide(reason) {
+    this.dispatchEvent(new CustomEvent('hide', {
+      bubbles: true,
+      composed: true,
+      detail: { reason },
+    }))
   }
 }
-
 
 function findFocusable(elements) {
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
-    if (element instanceof HTMLElement && typeof element.focus === 'function') {
+    if (isFocusable(element)) {
       return element
     }
 
-    const focusable = element.querySelector?.('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), tot-button')
-    if (focusable instanceof HTMLElement && typeof focusable.focus === 'function') {
-      return focusable
+    const candidates = element.querySelectorAll?.('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), tot-button') || []
+    for (let j = 0; j < candidates.length; j++) {
+      if (isFocusable(candidates[j])) {
+        return candidates[j]
+      }
     }
   }
 
   return null
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
-    detail: detail || {},
-  }))
+function isFocusable(element) {
+  if (!(element instanceof HTMLElement) || element.hidden || element.hasAttribute('disabled')) {
+    return false
+  }
+
+  if (element.getAttribute('aria-hidden') === 'true' || element.getAttribute('tabindex') === '-1') {
+    return false
+  }
+
+  return element.matches('button, [href], input, select, textarea, [tabindex], tot-button')
 }
 
-function emitCancelable(element, name, detail) {
-  const event = new CustomEvent(name, {
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-    detail: detail || {},
-  })
-  element.dispatchEvent(event)
-  return !event.defaultPrevented
+
+function setNullableAttribute(element, name, value) {
+  if (value === null || value === undefined) {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
 }
 
 function setBooleanAttribute(element, name, value) {
@@ -501,48 +322,6 @@ function setBooleanAttribute(element, name, value) {
   }
 }
 
-function setNullableAttribute(element, name, value) {
-  if (value === null || value === undefined) {
-    element.removeAttribute(name)
-  } else {
-    element.setAttribute(name, String(value))
-  }
-}
-
-function shouldAllowScroll(event, boundary, deltaY) {
-  if (deltaY === 0) {
-    return false
-  }
-
-  const path = typeof event.composedPath === 'function' ? event.composedPath() : []
-  for (let i = 0; i < path.length; i++) {
-    const node = path[i]
-    if (node === boundary) {
-      break
-    }
-
-    if (!(node instanceof HTMLElement)) {
-      continue
-    }
-
-    const style = getComputedStyle(node)
-    const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight
-    if (!canScrollY) {
-      continue
-    }
-
-    if (deltaY < 0 && node.scrollTop > 0) {
-      return true
-    }
-
-    if (deltaY > 0 && Math.ceil(node.scrollTop + node.clientHeight) < node.scrollHeight) {
-      return true
-    }
-  }
-
-  return false
-}
-
 function getSupportedValue(value, supportedValues, fallback) {
   for (let i = 0; i < supportedValues.length; i++) {
     if (supportedValues[i] === value) {
@@ -550,21 +329,4 @@ function getSupportedValue(value, supportedValues, fallback) {
     }
   }
   return fallback
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

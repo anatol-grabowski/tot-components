@@ -9,13 +9,13 @@ const copyButtonStyle = `
     box-sizing: border-box;
   }
 
-  .copy-button {
-    position: relative;
+  .base {
     display: inline-block;
     max-width: 100%;
+    position: relative;
   }
 
-  .copy-button__button {
+  .button {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -32,7 +32,6 @@ const copyButtonStyle = `
     line-height: 1;
     min-width: var(--tot-input-height-medium, 2.25rem);
     padding: 0 var(--tot-input-spacing-small, .5rem);
-    position: relative;
     transition:
       var(--tot-transition-fast, 150ms) background-color,
       var(--tot-transition-fast, 150ms) border-color,
@@ -40,27 +39,27 @@ const copyButtonStyle = `
       var(--tot-transition-fast, 150ms) opacity;
   }
 
-  .copy-button__button:hover:not(:disabled) {
+  .button:hover:not(:disabled) {
     background: var(--tot-input-background-color-hover, #f8fafc);
     border-color: var(--tot-input-border-color-hover, #94a3b8);
     color: var(--tot-input-icon-color-hover, var(--tot-input-color-hover, #0f172a));
   }
 
-  .copy-button__button:active:not(:disabled) {
+  .button:active:not(:disabled) {
     background: var(--tot-color-neutral-100, #f1f5f9);
   }
 
-  .copy-button__button:focus-visible {
+  .button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
-  .copy-button__button:disabled {
+  .button:disabled {
     cursor: not-allowed;
     opacity: .55;
   }
 
-  .copy-button__icon {
+  .icon {
     align-items: center;
     display: none;
     font-size: 1rem;
@@ -70,21 +69,21 @@ const copyButtonStyle = `
     width: 1em;
   }
 
-  .copy-button--copy .copy-button__icon--copy,
-  .copy-button--success .copy-button__icon--success,
-  .copy-button--error .copy-button__icon--error {
+  .base[data-status='copy'] .copy-icon,
+  .base[data-status='success'] .success-icon,
+  .base[data-status='error'] .error-icon {
     display: inline-flex;
   }
 
-  .copy-button--success .copy-button__button {
+  .base[data-status='success'] .button {
     color: var(--tot-color-success-600, #16a34a);
   }
 
-  .copy-button--error .copy-button__button {
+  .base[data-status='error'] .button {
     color: var(--tot-color-danger-600, #dc2626);
   }
 
-  .copy-button__feedback {
+  .feedback {
     background: var(--tot-color-neutral-900, #0f172a);
     border-radius: var(--tot-border-radius-medium, 4px);
     color: var(--tot-color-neutral-0, #fff);
@@ -107,10 +106,10 @@ const copyButtonStyle = `
     z-index: var(--tot-z-index-tooltip, 1000);
   }
 
-  .copy-button--success .copy-button__feedback,
-  .copy-button--error .copy-button__feedback,
-  .copy-button__button:hover + .copy-button__feedback,
-  .copy-button__button:focus-visible + .copy-button__feedback {
+  .base[data-status='success'] .feedback,
+  .base[data-status='error'] .feedback,
+  .button:hover + .feedback,
+  .button:focus-visible + .feedback {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
@@ -132,7 +131,27 @@ export class TotCopyButton extends HTMLElement {
   constructor() {
     super()
     this._status = 'copy'
-    this._feedbackTimer = null
+    this._feedbackTimer = 0
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${copyButtonStyle}</style>
+      <span class="base" part="base" data-status="copy">
+        <button class="button" part="button" type="button">
+          <span class="icon copy-icon" part="copy-icon" aria-hidden="true"><slot name="copy-icon">⧉</slot></span>
+          <span class="icon success-icon" part="success-icon" aria-hidden="true"><slot name="success-icon">✓</slot></span>
+          <span class="icon error-icon" part="error-icon" aria-hidden="true"><slot name="error-icon">!</slot></span>
+        </button>
+        <span class="feedback" part="feedback" role="status"></span>
+      </span>
+    `
+
+    this._baseElement = root.querySelector('.base')
+    this._buttonElement = root.querySelector('.button')
+    this._feedbackElement = root.querySelector('.feedback')
+    this._buttonElement.addEventListener('click', event => {
+      event.preventDefault()
+      void this.copy()
+    })
   }
 
   get value() {
@@ -159,6 +178,30 @@ export class TotCopyButton extends HTMLElement {
     setBooleanAttribute(this, 'disabled', value)
   }
 
+  get copyLabel() {
+    return this.getAttribute('copy-label') || 'Copy'
+  }
+
+  set copyLabel(value) {
+    setNullableAttribute(this, 'copy-label', value)
+  }
+
+  get successLabel() {
+    return this.getAttribute('success-label') || 'Copied'
+  }
+
+  set successLabel(value) {
+    setNullableAttribute(this, 'success-label', value)
+  }
+
+  get errorLabel() {
+    return this.getAttribute('error-label') || 'Copy failed'
+  }
+
+  set errorLabel(value) {
+    setNullableAttribute(this, 'error-label', value)
+  }
+
   get feedbackDuration() {
     return Math.max(0, parseNumber(this.getAttribute('feedback-duration'), 1000))
   }
@@ -168,96 +211,33 @@ export class TotCopyButton extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this._sync()
   }
 
   disconnectedCallback() {
-    this.clearFeedbackTimer()
+    this._clearFeedbackTimer()
   }
 
   attributeChangedCallback() {
-    this.render()
+    this._sync()
   }
 
   async copy() {
-    await this.copyValue()
-  }
-
-  focus(options) {
-    const button = this.getButton()
-    if (button) {
-      button.focus(options)
-    }
-  }
-
-  blur() {
-    const button = this.getButton()
-    if (button) {
-      button.blur()
-    }
-  }
-
-  render() {
-    const disabled = this.disabled
-    const copyLabel = this.getAttribute('copy-label') || 'Copy'
-    const successLabel = this.getAttribute('success-label') || 'Copied'
-    const errorLabel = this.getAttribute('error-label') || 'Copy failed'
-    const currentLabel = this._status === 'success'
-      ? successLabel
-      : this._status === 'error'
-        ? errorLabel
-        : copyLabel
-    const root = this.getRoot()
-
-    root.innerHTML = `<style>${copyButtonStyle}</style>
-      <span class="copy-button copy-button--${escapeAttribute(this._status)}">
-        <button
-          class="copy-button__button"
-          part="button"
-          type="button"
-          aria-label="${escapeAttribute(currentLabel)}"
-          title="${escapeAttribute(currentLabel)}"
-          ${disabled ? 'disabled' : ''}
-        >
-          <span class="copy-button__icon copy-button__icon--copy" part="copy-icon" aria-hidden="true">
-            <slot name="copy-icon">⧉</slot>
-          </span>
-          <span class="copy-button__icon copy-button__icon--success" part="success-icon" aria-hidden="true">
-            <slot name="success-icon">✓</slot>
-          </span>
-          <span class="copy-button__icon copy-button__icon--error" part="error-icon" aria-hidden="true">
-            <slot name="error-icon">!</slot>
-          </span>
-        </button>
-        <span class="copy-button__feedback" part="feedback" role="status">${escapeHtml(currentLabel)}</span>
-      </span>
-    `
-
-    const button = this.getButton()
-    button.addEventListener('click', (event) => {
-      event.preventDefault()
-      void this.copyValue()
-    })
-  }
-
-  async copyValue() {
     if (this.disabled) {
       return
     }
 
     try {
-      const value = this.getTextToCopy()
+      const value = this._getTextToCopy()
       if (!value) {
         throw new Error('No text to copy')
       }
 
       await writeClipboardText(value)
-      this.setStatus('success')
-      emit(this, 'copy', {
-        value,
-      })
+      this._setStatus('success')
+      emit(this, 'copy', { value })
     } catch (error) {
-      this.setStatus('error')
+      this._setStatus('error')
       emit(this, 'error', {
         error,
         message: error instanceof Error ? error.message : String(error),
@@ -265,13 +245,50 @@ export class TotCopyButton extends HTMLElement {
     }
   }
 
-  getTextToCopy() {
-    const from = this.from.trim()
-    if (!from) {
+  focus(options) {
+    this._buttonElement.focus(options)
+  }
+
+  blur() {
+    this._buttonElement.blur()
+  }
+
+  getButton() {
+    return this._buttonElement
+  }
+
+  _sync() {
+    if (!this._buttonElement) {
+      return
+    }
+
+    const label = this._getStatusLabel()
+    this._baseElement.dataset.status = this._status
+    this._buttonElement.disabled = this.disabled
+    this._buttonElement.setAttribute('aria-label', label)
+    this._buttonElement.title = label
+    this._feedbackElement.textContent = label
+  }
+
+  _getStatusLabel() {
+    if (this._status === 'success') {
+      return this.successLabel
+    }
+
+    if (this._status === 'error') {
+      return this.errorLabel
+    }
+
+    return this.copyLabel
+  }
+
+  _getTextToCopy() {
+    const reference = this.from.trim()
+    if (!reference) {
       return this.value
     }
 
-    const source = this.getSourceFromReference(from)
+    const source = resolveSourceReference(reference)
     if (!source.element) {
       throw new Error(`Element not found: ${source.id}`)
     }
@@ -288,68 +305,63 @@ export class TotCopyButton extends HTMLElement {
     return source.element.textContent || ''
   }
 
-  getSourceFromReference(reference) {
-    const attributeMatch = reference.match(/^(.+)\[([^\]]+)\]$/)
-    if (attributeMatch) {
-      const id = attributeMatch[1]
-      return {
-        id,
-        attribute: attributeMatch[2],
-        property: '',
-        element: document.getElementById(id),
-      }
-    }
-
-    const propertyMatch = reference.match(/^(.+)\.([^.]+)$/)
-    if (propertyMatch) {
-      const id = propertyMatch[1]
-      return {
-        id,
-        attribute: '',
-        property: propertyMatch[2],
-        element: document.getElementById(id),
-      }
-    }
-
-    return {
-      id: reference,
-      attribute: '',
-      property: '',
-      element: document.getElementById(reference),
-    }
-  }
-
-  setStatus(status) {
+  _setStatus(status) {
     this._status = status
-    this.clearFeedbackTimer()
-    this.render()
+    this._clearFeedbackTimer()
+    this._sync()
 
-    if (status !== 'copy') {
-      this._feedbackTimer = window.setTimeout(() => {
-        this._status = 'copy'
-        this.render()
-      }, this.feedbackDuration)
+    if (status === 'copy') {
+      return
+    }
+
+    this._feedbackTimer = window.setTimeout(() => {
+      this._feedbackTimer = 0
+      this._status = 'copy'
+      this._sync()
+    }, this.feedbackDuration)
+  }
+
+  _clearFeedbackTimer() {
+    if (!this._feedbackTimer) {
+      return
+    }
+
+    window.clearTimeout(this._feedbackTimer)
+    this._feedbackTimer = 0
+  }
+}
+
+function resolveSourceReference(reference) {
+  const attributeMatch = reference.match(/^(.+)\[([^\]]+)]$/)
+  if (attributeMatch) {
+    return {
+      id: attributeMatch[1],
+      attribute: attributeMatch[2],
+      property: '',
+      element: document.getElementById(attributeMatch[1]),
     }
   }
 
-  clearFeedbackTimer() {
-    if (this._feedbackTimer !== null) {
-      window.clearTimeout(this._feedbackTimer)
-      this._feedbackTimer = null
+  const propertyMatch = reference.match(/^(.+)\.([^.]+)$/)
+  if (propertyMatch) {
+    return {
+      id: propertyMatch[1],
+      attribute: '',
+      property: propertyMatch[2],
+      element: document.getElementById(propertyMatch[1]),
     }
   }
 
-  getButton() {
-    return this.shadowRoot?.querySelector('button')
-  }
-
-  getRoot() {
-    return this.shadowRoot || this.attachShadow({ mode: 'open' })
+  return {
+    id: reference,
+    attribute: '',
+    property: '',
+    element: document.getElementById(reference),
   }
 }
 
 async function writeClipboardText(value) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
+  if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value)
     return
   }
@@ -364,8 +376,7 @@ async function writeClipboardText(value) {
   textarea.select()
 
   try {
-    const successful = document.execCommand('copy')
-    if (!successful) {
+    if (!document.execCommand('copy')) {
       throw new Error('Clipboard copy was rejected')
     }
   } finally {
@@ -377,17 +388,13 @@ function emit(element, name, detail) {
   element.dispatchEvent(new CustomEvent(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
+    detail,
   }))
 }
 
 function parseNumber(value, fallback) {
-  if (value === null || value === undefined || value === '') {
-    return fallback
-  }
-
   const number = Number(value)
-  return Number.isFinite(number) ? number : fallback
+  return value !== null && value !== '' && Number.isFinite(number) ? number : fallback
 }
 
 function setBooleanAttribute(element, name, value) {
@@ -404,21 +411,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

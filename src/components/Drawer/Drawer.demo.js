@@ -48,13 +48,13 @@ registerDemo({
           </div>
           <tot-button slot="footer" id="closeStartDrawer" label="Close" variant="primary"></tot-button>
         </tot-drawer>
-        <tot-drawer id="topDrawer" label="Top drawer" placement="top" style="--size: 35dvh;">
+        <tot-drawer id="topDrawer" label="Top drawer" placement="top" style="--tot-drawer-size: 35dvh;">
           <div class="drawer-demo-copy">
-            <p>The top drawer uses <code>--size</code> to set its preferred height.</p>
+            <p>The top drawer uses <code>--tot-drawer-size</code> to set its preferred height.</p>
           </div>
           <tot-button slot="footer" id="closeTopDrawer" label="Close" variant="primary"></tot-button>
         </tot-drawer>
-        <tot-drawer id="bottomDrawer" label="Bottom drawer" placement="bottom" style="--size: 35dvh;">
+        <tot-drawer id="bottomDrawer" label="Bottom drawer" placement="bottom" style="--tot-drawer-size: 35dvh;">
           <div class="drawer-demo-copy">
             <p>The bottom drawer keeps the header and footer visible while the body scrolls.</p>
           </div>
@@ -67,7 +67,7 @@ registerDemo({
         <div class="row">
           <tot-button id="openResizableDrawer" label="Open resizable" variant="primary"></tot-button>
         </div>
-        <tot-drawer id="resizableDrawer" label="Resizable drawer" resizable min-size="16rem" max-size="80vw" style="--size: 24rem;">
+        <tot-drawer id="resizableDrawer" label="Resizable drawer" resizable min-size="16rem" max-size="80vw" style="--tot-drawer-size: 24rem;">
           <div class="drawer-demo-copy">
             <p>Drag the handle on the drawer edge to resize it.</p>
             <p>The size is clamped between <code>min-size</code> and <code>max-size</code>.</p>
@@ -80,7 +80,7 @@ registerDemo({
         <div class="demo-label">Contained drawer</div>
         <div class="drawer-demo-contained-box">
           <p>The drawer is contained to this box. It is intentionally not modal.</p>
-          <tot-drawer id="containedDrawer" label="Contained drawer" contained resizable min-size="30%" max-size="80%" style="--size: 50%;">
+          <tot-drawer id="containedDrawer" label="Contained drawer" contained resizable min-size="30%" max-size="80%" style="--tot-drawer-size: 50%;">
             <div class="drawer-demo-copy">
               <p>Contained drawers do not show an overlay and do not close with Escape.</p>
               <p>You can still close this one with its button.</p>
@@ -131,22 +131,22 @@ registerDemo({
     wrapper.querySelector('#closeContainedDrawer').addEventListener('click', () => containedDrawer.hide())
 
     const protectedDrawer = wrapper.querySelector('#protectedDrawer')
-    protectedDrawer.addEventListener('sl-request-close', (event) => {
-      if (event.detail.source === 'overlay') {
+    protectedDrawer.addEventListener('request-close', (event) => {
+      if (event.detail.reason === 'overlay') {
         event.preventDefault()
       }
     })
 
     const drawers = wrapper.querySelectorAll('tot-drawer')
     for (let i = 0; i < drawers.length; i++) {
-      drawers[i].addEventListener('sl-show', (event) => {
-        logEvent(drawers[i], 'sl-show', event.detail)
+      drawers[i].addEventListener('show', () => {
+        logEvent(drawers[i], 'show')
       })
-      drawers[i].addEventListener('sl-hide', (event) => {
-        logEvent(drawers[i], 'sl-hide', event.detail)
+      drawers[i].addEventListener('hide', () => {
+        logEvent(drawers[i], 'hide')
       })
-      drawers[i].addEventListener('sl-request-close', (event) => {
-        logEvent(drawers[i], 'sl-request-close', event.detail)
+      drawers[i].addEventListener('request-close', (event) => {
+        logEvent(drawers[i], 'request-close', event.detail)
       })
     }
 

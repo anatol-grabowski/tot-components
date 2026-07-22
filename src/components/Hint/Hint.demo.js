@@ -10,31 +10,31 @@ registerDemo({
       <div class="stack demo-group">
         <div class="demo-label">Pointer-following text hint on hover</div>
         <div class="row">
-          <tot-hint text="Saved locally in your browser.">
+          <tot-hint content="Saved locally in your browser.">
             <tot-button label="Hover for hint"></tot-button>
           </tot-hint>
-          <tot-hint text="The hint flips when there is not enough space below or to the right.">
+          <tot-hint content="The hint flips when there is not enough space below or to the right.">
             <span class="demo-native-button" tabindex="0">Hover text</span>
           </tot-hint>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Programmatic hint near the cursor</div>
+        <div class="demo-label">Programmatic hint at viewport coordinates</div>
         <div class="row">
-          <button class="demo-native-button" type="button" id="manualHintTrigger">Show hint here</button>
-          <tot-hint id="manualHint" trigger="manual" text="Shown by calling show(event)."></tot-hint>
+          <button class="demo-native-button" type="button" id="programmaticHintAnchor">Show hint here</button>
+          <tot-hint id="programmaticHint" activation="none" content="Shown by calling showAt(clientX, clientY)."></tot-hint>
         </div>
       </div>
     `
 
-    const manualHint = wrapper.querySelector('#manualHint')
-    const manualHintTrigger = wrapper.querySelector('#manualHintTrigger')
+    const programmaticHint = wrapper.querySelector('#programmaticHint')
+    const programmaticHintAnchor = wrapper.querySelector('#programmaticHintAnchor')
 
-    manualHintTrigger.addEventListener('click', (event) => {
-      manualHint.show(event)
-      logEvent(manualHint, 'show', { x: event.clientX, y: event.clientY })
+    programmaticHintAnchor.addEventListener('click', (event) => {
+      programmaticHint.showAt(event.clientX, event.clientY)
+      logEvent(programmaticHint, 'showAt', { clientX: event.clientX, clientY: event.clientY })
       window.setTimeout(() => {
-        manualHint.hide()
+        programmaticHint.hide()
       }, 1800)
     })
 

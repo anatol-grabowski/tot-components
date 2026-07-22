@@ -136,10 +136,12 @@ const tabsStyle = `
     right: var(--tot-tab-sticky-offset, 0px);
   }
 
-  button:hover:not(:disabled) {
-    --tot-tabs-tab-background: var(--tot-color-neutral-100, #f1f5f9);
+  @media (hover: hover) and (pointer: fine) {
+    button:hover:not(:disabled) {
+      --tot-tabs-tab-background: var(--tot-panel-background-color, #fff);
 
-    color: var(--tot-input-color-hover, #0f172a);
+      color: var(--tot-input-color-hover, #0f172a);
+    }
   }
 
   button:focus-visible {

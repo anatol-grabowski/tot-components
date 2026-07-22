@@ -25,6 +25,14 @@ const menuStyle = `
     padding: var(--tot-menu-padding, .25rem);
   }
 
+  .generated-items {
+    display: contents;
+  }
+
+  .generated-items[hidden] {
+    display: none;
+  }
+
   :host([dense]) {
     --tot-menu-item-gap: var(--tot-spacing-3x-small, .125rem);
     --tot-menu-item-height: 1.5rem;
@@ -42,12 +50,9 @@ const menuStyle = `
     min-width: 0;
   }
 
-  .menu > tot-divider,
+  .generated-items > tot-divider,
   ::slotted(tot-divider) {
-    display: block;
-    margin-block: var(--tot-menu-divider-spacing, .125rem);
-    margin-inline: 0;
-    width: 100%;
+    --tot-divider-spacing: var(--tot-menu-divider-spacing, .125rem);
   }
 `
 
@@ -64,6 +69,7 @@ const menuItemStyle = `
 
   .item {
     align-items: center;
+    appearance: none;
     background: transparent;
     border: 0;
     border-radius: var(--tot-border-radius-small, 3px);
@@ -74,7 +80,7 @@ const menuItemStyle = `
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
     gap: var(--tot-menu-item-gap, var(--tot-spacing-2x-small, .25rem));
-    grid-template-columns: minmax(0, 1fr) 1rem auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     line-height: var(--tot-line-height-normal, 1.4);
     min-height: var(--tot-menu-item-height, var(--tot-input-height-small, 1.75rem));
     outline: none;
@@ -85,14 +91,20 @@ const menuItemStyle = `
     width: 100%;
   }
 
-  .item:hover:not(.item--disabled),
-  .item:active:not(.item--disabled),
-  .item:focus-visible:not(.item--disabled) {
+  @media (hover: hover) {
+    .item:hover:not(:disabled) {
+      background: var(--tot-color-neutral-100, #f1f5f9);
+      color: var(--tot-input-color-hover, #0f172a);
+    }
+  }
+
+  .item:active:not(:disabled),
+  .item:focus-visible:not(:disabled) {
     background: var(--tot-color-neutral-100, #f1f5f9);
     color: var(--tot-input-color-hover, #0f172a);
   }
 
-  .item:focus:not(:focus-visible):not(.item--disabled) {
+  .item:focus:not(:focus-visible):not(:disabled) {
     background: transparent;
     color: var(--tot-input-color, #1e293b);
   }
@@ -101,70 +113,9 @@ const menuItemStyle = `
     box-shadow: var(--tot-focus-ring, 0 0 0 3px hsl(198.6 88.7% 48.4% / 40%));
   }
 
-  .item--checked {
-    color: var(--tot-color-primary-700, #0369a1);
-    font-weight: var(--tot-font-weight-semibold, 600);
-  }
-
-  .item--disabled {
+  .item:disabled {
     cursor: not-allowed;
     opacity: .55;
-  }
-
-  .item__state,
-  .item__check,
-  .item__loader,
-  .item__submenu-caret {
-    align-items: center;
-    display: inline-flex;
-    justify-content: center;
-    line-height: 1;
-  }
-
-  .item__state {
-    color: var(--tot-color-primary-700, #0369a1);
-    height: 1rem;
-    width: 1rem;
-  }
-
-  .item__check,
-  .item__loader,
-  .item__submenu-caret {
-    height: 1rem;
-    width: 1rem;
-  }
-
-  .item__check svg,
-  .item__loader svg,
-  .item__submenu-caret svg {
-    display: block;
-    fill: none;
-    height: 100%;
-    stroke: currentColor;
-    width: 100%;
-  }
-
-  .item:not(.item--checked) .item__check,
-  .item__loader {
-    display: none;
-  }
-
-  .item--loading .item__check {
-    display: none;
-  }
-
-  .item--loading .item__loader {
-    display: inline-flex;
-  }
-
-  .item__loader svg {
-    animation: menu-item-spin .8s linear infinite;
-  }
-
-  @keyframes menu-item-spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .item__label {
@@ -174,9 +125,43 @@ const menuItemStyle = `
     white-space: nowrap;
   }
 
+  .item__suffix,
+  .item__submenu-caret {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .item__suffix {
+    color: var(--tot-color-neutral-600, #475569);
+    min-width: 1rem;
+    white-space: nowrap;
+  }
+
+  .item__suffix[hidden] {
+    display: none;
+  }
+
+  .item__suffix ::slotted(*) {
+    display: block;
+    height: 1rem;
+    width: 1rem;
+  }
+
   .item__submenu-caret {
     color: var(--tot-color-neutral-500, #64748b);
     display: none;
+    height: 1rem;
+    width: 1rem;
+  }
+
+  .item__submenu-caret svg {
+    display: block;
+    fill: none;
+    height: 100%;
+    stroke: currentColor;
+    width: 100%;
   }
 
   .item--has-submenu .item__submenu-caret {
@@ -193,8 +178,12 @@ const menuItemStyle = `
     z-index: var(--tot-z-index-dropdown, 1000);
   }
 
-  :host(:hover) .submenu,
-  :host(:focus-within) .submenu,
+  @media (hover: hover) {
+    :host(:hover) .submenu {
+      display: block;
+    }
+  }
+
   :host([open]) .submenu {
     display: block;
   }
@@ -238,12 +227,28 @@ export class TotMenu extends HTMLElement {
   constructor() {
     super()
     this._items = null
+    this._usingSlot = false
     this._typeToSelect = ''
     this._typeToSelectTimer = 0
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${menuStyle}</style>
+      <div class="menu" part="base" role="menu">
+        <slot></slot>
+        <div class="generated-items" part="generated-items"></div>
+      </div>
+    `
+
+    this._base = root.querySelector('.menu')
+    this._defaultSlot = root.querySelector('slot')
+    this._generatedItems = root.querySelector('.generated-items')
+    this._base.addEventListener('click', (event) => this.handleClick(event))
+    this._base.addEventListener('keydown', (event) => this.handleKeyDown(event))
+    this._defaultSlot.addEventListener('slotchange', () => this.syncContentMode())
   }
 
   get items() {
-    if (this._items) {
+    if (this._items !== null) {
       return cloneItems(this._items)
     }
     return parseItems(this.getAttribute('items'))
@@ -251,7 +256,7 @@ export class TotMenu extends HTMLElement {
 
   set items(value) {
     this._items = parseItems(value)
-    this.render()
+    this.renderGeneratedItems()
   }
 
   get dense() {
@@ -262,44 +267,85 @@ export class TotMenu extends HTMLElement {
     setBooleanAttribute(this, 'dense', value)
   }
 
-  connectedCallback() {
-    this.render()
+  get embedded() {
+    return this.hasAttribute('embedded')
   }
 
-  attributeChangedCallback(name) {
+  set embedded(value) {
+    setBooleanAttribute(this, 'embedded', value)
+  }
+
+  connectedCallback() {
+    this.syncLabel()
+    this.syncContentMode()
+  }
+
+  disconnectedCallback() {
+    window.clearTimeout(this._typeToSelectTimer)
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
     if (name === 'items') {
       this._items = null
-    }
-    this.render()
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const label = this.getAttribute('aria-label') || 'Menu'
-    const hasDefaultSlotContent = this.hasDefaultSlotContent()
-
-    root.innerHTML = `<style>${menuStyle}</style>
-      <div class="menu" part="base" role="menu" aria-label="${escapeAttribute(label)}"></div>
-    `
-
-    const holder = root.querySelector('.menu')
-    if (hasDefaultSlotContent) {
-      const slot = document.createElement('slot')
-      slot.addEventListener('slotchange', () => this.handleSlotChange())
-      holder.append(slot)
+      this.renderGeneratedItems()
     } else {
-      this.renderItems(holder, this.items)
+      this.syncLabel()
     }
-
-    holder.addEventListener('click', (event) => this.handleClick(event))
-    holder.addEventListener('keydown', (event) => this.handleKeyDown(event))
   }
 
-  renderItems(holder, items) {
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      holder.append(this.createItemElement(item))
+  focus(options) {
+    this.focusFirstItem(options)
+  }
+
+  getBase() {
+    return this._base
+  }
+
+  getMenuItems() {
+    const source = this.getItemSource()
+    const items = []
+
+    for (let i = 0; i < source.length; i++) {
+      if (source[i].localName === 'tot-menu-item') {
+        items.push(source[i])
+      }
     }
+
+    return items
+  }
+
+  getEnabledMenuItems() {
+    const items = this.getMenuItems()
+    const enabled = []
+
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i].disabled) {
+        enabled.push(items[i])
+      }
+    }
+
+    return enabled
+  }
+
+  focusFirstItem(options) {
+    const items = this.getEnabledMenuItems()
+    if (items.length > 0) {
+      items[0].focus(options)
+    }
+  }
+
+  renderGeneratedItems() {
+    const fragment = document.createDocumentFragment()
+    const items = this.items
+    for (let i = 0; i < items.length; i++) {
+      fragment.append(this.createItemElement(items[i]))
+    }
+    this._generatedItems.replaceChildren(fragment)
+    this.syncContentMode()
   }
 
   createItemElement(item) {
@@ -315,24 +361,15 @@ export class TotMenu extends HTMLElement {
 
     const element = document.createElement('tot-menu-item')
     element.textContent = item.label
-
-    if (item.value) {
-      element.setAttribute('value', item.value)
-    }
-
+    element.setAttribute('value', item.value)
     if (item.disabled) {
       element.setAttribute('disabled', '')
     }
-
-    if (item.checked) {
-      element.setAttribute('checked', '')
+    if (item.suffix) {
+      element.setAttribute('suffix', item.suffix)
     }
 
-    if (item.loading) {
-      element.setAttribute('loading', '')
-    }
-
-    if (item.items.length > 0) {
+    if (item.items?.length > 0) {
       const submenu = document.createElement('tot-menu')
       submenu.slot = 'submenu'
       submenu.items = item.items
@@ -342,11 +379,25 @@ export class TotMenu extends HTMLElement {
     return element
   }
 
-  handleSlotChange() {
-    const hasDefaultSlotContent = this.hasDefaultSlotContent()
-    if (!hasDefaultSlotContent) {
-      this.render()
+  syncLabel() {
+    const base = this.getBase()
+    if (base) {
+      base.setAttribute('aria-label', this.getAttribute('aria-label') || 'Menu')
     }
+  }
+
+  syncContentMode() {
+    this._usingSlot = hasMeaningfulAssignedContent(this._defaultSlot)
+    this._defaultSlot.hidden = !this._usingSlot
+    this._generatedItems.hidden = this._usingSlot
+  }
+
+  getItemSource() {
+    if (this._usingSlot) {
+      return this._defaultSlot.assignedElements({ flatten: true })
+    }
+
+    return Array.from(this._generatedItems.children)
   }
 
   handleClick(event) {
@@ -355,22 +406,23 @@ export class TotMenu extends HTMLElement {
       return
     }
 
-    if (item.disabled || item.loading) {
+    if (item.disabled) {
       event.preventDefault()
       event.stopPropagation()
       return
     }
 
     if (item.hasSubmenu) {
+      this.closeSubmenus(item)
       item.open = !item.open
       return
     }
 
+    this.closeSubmenus()
     emit(this, 'select', {
       item,
       value: item.value,
       label: item.label,
-      checked: item.checked,
     })
   }
 
@@ -395,16 +447,31 @@ export class TotMenu extends HTMLElement {
       next = items[0]
     } else if (event.key === 'End') {
       next = items[items.length - 1]
+    } else if (event.key === 'ArrowRight' && active?.hasSubmenu) {
+      this.closeSubmenus(active)
+      active.open = true
+      const submenu = active.getSubmenu()
+      if (submenu && typeof submenu.focusFirstItem === 'function') {
+        submenu.focusFirstItem()
+      }
+      event.preventDefault()
+      return
+    } else if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+      if (this.closeParentSubmenu()) {
+        event.preventDefault()
+        return
+      }
+
+      this.closeSubmenus()
+      const activeElement = this.getDeepActiveElement()
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur()
+      }
+      return
     } else if (event.key === 'Enter' || event.key === ' ') {
       if (active) {
         active.click()
         event.preventDefault()
-      }
-      return
-    } else if (event.key === 'Escape') {
-      const activeElement = this.getDeepActiveElement()
-      if (activeElement && activeElement.blur) {
-        activeElement.blur()
       }
       return
     } else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
@@ -417,36 +484,24 @@ export class TotMenu extends HTMLElement {
     }
   }
 
-  getMenuItems() {
-    const root = this.shadowRoot
-    if (!root) {
-      return []
-    }
-
-    const slot = root.querySelector('slot:not([name])')
-    const source = slot ? slot.assignedElements({ flatten: true }) : Array.from(root.querySelector('.menu').children)
-    const items = []
-
-    for (let i = 0; i < source.length; i++) {
-      if (source[i].localName === 'tot-menu-item') {
-        items.push(source[i])
+  closeSubmenus(except) {
+    const items = this.getMenuItems()
+    for (let i = 0; i < items.length; i++) {
+      if (items[i] !== except && items[i].open) {
+        items[i].open = false
       }
     }
-
-    return items
   }
 
-  getEnabledMenuItems() {
-    const items = this.getMenuItems()
-    const enabled = []
-
-    for (let i = 0; i < items.length; i++) {
-      if (!items[i].disabled && !items[i].loading) {
-        enabled.push(items[i])
-      }
+  closeParentSubmenu() {
+    const parentItem = this.parentElement
+    if (!parentItem || parentItem.localName !== 'tot-menu-item' || this.slot !== 'submenu') {
+      return false
     }
 
-    return enabled
+    parentItem.open = false
+    parentItem.focus()
+    return true
   }
 
   getActiveItem(items) {
@@ -465,20 +520,18 @@ export class TotMenu extends HTMLElement {
     }
 
     const index = items.indexOf(active)
-    const nextIndex = (index + step + items.length) % items.length
-    return items[nextIndex]
+    return items[(index + step + items.length) % items.length]
   }
 
   getTypeAheadItem(items, key) {
     window.clearTimeout(this._typeToSelectTimer)
-    this._typeToSelect += key.toLocaleLowerCase()
+    this._typeToSelect += normalizeSearchText(key)
     this._typeToSelectTimer = window.setTimeout(() => {
       this._typeToSelect = ''
     }, 700)
 
     for (let i = 0; i < items.length; i++) {
-      const label = items[i].label.toLocaleLowerCase()
-      if (label.startsWith(this._typeToSelect)) {
+      if (normalizeSearchText(items[i].label).startsWith(this._typeToSelect)) {
         return items[i]
       }
     }
@@ -488,39 +541,53 @@ export class TotMenu extends HTMLElement {
 
   getDeepActiveElement() {
     let active = document.activeElement
-    while (active && active.shadowRoot && active.shadowRoot.activeElement) {
+    while (active?.shadowRoot?.activeElement) {
       active = active.shadowRoot.activeElement
     }
     return active
-  }
-
-  hasDefaultSlotContent() {
-    for (let i = 0; i < this.childNodes.length; i++) {
-      const node = this.childNodes[i]
-      if (node.nodeType === Node.ELEMENT_NODE && !node.slot) {
-        return true
-      }
-
-      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-        return true
-      }
-    }
-    return false
   }
 }
 
 export class TotMenuItem extends HTMLElement {
   static get observedAttributes() {
-    return ['disabled', 'checked', 'loading', 'value', 'open']
+    return ['disabled', 'suffix', 'value', 'open']
   }
 
   constructor() {
     super()
     this._hasSubmenu = false
+    this._listeningForViewportChanges = false
     this._positionFrame = 0
     this._visualViewport = null
-    this._handleSubmenuOpen = () => this.scheduleSubmenuPosition()
+    this._handleSubmenuOpen = () => this.handleSubmenuOpen()
+    this._handleSubmenuLeave = () => this.handleSubmenuLeave()
     this._handleWindowChange = () => this.scheduleSubmenuPosition()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${menuItemStyle}</style>
+      <button class="item" part="base" type="button" role="menuitem">
+        <span class="item__label" part="label"><slot></slot></span>
+        <span class="item__suffix" part="suffix" hidden>
+          <slot name="suffix"><span class="item__suffix-fallback"></span></slot>
+        </span>
+        <span class="item__submenu-caret" part="submenu-caret" aria-hidden="true">
+          <svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="m6 4 4 4-4 4"></path>
+          </svg>
+        </span>
+      </button>
+      <span class="submenu" part="submenu"><slot name="submenu"></slot></span>
+    `
+
+    this._control = root.querySelector('.item')
+    this._suffixHolder = root.querySelector('.item__suffix')
+    this._suffixFallback = root.querySelector('.item__suffix-fallback')
+    this._suffixSlot = root.querySelector('slot[name="suffix"]')
+    this._submenuHolder = root.querySelector('.submenu')
+    this._submenuSlot = root.querySelector('slot[name="submenu"]')
+    this._control.addEventListener('click', (event) => this.handleControlClick(event))
+    this._suffixSlot.addEventListener('slotchange', () => this.syncSuffix())
+    this._submenuSlot.addEventListener('slotchange', () => this.syncSubmenu())
   }
 
   get disabled() {
@@ -531,20 +598,12 @@ export class TotMenuItem extends HTMLElement {
     setBooleanAttribute(this, 'disabled', value)
   }
 
-  get checked() {
-    return this.hasAttribute('checked')
+  get suffix() {
+    return this.getAttribute('suffix') || ''
   }
 
-  set checked(value) {
-    setBooleanAttribute(this, 'checked', value)
-  }
-
-  get loading() {
-    return this.hasAttribute('loading')
-  }
-
-  set loading(value) {
-    setBooleanAttribute(this, 'loading', value)
+  set suffix(value) {
+    setStringAttribute(this, 'suffix', value)
   }
 
   get open() {
@@ -585,9 +644,148 @@ export class TotMenuItem extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
     this.addEventListener('pointerenter', this._handleSubmenuOpen)
+    this.addEventListener('pointerleave', this._handleSubmenuLeave)
     this.addEventListener('focusin', this._handleSubmenuOpen)
+    this.addEventListener('focusout', this._handleSubmenuLeave)
+    this.syncSuffix()
+    this.syncSubmenu()
+    this.syncState()
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('pointerenter', this._handleSubmenuOpen)
+    this.removeEventListener('pointerleave', this._handleSubmenuLeave)
+    this.removeEventListener('focusin', this._handleSubmenuOpen)
+    this.removeEventListener('focusout', this._handleSubmenuLeave)
+    this.stopViewportListeners()
+    cancelAnimationFrame(this._positionFrame)
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
+    if (name === 'suffix') {
+      this.syncSuffix()
+    } else {
+      this.syncState()
+    }
+
+    if (name === 'open') {
+      if (this.open) {
+        this.handleSubmenuOpen()
+      } else {
+        this.handleSubmenuLeave()
+      }
+    }
+  }
+
+  click() {
+    this.getControl()?.click()
+  }
+
+  focus(options) {
+    this.getControl()?.focus(options)
+  }
+
+  blur() {
+    this.getControl()?.blur()
+  }
+
+  getControl() {
+    return this._control
+  }
+
+  getBase() {
+    return this.getControl()
+  }
+
+  getSubmenu() {
+    const assigned = this._submenuSlot.assignedElements({ flatten: true })
+    for (let i = 0; i < assigned.length; i++) {
+      if (assigned[i].localName === 'tot-menu') {
+        return assigned[i]
+      }
+    }
+    return null
+  }
+
+  handleControlClick(event) {
+    if (this.disabled) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+
+    if (event.detail > 0) {
+      requestAnimationFrame(() => this.getControl()?.blur())
+    }
+  }
+
+  syncState() {
+    const control = this.getControl()
+    if (!control) {
+      return
+    }
+
+    control.disabled = this.disabled
+    control.classList.toggle('item--has-submenu', this.hasSubmenu)
+    control.setAttribute('aria-disabled', this.disabled ? 'true' : 'false')
+
+    if (this.hasSubmenu) {
+      control.setAttribute('aria-haspopup', 'menu')
+      control.setAttribute('aria-expanded', this.open ? 'true' : 'false')
+    } else {
+      control.removeAttribute('aria-haspopup')
+      control.removeAttribute('aria-expanded')
+    }
+  }
+
+  syncSuffix() {
+    this._suffixFallback.textContent = this.suffix
+    this._suffixHolder.hidden = !this.suffix && !hasMeaningfulAssignedContent(this._suffixSlot)
+  }
+
+  syncSubmenu() {
+    this._hasSubmenu = Boolean(this.getSubmenu())
+    this.syncState()
+
+    if (!this._hasSubmenu) {
+      this.open = false
+      this.stopViewportListeners()
+      return
+    }
+
+    if (this.open || this.matches(':hover') || this.matches(':focus-within')) {
+      this.handleSubmenuOpen()
+    }
+  }
+
+  handleSubmenuOpen() {
+    if (!this.hasSubmenu) {
+      return
+    }
+
+    this.startViewportListeners()
+    this.scheduleSubmenuPosition()
+  }
+
+  handleSubmenuLeave() {
+    requestAnimationFrame(() => {
+      if (!this.open && !this.matches(':hover') && !this.matches(':focus-within')) {
+        this.stopViewportListeners()
+      }
+    })
+  }
+
+  startViewportListeners() {
+    if (this._listeningForViewportChanges || !this.isConnected) {
+      return
+    }
+
+    this._listeningForViewportChanges = true
     window.addEventListener('resize', this._handleWindowChange)
     document.addEventListener('scroll', this._handleWindowChange, true)
     this._visualViewport = window.visualViewport || null
@@ -597,9 +795,12 @@ export class TotMenuItem extends HTMLElement {
     }
   }
 
-  disconnectedCallback() {
-    this.removeEventListener('pointerenter', this._handleSubmenuOpen)
-    this.removeEventListener('focusin', this._handleSubmenuOpen)
+  stopViewportListeners() {
+    if (!this._listeningForViewportChanges) {
+      return
+    }
+
+    this._listeningForViewportChanges = false
     window.removeEventListener('resize', this._handleWindowChange)
     document.removeEventListener('scroll', this._handleWindowChange, true)
     if (this._visualViewport) {
@@ -607,120 +808,10 @@ export class TotMenuItem extends HTMLElement {
       this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
       this._visualViewport = null
     }
-    cancelAnimationFrame(this._positionFrame)
-  }
-
-  attributeChangedCallback() {
-    this.render()
-    this.scheduleSubmenuPosition()
-  }
-
-  click() {
-    const base = this.getBase()
-    if (base) {
-      base.click()
-    }
-  }
-
-  focus(options) {
-    const base = this.getBase()
-    if (base) {
-      base.focus(options)
-    }
-  }
-
-  blur() {
-    const base = this.getBase()
-    if (base) {
-      base.blur()
-    }
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const disabled = this.disabled
-    const checked = this.checked
-    const loading = this.loading
-    const hasSubmenu = this.hasSubmenuContent()
-    this._hasSubmenu = hasSubmenu
-
-    const classes = ['item']
-    if (disabled || loading) {
-      classes.push('item--disabled')
-    }
-    if (checked) {
-      classes.push('item--checked')
-    }
-    if (loading) {
-      classes.push('item--loading')
-    }
-    if (hasSubmenu) {
-      classes.push('item--has-submenu')
-    }
-
-    root.innerHTML = `<style>${menuItemStyle}</style>
-      <div
-        class="${escapeAttribute(classes.join(' '))}"
-        part="base"
-        role="${checked ? 'menuitemcheckbox' : 'menuitem'}"
-        tabindex="${disabled || loading ? '-1' : '0'}"
-        aria-disabled="${disabled || loading ? 'true' : 'false'}"
-        ${checked ? 'aria-checked="true"' : ''}
-      >
-        <span class="item__label"><slot></slot></span>
-        <span class="item__state" aria-hidden="true">
-          <span class="item__check">
-            <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-              <path d="m3.5 8.2 2.8 2.8 6.2-6.2"></path>
-            </svg>
-          </span>
-          <span class="item__loader">
-            <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" focusable="false">
-              <circle cx="8" cy="8" r="5.5" opacity=".25"></circle>
-              <path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5"></path>
-            </svg>
-          </span>
-        </span>
-        <span class="item__submenu-caret" aria-hidden="true">
-          <svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-            <path d="m6 4 4 4-4 4"></path>
-          </svg>
-        </span>
-      </div>
-      <span class="submenu"><slot name="submenu"></slot></span>
-    `
-
-    const base = root.querySelector('.item')
-    const submenuSlot = root.querySelector('slot[name="submenu"]')
-
-    base.addEventListener('click', (event) => {
-      if (disabled || loading) {
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
-
-      if (event.detail === 0) {
-        base.focus()
-      } else {
-        requestAnimationFrame(() => base.blur())
-      }
-    })
-
-    submenuSlot.addEventListener('slotchange', () => {
-      const nextHasSubmenu = this.hasSubmenuContent()
-      if (nextHasSubmenu !== this._hasSubmenu) {
-        this.render()
-        return
-      }
-      this.scheduleSubmenuPosition()
-    })
-
-    this.scheduleSubmenuPosition()
   }
 
   scheduleSubmenuPosition() {
-    if (!this.hasSubmenuContent()) {
+    if (!this.hasSubmenu || !this.isConnected) {
       return
     }
 
@@ -729,22 +820,18 @@ export class TotMenuItem extends HTMLElement {
   }
 
   updateSubmenuPosition() {
-    if (!this.hasSubmenuContent() || !this.shadowRoot) {
+    if (!this.hasSubmenu) {
       return
     }
 
-    const submenu = this.shadowRoot.querySelector('.submenu')
-    if (!submenu) {
-      return
-    }
-
+    const submenu = this._submenuHolder
+    const control = this._control
     const viewport = getViewportRect()
     const margin = 8
-    const baseRect = this.getBoundingClientRect()
+    const baseRect = control.getBoundingClientRect()
     const previousDisplay = submenu.style.display
     const previousVisibility = submenu.style.visibility
-    const submenuSlot = this.shadowRoot.querySelector('slot[name="submenu"]')
-    const submenuMenus = getSubmenuMenus(submenuSlot)
+    const submenuMenus = getSubmenuMenus(this._submenuSlot)
 
     for (let i = 0; i < submenuMenus.length; i++) {
       submenuMenus[i].style.setProperty('--tot-menu-max-height', 'none')
@@ -772,7 +859,6 @@ export class TotMenuItem extends HTMLElement {
 
     submenu.style.left = `${Math.round(left)}px`
     submenu.style.top = `${Math.round(top)}px`
-    submenu.style.maxWidth = `${Math.floor(Math.max(0, viewport.width - margin * 2))}px`
 
     for (let i = 0; i < submenuMenus.length; i++) {
       submenuMenus[i].style.setProperty('--tot-menu-max-height', `${Math.floor(maxHeight)}px`)
@@ -782,30 +868,32 @@ export class TotMenuItem extends HTMLElement {
     submenu.style.visibility = previousVisibility
     submenu.style.display = previousDisplay
   }
-
-  getBase() {
-    return this.shadowRoot?.querySelector('.item')
-  }
-
-  hasSubmenuContent() {
-    for (let i = 0; i < this.children.length; i++) {
-      if (this.children[i].slot === 'submenu') {
-        return true
-      }
-    }
-    return false
-  }
 }
 
 export class TotMenuLabel extends HTMLElement {
-  connectedCallback() {
-    this.render()
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+  constructor() {
+    super()
+    const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${menuLabelStyle}</style><div class="label" part="base"><slot></slot></div>`
   }
+
+  getBase() {
+    return this.shadowRoot?.querySelector('.label') || null
+  }
+}
+
+function hasMeaningfulAssignedContent(slot) {
+  const nodes = slot.assignedNodes({ flatten: true })
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].nodeType === Node.ELEMENT_NODE) {
+      return true
+    }
+
+    if (nodes[i].nodeType === Node.TEXT_NODE && nodes[i].textContent.trim()) {
+      return true
+    }
+  }
+  return false
 }
 
 function getSubmenuMenus(submenuSlot) {
@@ -853,13 +941,9 @@ function clamp(value, min, max) {
 }
 
 function parseItems(value) {
-  if (value === null || value === undefined || value === '') {
-    return []
-  }
-
   let source = value
-  if (typeof value === 'string') {
-    source = parseJson(value, [])
+  if (typeof source === 'string') {
+    source = parseJson(source, [])
   }
 
   if (!Array.isArray(source)) {
@@ -877,50 +961,48 @@ function parseItems(value) {
 }
 
 function normalizeItem(item) {
-  if (item === 'divider') {
-    return { type: 'divider' }
-  }
-
-  if (typeof item === 'string') {
-    return {
-      type: 'item',
-      value: item,
-      label: item,
-      disabled: false,
-      checked: false,
-      loading: false,
-      items: [],
-    }
-  }
-
   if (!item || typeof item !== 'object') {
     return null
   }
 
-  if (item.type === 'divider' || item.kind === 'divider' || item.divider) {
+  if (item.type === 'divider') {
     return { type: 'divider' }
   }
 
-  if (item.type === 'label' || item.kind === 'label') {
+  if (item.type === 'label' && typeof item.label === 'string') {
     return {
       type: 'label',
-      label: String(item.label ?? item.text ?? ''),
+      label: item.label,
     }
   }
 
-  const label = String(item.label ?? item.text ?? item.value ?? item.id ?? '')
-  const value = String(item.value ?? item.id ?? label)
-  const children = item.items ?? item.children ?? item.submenu ?? []
-
-  return {
-    type: 'item',
-    value,
-    label,
-    disabled: Boolean(item.disabled),
-    checked: Boolean(item.checked),
-    loading: Boolean(item.loading),
-    items: parseItems(children),
+  if (
+    item.type !== 'item' ||
+    typeof item.value !== 'string' ||
+    typeof item.label !== 'string'
+  ) {
+    return null
   }
+
+  const normalized = {
+    type: 'item',
+    value: item.value,
+    label: item.label,
+  }
+
+  if (item.disabled) {
+    normalized.disabled = true
+  }
+  if (typeof item.suffix === 'string' && item.suffix) {
+    normalized.suffix = item.suffix
+  }
+
+  const children = parseItems(item.items)
+  if (children.length > 0) {
+    normalized.items = children
+  }
+
+  return normalized
 }
 
 function cloneItems(items) {
@@ -953,7 +1035,7 @@ function emit(element, name, detail) {
   element.dispatchEvent(new CustomEvent(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
+    detail,
   }))
 }
 
@@ -965,6 +1047,14 @@ function setBooleanAttribute(element, name, value) {
   }
 }
 
+function setStringAttribute(element, name, value) {
+  if (value === null || value === undefined || value === '') {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
+}
+
 function parseJson(value, fallback) {
   try {
     return JSON.parse(value)
@@ -973,16 +1063,9 @@ function parseJson(value, fallback) {
   }
 }
 
-function escapeAttribute(value) {
-  return String(value).replace(/[&<>"'`]/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '`': '&#96;',
-    }
-    return replacements[match]
-  })
+function normalizeSearchText(value) {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
 }

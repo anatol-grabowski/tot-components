@@ -31,14 +31,14 @@ registerDemo({
       <div class="stack demo-group">
         <div class="demo-label">One-tap favorite</div>
         <div class="row">
-          <tot-rating class="rating-demo-favorite" label="Favorite" max="1" value="0" style="--symbol-color-active: var(--tot-color-danger-500, #ef4444);"></tot-rating>
+          <tot-rating class="rating-demo-favorite" label="Favorite" max="1" value="0" style="--tot-rating-symbol-color-active: var(--tot-color-danger-500, #ef4444);"></tot-rating>
           <span class="rating-demo-favorite-value">0</span>
         </div>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Custom symbols and hover</div>
         <div class="row">
-          <tot-rating class="rating-demo-hearts" label="Heart rating" value="4" style="--symbol-color-active: var(--tot-color-danger-500, #ef4444);"></tot-rating>
+          <tot-rating class="rating-demo-hearts" label="Heart rating" value="4" style="--tot-rating-symbol-color-active: var(--tot-color-danger-500, #ef4444);"></tot-rating>
           <span class="rating-demo-hover"></span>
         </div>
       </div>

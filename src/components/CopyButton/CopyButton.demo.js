@@ -23,7 +23,7 @@ registerDemo({
           <tot-copy-button from="copy-demo-phone"></tot-copy-button>
         </div>
         <div class="row">
-          <input id="copy-demo-input" class="demo-native-button" value="Input property value">
+          <tot-input id="copy-demo-input" value="Input property value"></tot-input>
           <tot-copy-button from="copy-demo-input.value"></tot-copy-button>
         </div>
         <div class="row">

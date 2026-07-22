@@ -15,7 +15,7 @@ const drawerStyle = `
   }
 
   .base {
-    --tot-drawer-resolved-size: var(--tot-drawer-current-size, var(--size, var(--tot-drawer-size, 25rem)));
+    --tot-drawer-resolved-size: var(--tot-drawer-current-size, var(--tot-drawer-size, 25rem));
     --tot-drawer-min-size-resolved: var(--tot-drawer-min-size, 12rem);
     --tot-drawer-max-size-resolved: var(--tot-drawer-max-size, 100%);
     inset: 0;
@@ -180,10 +180,13 @@ const drawerStyle = `
     color: var(--tot-input-icon-color-hover, #475569);
   }
 
-  .close-button:focus-visible,
-  .resize-handle:focus-visible {
+  .close-button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
+  }
+
+  .resize-handle:focus-visible {
+    outline: none;
   }
 
   .body {
@@ -238,11 +241,7 @@ const drawerStyle = `
     content: '';
     opacity: 0;
     position: absolute;
-    transition:
-      opacity var(--tot-transition-fast, 120ms),
-      transform var(--tot-transition-fast, 120ms),
-      width var(--tot-transition-fast, 120ms),
-      height var(--tot-transition-fast, 120ms);
+    transition: opacity var(--tot-transition-fast, 120ms);
   }
 
   .base--resizable .resize-handle:hover::before,
@@ -256,7 +255,7 @@ const drawerStyle = `
     bottom: 0;
     cursor: ew-resize;
     top: 0;
-    width: 18px;
+    width: 12px;
   }
 
   .base--start .resize-handle {
@@ -271,7 +270,7 @@ const drawerStyle = `
   .base--end .resize-handle::before {
     bottom: 0;
     top: 0;
-    width: 3px;
+    width: 2px;
   }
 
   .base--start .resize-handle::before {
@@ -284,19 +283,10 @@ const drawerStyle = `
     transform-origin: left center;
   }
 
-  .base--start .resize-handle:hover::before,
-  .base--start .resize-handle:focus-visible::before,
-  .base--start.base--resizing .resize-handle::before,
-  .base--end .resize-handle:hover::before,
-  .base--end .resize-handle:focus-visible::before,
-  .base--end.base--resizing .resize-handle::before {
-    transform: scaleX(6);
-  }
-
   .base--top .resize-handle,
   .base--bottom .resize-handle {
     cursor: ns-resize;
-    height: 18px;
+    height: 12px;
     left: 0;
     right: 0;
   }
@@ -311,7 +301,7 @@ const drawerStyle = `
 
   .base--top .resize-handle::before,
   .base--bottom .resize-handle::before {
-    height: 3px;
+    height: 2px;
     left: 0;
     right: 0;
   }
@@ -326,13 +316,16 @@ const drawerStyle = `
     transform-origin: center top;
   }
 
-  .base--top .resize-handle:hover::before,
-  .base--top .resize-handle:focus-visible::before,
-  .base--top.base--resizing .resize-handle::before,
-  .base--bottom .resize-handle:hover::before,
-  .base--bottom .resize-handle:focus-visible::before,
-  .base--bottom.base--resizing .resize-handle::before {
-    transform: scaleY(6);
+  @media (pointer: coarse) {
+    .base--start .resize-handle,
+    .base--end .resize-handle {
+      width: 28px;
+    }
+
+    .base--top .resize-handle,
+    .base--bottom .resize-handle {
+      height: 28px;
+    }
   }
 
   @keyframes tot-drawer-deny {
@@ -380,11 +373,52 @@ export class TotDrawer extends HTMLElement {
     this._sizePx = null
     this._activeResize = null
     this._touchStartY = 0
-    this._footerSlotChange = null
-    this._handleKeyDown = event => this.handleKeyDown(event)
-    this._handlePopState = event => this.handlePopState(event)
-    this._handlePointerMove = event => this.handleResizeMove(event)
-    this._handlePointerUp = event => this.handleResizeEnd(event)
+    this._focusFrame = 0
+    this._hideTimer = 0
+    this._handleKeyDown = event => this._onKeyDown(event)
+    this._handlePopState = event => this._onPopState(event)
+    this._handlePointerMove = event => this._onResizeMove(event)
+    this._handlePointerUp = () => this._stopResize()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${drawerStyle}</style>
+      <div class="base base--end" part="base" hidden>
+        <div class="overlay" part="overlay"></div>
+        <section class="panel" part="panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabindex="-1">
+          <header class="header" part="header">
+            <div class="title" id="drawer-title" part="title"><slot name="label"></slot></div>
+            <div class="header-actions" part="header-actions">
+              <slot name="header-actions"></slot>
+              <button class="close-button" part="close-button" type="button" aria-label="Close">×</button>
+            </div>
+          </header>
+          <div class="body" part="body"><slot></slot></div>
+          <footer class="footer" part="footer" hidden><slot name="footer"></slot></footer>
+          <button class="resize-handle" part="resize-handle" type="button" aria-label="Resize drawer" tabindex="0"></button>
+        </section>
+      </div>
+    `
+
+    this._baseElement = root.querySelector('.base')
+    this._overlayElement = root.querySelector('.overlay')
+    this._panelElement = root.querySelector('.panel')
+    this._headerElement = root.querySelector('.header')
+    this._titleElement = root.querySelector('.title')
+    this._labelSlot = root.querySelector('slot[name="label"]')
+    this._bodyElement = root.querySelector('.body')
+    this._footerElement = root.querySelector('.footer')
+    this._footerSlot = root.querySelector('slot[name="footer"]')
+    this._closeButton = root.querySelector('.close-button')
+    this._resizeHandle = root.querySelector('.resize-handle')
+
+    this._footerSlot.addEventListener('slotchange', () => this._syncFooter())
+    this._overlayElement.addEventListener('click', () => this._requestClose('overlay'))
+    this._baseElement.addEventListener('wheel', event => this._onOverlayWheel(event), { passive: false })
+    this._baseElement.addEventListener('touchstart', event => this._onOverlayTouchStart(event), { passive: true })
+    this._baseElement.addEventListener('touchmove', event => this._onOverlayTouchMove(event), { passive: false })
+    this._closeButton.addEventListener('click', () => this._requestClose('close'))
+    this._resizeHandle.addEventListener('pointerdown', event => this._onResizeStart(event))
+    this._resizeHandle.addEventListener('keydown', event => this._onResizeKeyDown(event))
   }
 
   get label() {
@@ -452,25 +486,36 @@ export class TotDrawer extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
-    this.syncOpenState()
+    this._syncAll()
+    this._syncOpenState()
   }
 
   disconnectedCallback() {
-    this.stopResizeListeners()
+    this._cancelScheduledWork()
+    this._stopResize()
     if (this._wasOpen) {
-      this.deactivateDrawer(true, true)
+      this._deactivateDrawer(true, true, false)
+      this._cancelScheduledWork()
+      this._baseElement.hidden = true
       this._wasOpen = false
     }
   }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
     if (name === 'placement') {
       this._sizePx = null
     }
 
-    this.render()
-    this.syncOpenState()
+    this._syncAll()
+    if (name === 'open') {
+      this._syncOpenState()
+    } else if (name === 'contained' && this._wasOpen && this.isConnected) {
+      this._syncContainmentMode(oldValue !== null)
+    }
   }
 
   show() {
@@ -481,175 +526,46 @@ export class TotDrawer extends HTMLElement {
     this.open = false
   }
 
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
-    const placement = this.placement
-    const baseClasses = [
-      'base',
-      `base--${placement}`,
-      open ? 'base--open' : '',
-      this.contained ? 'base--contained' : '',
-      this.resizable ? 'base--resizable' : '',
-    ].filter(Boolean).join(' ')
-    const labelledBy = this.noHeader ? '' : ' aria-labelledby="drawer-title"'
-    const ariaLabel = this.noHeader ? ` aria-label="${escapeAttribute(this.label || 'Drawer')}"` : ''
-    const currentSize = this._sizePx === null ? '' : ` --tot-drawer-current-size: ${Math.round(this._sizePx)}px;`
-
-    root.innerHTML = `<style>${drawerStyle}</style>
-      <div class="${baseClasses}" part="base" ${open ? '' : 'hidden'} style="--tot-drawer-min-size: ${escapeAttribute(this.minSize)}; --tot-drawer-max-size: ${escapeAttribute(this.maxSize)};${currentSize}">
-        <div class="overlay" part="overlay"></div>
-        <section class="panel" part="panel" role="dialog" aria-modal="${this.contained ? 'false' : 'true'}"${labelledBy}${ariaLabel} tabindex="-1">
-          <header class="header" part="header" ${this.noHeader ? 'hidden' : ''}>
-            <div class="title" id="drawer-title" part="title"><slot name="label">${escapeHtml(this.label)}</slot></div>
-            <div class="header-actions" part="header-actions">
-              <slot name="header-actions"></slot>
-              <button class="close-button" part="close-button" type="button" aria-label="Close">×</button>
-            </div>
-          </header>
-          <div class="body" part="body"><slot></slot></div>
-          <footer class="footer" part="footer"><slot name="footer"></slot></footer>
-          <button class="resize-handle" part="resize-handle" type="button" aria-label="Resize drawer" tabindex="0"></button>
-        </section>
-      </div>
-    `
-
-    const base = root.querySelector('.base')
-    const overlay = root.querySelector('.overlay')
-    const closeButton = root.querySelector('.close-button')
-    const footer = root.querySelector('.footer')
-    const footerSlot = root.querySelector('slot[name="footer"]')
-    const resizeHandle = root.querySelector('.resize-handle')
-    const syncFooter = () => {
-      footer.hidden = !hasAssignedSlotContent(footerSlot)
-    }
-
-    this._footerSlotChange = syncFooter
-    syncFooter()
-    footerSlot.addEventListener('slotchange', syncFooter)
-
-    overlay.addEventListener('click', () => this.requestClose('overlay'))
-    base.addEventListener('wheel', (event) => this.handleOverlayWheel(event), { passive: false })
-    base.addEventListener('touchstart', (event) => this.handleOverlayTouchStart(event), { passive: true })
-    base.addEventListener('touchmove', (event) => this.handleOverlayTouchMove(event), { passive: false })
-    closeButton.addEventListener('click', () => this.requestClose('close-button'))
-    resizeHandle.addEventListener('pointerdown', (event) => this.handleResizeStart(event))
-    resizeHandle.addEventListener('keydown', (event) => this.handleResizeKeyDown(event))
+  focus(options) {
+    this._panelElement.focus(options)
   }
 
-  syncOpenState() {
-    const open = this.open
-    if (open === this._wasOpen) {
-      return
-    }
-
-    if (open) {
-      this.activateDrawer()
-    } else {
-      this.deactivateDrawer(this._skipHistoryOnDeactivate, false)
-      this._skipHistoryOnDeactivate = false
-    }
-
-    this._wasOpen = open
+  getBase() {
+    return this._baseElement
   }
 
-  activateDrawer() {
-    this._previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
-
-    if (!this.contained) {
-      lockPageScroll()
-      document.addEventListener('keydown', this._handleKeyDown)
-      window.addEventListener('popstate', this._handlePopState)
-      this.pushHistoryState()
-    }
-
-    emitBoth(this, 'show', this.getEventDetail())
-
-    requestAnimationFrame(() => {
-      const focusEvent = new CustomEvent('sl-initial-focus', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        detail: {},
-      })
-      this.dispatchEvent(focusEvent)
-      emit(this, 'initial-focus', {})
-
-      if (focusEvent.defaultPrevented) {
-        return
-      }
-
-      const panel = this.shadowRoot?.querySelector('.panel')
-      const autofocus = this.querySelector('[autofocus]')
-      const focusTarget = autofocus instanceof HTMLElement ? autofocus : panel
-
-      if (focusTarget instanceof HTMLElement) {
-        focusTarget.focus()
-      }
-    })
-
-    window.setTimeout(() => {
-      if (this.open) {
-        emitBoth(this, 'after-show', this.getEventDetail())
-      }
-    }, getTransitionDuration(this.shadowRoot?.querySelector('.panel')))
+  getPanel() {
+    return this._panelElement
   }
 
-  deactivateDrawer(skipHistory, skipRestoreFocus) {
-    if (!this.contained) {
-      document.removeEventListener('keydown', this._handleKeyDown)
-      window.removeEventListener('popstate', this._handlePopState)
-      unlockPageScroll()
-
-      if (!skipHistory) {
-        this.removeHistoryState()
-      } else {
-        this._historyPushed = false
-        this._historyToken = ''
-      }
-    }
-
-    this.stopResizeListeners()
-    emitBoth(this, 'hide', this.getEventDetail())
-
-    if (!skipRestoreFocus) {
-      const previouslyFocused = this._previouslyFocused
-      if (previouslyFocused && document.contains(previouslyFocused)) {
-        previouslyFocused.focus()
-      }
-    }
-
-    this._previouslyFocused = null
-
-    window.setTimeout(() => {
-      if (!this.open) {
-        emitBoth(this, 'after-hide', this.getEventDetail())
-      }
-    }, getTransitionDuration(this.shadowRoot?.querySelector('.panel')))
+  getHeader() {
+    return this._headerElement
   }
 
-  requestClose(source) {
-    if (this.contained && source !== 'close-button') {
+  getBody() {
+    return this._bodyElement
+  }
+
+  getFooter() {
+    return this._footerElement
+  }
+
+  getCloseButton() {
+    return this._closeButton
+  }
+
+  getResizeHandle() {
+    return this._resizeHandle
+  }
+
+  _requestClose(reason) {
+    if (this.contained && reason !== 'close') {
       return false
     }
 
-    const event = new CustomEvent('sl-request-close', {
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      detail: { source },
-    })
-    this.dispatchEvent(event)
-    const localEvent = new CustomEvent('request-close', {
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      detail: { source },
-    })
-    this.dispatchEvent(localEvent)
-
-    if (event.defaultPrevented || localEvent.defaultPrevented) {
-      this.denyClose()
+    const event = emitCancelable(this, 'request-close', { reason })
+    if (event.defaultPrevented) {
+      this._denyClose()
       return false
     }
 
@@ -657,53 +573,182 @@ export class TotDrawer extends HTMLElement {
     return true
   }
 
-  denyClose() {
-    const panel = this.shadowRoot?.querySelector('.panel')
-    if (!panel) {
+  _syncAll() {
+    if (!this._baseElement) {
       return
     }
 
-    const offset = 8
-    const placement = this.placement
-    panel.classList.remove('panel--denied')
-    panel.style.setProperty('--tot-drawer-deny-offset-x', placement === 'start' ? `${offset}px` : placement === 'end' ? `-${offset}px` : '0')
-    panel.style.setProperty('--tot-drawer-deny-offset-y', placement === 'top' ? `${offset}px` : placement === 'bottom' ? `-${offset}px` : '0')
-    void panel.offsetWidth
-    panel.classList.add('panel--denied')
+    for (let i = 0; i < placements.length; i++) {
+      this._baseElement.classList.toggle(`base--${placements[i]}`, placements[i] === this.placement)
+    }
+    this._baseElement.classList.toggle('base--contained', this.contained)
+    this._baseElement.classList.toggle('base--resizable', this.resizable)
+    this._baseElement.style.setProperty('--tot-drawer-min-size', this.minSize)
+    this._baseElement.style.setProperty('--tot-drawer-max-size', this.maxSize)
+    if (this._sizePx === null) {
+      this._baseElement.style.removeProperty('--tot-drawer-current-size')
+    } else {
+      this._baseElement.style.setProperty('--tot-drawer-current-size', `${Math.round(this._sizePx)}px`)
+    }
+
+    this._headerElement.hidden = this.noHeader
+    this._labelSlot.textContent = this.label
+    this._panelElement.setAttribute('aria-modal', String(!this.contained))
+    if (this.noHeader) {
+      this._panelElement.removeAttribute('aria-labelledby')
+      this._panelElement.setAttribute('aria-label', this.label || 'Drawer')
+    } else {
+      this._panelElement.setAttribute('aria-labelledby', 'drawer-title')
+      this._panelElement.removeAttribute('aria-label')
+    }
+
+    const vertical = this.placement === 'top' || this.placement === 'bottom'
+    this._resizeHandle.setAttribute('aria-orientation', vertical ? 'horizontal' : 'vertical')
+    this._syncFooter()
   }
 
-  handleKeyDown(event) {
-    if (event.key !== 'Escape' || !this.open || this.contained) {
+  _syncFooter() {
+    this._footerElement.hidden = !hasAssignedSlotContent(this._footerSlot)
+  }
+
+  _syncOpenState() {
+    if (!this.isConnected || this.open === this._wasOpen) {
       return
     }
 
-    if (event.defaultPrevented || hasActiveFullscreenLayer()) {
+    if (this.open) {
+      this._activateDrawer()
+    } else {
+      this._deactivateDrawer(this._skipHistoryOnDeactivate, false, true)
+      this._skipHistoryOnDeactivate = false
+    }
+
+    this._wasOpen = this.open
+  }
+
+  _activateDrawer() {
+    this._cancelScheduledWork()
+    this._previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    this._baseElement.hidden = false
+    void this._baseElement.offsetWidth
+    this._baseElement.classList.add('base--open')
+
+    if (!this.contained) {
+      this._startModalBehavior()
+    }
+
+    emitEvent(this, 'show')
+    this._focusFrame = requestAnimationFrame(() => {
+      this._focusFrame = 0
+      if (!this.open || !this.isConnected || (!this.contained && !isTopDrawer(this))) {
+        return
+      }
+
+      const autofocus = this.querySelector('[autofocus]')
+      const target = autofocus instanceof HTMLElement ? autofocus : this._panelElement
+      target.focus()
+    })
+  }
+
+  _deactivateDrawer(skipHistory, skipRestoreFocus, emitEvents) {
+    this._cancelScheduledWork()
+    this._baseElement.classList.remove('base--open')
+
+    if (!this.contained) {
+      this._stopModalBehavior(skipHistory)
+    }
+
+    this._stopResize()
+    if (emitEvents) {
+      emitEvent(this, 'hide')
+    }
+
+    if (!skipRestoreFocus && this._previouslyFocused && document.contains(this._previouslyFocused)) {
+      this._previouslyFocused.focus()
+    }
+    this._previouslyFocused = null
+
+    const duration = getTransitionDuration(this._panelElement)
+    this._hideTimer = window.setTimeout(() => {
+      this._hideTimer = 0
+      if (!this.open) {
+        this._baseElement.hidden = true
+      }
+    }, duration)
+  }
+
+  _cancelScheduledWork() {
+    cancelAnimationFrame(this._focusFrame)
+    this._focusFrame = 0
+    window.clearTimeout(this._hideTimer)
+    this._hideTimer = 0
+  }
+
+  _syncContainmentMode(wasContained) {
+    if (wasContained === this.contained) {
+      return
+    }
+
+    if (this.contained) {
+      this._stopModalBehavior(false)
+    } else {
+      this._startModalBehavior()
+    }
+  }
+
+  _startModalBehavior() {
+    registerOpenDrawer(this)
+    beginPageScrollContainment()
+    document.addEventListener('keydown', this._handleKeyDown)
+    window.addEventListener('popstate', this._handlePopState)
+    this._pushHistoryState()
+  }
+
+  _stopModalBehavior(skipHistory) {
+    unregisterOpenDrawer(this)
+    document.removeEventListener('keydown', this._handleKeyDown)
+    window.removeEventListener('popstate', this._handlePopState)
+    endPageScrollContainment()
+
+    if (skipHistory) {
+      this._historyPushed = false
+      this._historyToken = ''
+    } else {
+      this._removeHistoryState()
+    }
+  }
+
+  _denyClose() {
+    const offset = 8
+    this._panelElement.classList.remove('panel--denied')
+    this._panelElement.style.setProperty('--tot-drawer-deny-offset-x', this.placement === 'start' ? `${offset}px` : this.placement === 'end' ? `-${offset}px` : '0')
+    this._panelElement.style.setProperty('--tot-drawer-deny-offset-y', this.placement === 'top' ? `${offset}px` : this.placement === 'bottom' ? `-${offset}px` : '0')
+    void this._panelElement.offsetWidth
+    this._panelElement.classList.add('panel--denied')
+  }
+
+  _onKeyDown(event) {
+    if (event.key !== 'Escape' || event.defaultPrevented || !this.open || this.contained || !isTopDrawer(this) || hasActiveFullscreenLayer()) {
       return
     }
 
     event.preventDefault()
-    this.requestClose('keyboard')
+    this._requestClose('escape')
   }
 
-  handleOverlayWheel(event) {
-    if (!this.open || this.contained) {
-      return
-    }
-
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.base'), event.deltaY)) {
+  _onOverlayWheel(event) {
+    if (this.open && !this.contained && !shouldAllowScroll(event, this._baseElement, event.deltaY)) {
       event.preventDefault()
     }
   }
 
-  handleOverlayTouchStart(event) {
-    if (!this.open || this.contained || event.touches.length !== 1) {
-      return
+  _onOverlayTouchStart(event) {
+    if (this.open && !this.contained && event.touches.length === 1) {
+      this._touchStartY = event.touches[0].clientY
     }
-
-    this._touchStartY = event.touches[0].clientY
   }
 
-  handleOverlayTouchMove(event) {
+  _onOverlayTouchMove(event) {
     if (!this.open || this.contained) {
       return
     }
@@ -716,220 +761,197 @@ export class TotDrawer extends HTMLElement {
     const currentY = event.touches[0].clientY
     const deltaY = this._touchStartY - currentY
     this._touchStartY = currentY
-
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.base'), deltaY)) {
+    if (!shouldAllowScroll(event, this._baseElement, deltaY)) {
       event.preventDefault()
     }
   }
 
-  handleResizeStart(event) {
+  _onResizeStart(event) {
     if (!this.resizable || !this.open) {
       return
     }
 
-    const panel = this.shadowRoot?.querySelector('.panel')
-    const base = this.shadowRoot?.querySelector('.base')
-    if (!panel || !base) {
-      return
-    }
-
-    const placement = this.placement
-    const rect = panel.getBoundingClientRect()
-    const isVertical = placement === 'top' || placement === 'bottom'
-    const axisSize = isVertical ? rect.height : rect.width
-
+    const rect = this._panelElement.getBoundingClientRect()
+    const vertical = this.placement === 'top' || this.placement === 'bottom'
     this._activeResize = {
-      placement,
+      placement: this.placement,
       startX: event.clientX,
       startY: event.clientY,
-      startSize: axisSize,
-      isVertical,
+      startSize: vertical ? rect.height : rect.width,
+      vertical,
     }
-    base.classList.add('base--resizing')
-    event.currentTarget.setPointerCapture(event.pointerId)
+    this._baseElement.classList.add('base--resizing')
+    event.currentTarget.setPointerCapture?.(event.pointerId)
     document.addEventListener('pointermove', this._handlePointerMove)
     document.addEventListener('pointerup', this._handlePointerUp)
     event.preventDefault()
   }
 
-  handleResizeMove(event) {
+  _onResizeMove(event) {
     if (!this._activeResize) {
       return
     }
 
-    const resize = this._activeResize
-    let delta = resize.isVertical ? event.clientY - resize.startY : event.clientX - resize.startX
-
-    if (resize.placement === 'end' || resize.placement === 'bottom') {
+    let delta = this._activeResize.vertical
+      ? event.clientY - this._activeResize.startY
+      : event.clientX - this._activeResize.startX
+    if (this._activeResize.placement === 'end' || this._activeResize.placement === 'bottom') {
       delta *= -1
     }
 
-    this.setDrawerSize(resize.startSize + delta)
+    this._setDrawerSize(this._activeResize.startSize + delta)
     event.preventDefault()
   }
 
-  handleResizeEnd() {
-    this.stopResizeListeners()
-  }
-
-  handleResizeKeyDown(event) {
+  _onResizeKeyDown(event) {
     if (!this.resizable) {
       return
     }
 
-    const placement = this.placement
-    const isVertical = placement === 'top' || placement === 'bottom'
-    const decreaseKeys = isVertical ? ['ArrowUp'] : ['ArrowLeft']
-    const increaseKeys = isVertical ? ['ArrowDown'] : ['ArrowRight']
+    const vertical = this.placement === 'top' || this.placement === 'bottom'
+    const rect = this._panelElement.getBoundingClientRect()
+    const currentSize = vertical ? rect.height : rect.width
     const step = event.shiftKey ? 48 : 16
-    const panel = this.shadowRoot?.querySelector('.panel')
-    if (!panel) {
-      return
-    }
-
-    const rect = panel.getBoundingClientRect()
-    const currentSize = isVertical ? rect.height : rect.width
     let direction = 0
 
-    if (contains(decreaseKeys, event.key)) {
+    if (event.key === (vertical ? 'ArrowUp' : 'ArrowLeft')) {
       direction = -1
-    } else if (contains(increaseKeys, event.key)) {
+    } else if (event.key === (vertical ? 'ArrowDown' : 'ArrowRight')) {
       direction = 1
     } else if (event.key === 'Home') {
-      this.setDrawerSize(resolveCssLength(this.minSize, this.getResizeLimitBase()) || 0)
+      this._setDrawerSize(resolveCssLength(this.minSize, this._getResizeLimitBase()) || 0)
       event.preventDefault()
       return
     } else if (event.key === 'End') {
-      this.setDrawerSize(resolveCssLength(this.maxSize, this.getResizeLimitBase()) || this.getResizeLimitBase())
+      this._setDrawerSize(resolveCssLength(this.maxSize, this._getResizeLimitBase()) || this._getResizeLimitBase())
       event.preventDefault()
       return
     } else {
       return
     }
 
-    if (placement === 'end' || placement === 'bottom') {
+    if (this.placement === 'end' || this.placement === 'bottom') {
       direction *= -1
     }
-
-    this.setDrawerSize(currentSize + direction * step)
+    this._setDrawerSize(currentSize + direction * step)
     event.preventDefault()
   }
 
-  setDrawerSize(value) {
-    const limitBase = this.getResizeLimitBase()
-    const minSize = resolveCssLength(this.minSize, limitBase) || 0
-    const maxSize = resolveCssLength(this.maxSize, limitBase) || limitBase
-    const maxAllowed = Math.max(minSize, Math.min(maxSize, limitBase))
-    const size = clamp(value, minSize, maxAllowed)
-    const base = this.shadowRoot?.querySelector('.base')
-
-    this._sizePx = size
-    if (base) {
-      base.style.setProperty('--tot-drawer-current-size', `${Math.round(size)}px`)
-    }
+  _setDrawerSize(value) {
+    const limit = this._getResizeLimitBase()
+    const min = resolveCssLength(this.minSize, limit) || 0
+    const max = resolveCssLength(this.maxSize, limit) || limit
+    this._sizePx = clamp(value, min, Math.max(min, Math.min(max, limit)))
+    this._baseElement.style.setProperty('--tot-drawer-current-size', `${Math.round(this._sizePx)}px`)
   }
 
-  getResizeLimitBase() {
-    const host = this.contained ? this.parentElement : null
-    const rect = host ? host.getBoundingClientRect() : null
-    const placement = this.placement
-    const isVertical = placement === 'top' || placement === 'bottom'
-
-    if (rect && rect.width && rect.height) {
-      return isVertical ? rect.height : rect.width
+  _getResizeLimitBase() {
+    const rect = this.contained ? this.parentElement?.getBoundingClientRect() : null
+    const vertical = this.placement === 'top' || this.placement === 'bottom'
+    if (rect?.width && rect.height) {
+      return vertical ? rect.height : rect.width
     }
-
-    return isVertical ? window.innerHeight : window.innerWidth
+    return vertical ? window.innerHeight : window.innerWidth
   }
 
-  stopResizeListeners() {
-    const base = this.shadowRoot?.querySelector('.base')
-    if (base) {
-      base.classList.remove('base--resizing')
-    }
-
+  _stopResize() {
+    this._baseElement.classList.remove('base--resizing')
     document.removeEventListener('pointermove', this._handlePointerMove)
     document.removeEventListener('pointerup', this._handlePointerUp)
     this._activeResize = null
   }
 
-  handlePopState(event) {
+  _onPopState(event) {
     if (this._ignoreNextPopState) {
       this._ignoreNextPopState = false
       return
     }
 
-    if (!this.open || !this._historyPushed) {
+    if (!this.open || !this._historyPushed || !isTopDrawer(this)) {
       return
     }
 
-    const state = event && event.state
-    if (state && state.totDrawerToken === this._historyToken) {
+    if (event.state?.totDrawerToken === this._historyToken) {
       return
     }
 
     this._skipHistoryOnDeactivate = true
-    this.open = false
+    if (!this._requestClose('back')) {
+      this._skipHistoryOnDeactivate = false
+      this._historyPushed = false
+      this._historyToken = ''
+      this._pushHistoryState()
+    }
   }
 
-  pushHistoryState() {
+  _pushHistoryState() {
     if (this._historyPushed || typeof history === 'undefined') {
       return
     }
 
     this._historyToken = `tot-drawer-${Date.now()}-${Math.random().toString(36).slice(2)}`
-
     try {
-      const currentState = history.state && typeof history.state === 'object' ? history.state : {}
-      history.pushState({ ...currentState, totDrawerToken: this._historyToken }, '')
+      const state = history.state && typeof history.state === 'object' ? history.state : {}
+      history.pushState({ ...state, totDrawerToken: this._historyToken }, '')
       this._historyPushed = true
-    } catch (error) {
+    } catch {
       this._historyPushed = false
+      this._historyToken = ''
     }
   }
 
-  removeHistoryState() {
+  _removeHistoryState() {
     if (!this._historyPushed || typeof history === 'undefined') {
       this._historyPushed = false
       this._historyToken = ''
       return
     }
 
-    const state = history.state
-    const isCurrentDrawerState = state && state.totDrawerToken === this._historyToken
+    const isCurrent = history.state?.totDrawerToken === this._historyToken
     this._historyPushed = false
     this._historyToken = ''
-
-    if (!isCurrentDrawerState) {
-      return
-    }
-
-    this._ignoreNextPopState = false
-    history.back()
-  }
-
-  getEventDetail() {
-    return {
-      open: this.open,
-      label: this.label,
-      placement: this.placement,
-      contained: this.contained,
-      resizable: this.resizable,
+    if (isCurrent) {
+      this._ignoreNextPopState = true
+      history.back()
     }
   }
 }
 
-function emitBoth(element, name, detail) {
-  emit(element, name, detail)
-  emit(element, `sl-${name}`, detail)
+const openDrawers = []
+
+function registerOpenDrawer(drawer) {
+  if (!contains(openDrawers, drawer)) {
+    openDrawers.push(drawer)
+  }
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function unregisterOpenDrawer(drawer) {
+  const index = openDrawers.indexOf(drawer)
+  if (index !== -1) {
+    openDrawers.splice(index, 1)
+  }
+}
+
+function isTopDrawer(drawer) {
+  return openDrawers[openDrawers.length - 1] === drawer
+}
+
+function emitEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
+}
+
+function emitCancelable(element, name, detail) {
+  const event = new CustomEvent(name, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    detail: detail || {},
+  })
+  element.dispatchEvent(event)
+  return event
 }
 
 function setBooleanAttribute(element, name, value) {
@@ -949,13 +971,8 @@ function setNullableAttribute(element, name, value) {
 }
 
 function getSupportedValue(value, supportedValues, fallback) {
-  const normalizedValue = value || fallback
-  for (let i = 0; i < supportedValues.length; i++) {
-    if (supportedValues[i] === normalizedValue) {
-      return normalizedValue
-    }
-  }
-  return fallback
+  const normalized = value || fallback
+  return contains(supportedValues, normalized) ? normalized : fallback
 }
 
 function contains(items, value) {
@@ -973,64 +990,34 @@ function clamp(value, min, max) {
 
 function resolveCssLength(value, reference) {
   const raw = String(value || '').trim()
-  if (!raw) {
-    return null
-  }
-
   const parsed = Number.parseFloat(raw)
-  if (!Number.isFinite(parsed)) {
+  if (!raw || !Number.isFinite(parsed)) {
     return null
   }
 
-  if (raw.endsWith('px')) {
+  if (raw.endsWith('px') || /^-?\d+(\.\d+)?$/.test(raw)) {
     return parsed
   }
-
   if (raw.endsWith('%')) {
     return reference * parsed / 100
   }
-
-  if (raw.endsWith('vw')) {
+  if (raw.endsWith('vw') || raw.endsWith('dvw')) {
     return window.innerWidth * parsed / 100
   }
-
-  if (raw.endsWith('vh')) {
+  if (raw.endsWith('vh') || raw.endsWith('dvh')) {
     return window.innerHeight * parsed / 100
   }
-
-  if (raw.endsWith('dvw')) {
-    return window.innerWidth * parsed / 100
-  }
-
-  if (raw.endsWith('dvh')) {
-    return window.innerHeight * parsed / 100
-  }
-
   if (raw.endsWith('rem')) {
-    return parsed * getRootFontSize()
+    return parsed * getFontSize(document.documentElement)
   }
-
   if (raw.endsWith('em')) {
-    return parsed * getElementFontSize(document.body)
+    return parsed * getFontSize(document.body)
   }
-
-  if (/^-?\d+(\.\d+)?$/.test(raw)) {
-    return parsed
-  }
-
   return null
 }
 
-function getRootFontSize() {
-  return getElementFontSize(document.documentElement) || 16
-}
-
-function getElementFontSize(element) {
-  if (!element) {
-    return 16
-  }
-
-  const value = Number.parseFloat(getComputedStyle(element).fontSize)
+function getFontSize(element) {
+  const value = Number.parseFloat(element ? getComputedStyle(element).fontSize : '')
   return Number.isFinite(value) ? value : 16
 }
 
@@ -1039,13 +1026,12 @@ function getTransitionDuration(element) {
     return 0
   }
 
-  const style = getComputedStyle(element)
-  const durations = style.transitionDuration.split(',')
-  let maxDuration = 0
+  const durations = getComputedStyle(element).transitionDuration.split(',')
+  let max = 0
   for (let i = 0; i < durations.length; i++) {
-    maxDuration = Math.max(maxDuration, parseTime(durations[i]))
+    max = Math.max(max, parseTime(durations[i]))
   }
-  return maxDuration
+  return max
 }
 
 function parseTime(value) {
@@ -1053,39 +1039,40 @@ function parseTime(value) {
   if (trimmed.endsWith('ms')) {
     return Number.parseFloat(trimmed) || 0
   }
-
   if (trimmed.endsWith('s')) {
     return (Number.parseFloat(trimmed) || 0) * 1000
   }
-
   return 0
 }
 
 function hasActiveFullscreenLayer() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return false
-  }
-
-  return (window.__totFullscreenOpenCount || 0) > 0 || document.documentElement.hasAttribute('data-tot-fullscreen-open')
+  return typeof window !== 'undefined' && typeof document !== 'undefined'
+    && ((window.__totFullscreenOpenCount || 0) > 0 || document.documentElement.hasAttribute('data-tot-fullscreen-open'))
 }
 
-function lockPageScroll() {
-  const state = getScrollLockState()
+function beginPageScrollContainment() {
+  const state = getSharedScrollLockState()
+
+  // Keep this aligned with Modal.js. Do not lock scrolling by fixing and
+  // negatively offsetting <body>: Firefox can stop painting the page beneath a
+  // fixed Shadow DOM overlay, making a translucent overlay appear opaque.
   state.count += 1
 }
 
-function unlockPageScroll() {
-  const state = getScrollLockState()
+function endPageScrollContainment() {
+  const state = getSharedScrollLockState()
   state.count = Math.max(0, state.count - 1)
 }
 
-function getScrollLockState() {
-  if (!window.__totScrollLockState) {
-    window.__totScrollLockState = {
-      count: 0,
-    }
+function getSharedScrollLockState() {
+  const state = window.__totScrollLockState && typeof window.__totScrollLockState === 'object'
+    ? window.__totScrollLockState
+    : {}
+  if (!Number.isFinite(state.count)) {
+    state.count = 0
   }
-  return window.__totScrollLockState
+  window.__totScrollLockState = state
+  return state
 }
 
 function shouldAllowScroll(event, boundary, deltaY) {
@@ -1099,56 +1086,30 @@ function shouldAllowScroll(event, boundary, deltaY) {
     if (node === boundary) {
       break
     }
-
     if (!(node instanceof HTMLElement)) {
       continue
     }
 
     const style = getComputedStyle(node)
-    const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight
-    if (!canScrollY) {
+    if (!/(auto|scroll)/.test(style.overflowY) || node.scrollHeight <= node.clientHeight) {
       continue
     }
-
     if (deltaY < 0 && node.scrollTop > 0) {
       return true
     }
-
     if (deltaY > 0 && Math.ceil(node.scrollTop + node.clientHeight) < node.scrollHeight) {
       return true
     }
   }
-
   return false
 }
 
 function hasAssignedSlotContent(slot) {
   const nodes = slot.assignedNodes({ flatten: true })
   for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].nodeType === Node.ELEMENT_NODE) {
-      return true
-    }
-
-    if (nodes[i].nodeType === Node.TEXT_NODE && nodes[i].textContent.trim() !== '') {
+    if (nodes[i].nodeType === Node.ELEMENT_NODE || (nodes[i].nodeType === Node.TEXT_NODE && nodes[i].textContent.trim())) {
       return true
     }
   }
   return false
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      '\'': '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

@@ -1,6 +1,6 @@
 const toastStyle = `
   :host {
-    bottom: calc(max(var(--tot-spacing-medium, 1rem), env(safe-area-inset-bottom)) + var(--tot-toast-stack-offset, 0px));
+    bottom: max(var(--tot-spacing-medium, 1rem), env(safe-area-inset-bottom));
     display: block;
     left: 50%;
     max-width: calc(100vw - 2 * var(--tot-spacing-small, .75rem));
@@ -11,12 +11,20 @@ const toastStyle = `
     z-index: var(--tot-z-index-toast, 1400);
   }
 
-  :host(:not([open])) {
-    display: none;
-  }
-
   *, *::before, *::after {
     box-sizing: border-box;
+  }
+
+  .base {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tot-spacing-x-small, .5rem);
+    max-width: 100%;
+  }
+
+  .base:empty {
+    display: none;
   }
 
   .toast {
@@ -45,217 +53,144 @@ const toastStyle = `
 `
 
 export class TotToast extends HTMLElement {
-  static get observedAttributes() {
-    return ['open', 'message', 'content', 'duration']
-  }
-
   constructor() {
     super()
-    this._hideTimer = 0
-    this._hideTimerStartedAt = 0
-    this._remainingDuration = 0
-    this._isTimerPaused = false
-    this._isPointerInside = false
-    this._activePointerId = null
-    this._toastElement = null
-  }
+    this._entries = new Set()
 
-  static show(options) {
-    const toast = document.createElement('tot-toast')
-    const config = normalizeShowOptions(options)
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${toastStyle}</style>
+      <div class="base" part="base" role="status" aria-live="polite" aria-atomic="false"></div>
+    `
 
-    toast.message = config.message
-    toast.duration = config.duration
-    toast.addEventListener('hide', () => {
-      window.setTimeout(() => toast.remove(), 0)
-    }, { once: true })
-
-    document.body.append(toast)
-    toast.show()
-    return toast
-  }
-
-  get open() {
-    return this.hasAttribute('open')
-  }
-
-  set open(value) {
-    setBooleanAttribute(this, 'open', value)
-  }
-
-  get message() {
-    return this.getAttribute('message') || this.getAttribute('content') || this.textContent.trim()
-  }
-
-  set message(value) {
-    setNullableAttribute(this, 'message', value)
-  }
-
-  get duration() {
-    const value = Number.parseInt(this.getAttribute('duration') || '', 10)
-    return Number.isFinite(value) ? value : 4000
-  }
-
-  set duration(value) {
-    setNullableAttribute(this, 'duration', value)
-  }
-
-  connectedCallback() {
-    this.render()
-    this.syncTimer()
-    scheduleToastStackUpdate()
+    this._baseElement = root.querySelector('.base')
   }
 
   disconnectedCallback() {
-    clearTimeout(this._hideTimer)
-    this._activePointerId = null
-    scheduleToastStackUpdate()
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (name === 'open' && newValue === null) {
-      this._isPointerInside = false
-      this._activePointerId = null
-    }
-
-    this.render()
-    this.syncTimer()
-    scheduleToastStackUpdate()
-
-    if (name === 'open' && oldValue !== newValue) {
-      emit(this, newValue === null ? 'hide' : 'show', this.getEventDetail())
+    const entries = Array.from(this._entries)
+    for (let i = 0; i < entries.length; i++) {
+      this.removeEntry(entries[i])
     }
   }
 
-  show() {
-    this.open = true
-  }
-
-  hide() {
-    this.open = false
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-
-    root.innerHTML = `<style>${toastStyle}</style>
-      <div class="toast" part="base" role="status" aria-live="polite">${escapeHtml(this.message)}</div>
-    `
-
-    this._toastElement = root.querySelector('.toast')
-    this._toastElement.addEventListener('pointerenter', (event) => this.handlePointerEnter(event))
-    this._toastElement.addEventListener('pointerleave', (event) => this.handlePointerLeave(event))
-    this._toastElement.addEventListener('pointerdown', (event) => this.handlePointerDown(event))
-    this._toastElement.addEventListener('pointerup', (event) => this.handlePointerEnd(event))
-    this._toastElement.addEventListener('pointercancel', (event) => this.handlePointerEnd(event))
-  }
-
-  syncTimer() {
-    clearTimeout(this._hideTimer)
-    this._hideTimerStartedAt = 0
-    this._remainingDuration = this.duration
-    this._isTimerPaused = false
-
-    if (!this.open || this.duration <= 0) {
+  show(message, duration = 4000) {
+    const text = String(message ?? '').trim()
+    if (!text) {
       return
     }
 
-    if (this._isPointerInside || this._activePointerId !== null) {
-      this._isTimerPaused = true
+    const entry = {
+      element: document.createElement('div'),
+      duration: normalizeDuration(duration),
+      remaining: 0,
+      startedAt: 0,
+      timer: 0,
+      pointerInside: false,
+      pointerId: null,
+    }
+
+    entry.remaining = entry.duration
+    entry.element.className = 'toast'
+    entry.element.setAttribute('part', 'toast')
+    entry.element.textContent = text
+    entry.element.addEventListener('pointerenter', () => this.handlePointerEnter(entry))
+    entry.element.addEventListener('pointerleave', () => this.handlePointerLeave(entry))
+    entry.element.addEventListener('pointerdown', event => this.handlePointerDown(entry, event))
+    entry.element.addEventListener('pointerup', event => this.handlePointerEnd(entry, event))
+    entry.element.addEventListener('pointercancel', event => this.handlePointerEnd(entry, event))
+
+    this._entries.add(entry)
+    this._baseElement.append(entry.element)
+    this.startTimer(entry)
+  }
+
+  getBase() {
+    return this._baseElement
+  }
+
+  startTimer(entry) {
+    clearTimeout(entry.timer)
+    entry.startedAt = Date.now()
+    entry.timer = window.setTimeout(() => {
+      this.removeEntry(entry)
+    }, entry.remaining)
+  }
+
+  pauseTimer(entry) {
+    if (!this._entries.has(entry) || !entry.timer) {
       return
     }
 
-    this.startHideTimer(this._remainingDuration)
+    clearTimeout(entry.timer)
+    entry.timer = 0
+    entry.remaining = Math.max(0, entry.remaining - (Date.now() - entry.startedAt))
   }
 
-  startHideTimer(duration) {
-    clearTimeout(this._hideTimer)
-    this._remainingDuration = duration
-    this._hideTimerStartedAt = Date.now()
-
-    this._hideTimer = window.setTimeout(() => {
-      this.hide()
-    }, duration)
-  }
-
-  pauseTimer() {
-    if (!this.open || this.duration <= 0 || this._isTimerPaused) {
+  resumeTimer(entry) {
+    if (!this._entries.has(entry) || entry.timer) {
       return
     }
 
-    clearTimeout(this._hideTimer)
-    this._isTimerPaused = true
-
-    if (this._hideTimerStartedAt > 0) {
-      const elapsed = Date.now() - this._hideTimerStartedAt
-      this._remainingDuration = Math.max(0, this._remainingDuration - elapsed)
-    }
-  }
-
-  resumeTimer() {
-    if (!this.open || this.duration <= 0 || !this._isTimerPaused) {
+    if (entry.remaining <= 0) {
+      this.removeEntry(entry)
       return
     }
 
-    this._isTimerPaused = false
+    this.startTimer(entry)
+  }
 
-    if (this._remainingDuration <= 0) {
-      this.hide()
+  removeEntry(entry) {
+    if (!this._entries.delete(entry)) {
       return
     }
 
-    this.startHideTimer(this._remainingDuration)
+    clearTimeout(entry.timer)
+    entry.timer = 0
+    entry.element.remove()
   }
 
-  handlePointerEnter() {
-    this._isPointerInside = true
-    this.pauseTimer()
+  handlePointerEnter(entry) {
+    entry.pointerInside = true
+    this.pauseTimer(entry)
   }
 
-  handlePointerLeave() {
-    this._isPointerInside = false
-
-    if (this._activePointerId === null) {
-      this.resumeTimer()
+  handlePointerLeave(entry) {
+    entry.pointerInside = false
+    if (entry.pointerId === null) {
+      this.resumeTimer(entry)
     }
   }
 
-  handlePointerDown(event) {
-    this._activePointerId = event.pointerId
-    this._isPointerInside = true
-    capturePointer(this._toastElement, event.pointerId)
-    this.pauseTimer()
+  handlePointerDown(entry, event) {
+    entry.pointerInside = true
+    entry.pointerId = event.pointerId
+    capturePointer(entry.element, event.pointerId)
+    this.pauseTimer(entry)
   }
 
-  handlePointerEnd(event) {
-    if (this._activePointerId !== event.pointerId) {
+  handlePointerEnd(entry, event) {
+    if (entry.pointerId !== event.pointerId) {
       return
     }
 
-    this._activePointerId = null
-    releasePointer(this._toastElement, event.pointerId)
-
+    entry.pointerId = null
+    releasePointer(entry.element, event.pointerId)
     if (event.pointerType === 'touch') {
-      this._isPointerInside = false
+      entry.pointerInside = false
     }
 
-    if (!this._isPointerInside) {
-      this.resumeTimer()
-    }
-  }
-
-  getEventDetail() {
-    return {
-      open: this.open,
-      message: this.message,
-      duration: this.duration,
+    if (!entry.pointerInside) {
+      this.resumeTimer(entry)
     }
   }
 }
 
+function normalizeDuration(value) {
+  const duration = Number(value)
+  return Number.isFinite(duration) && duration > 0 ? duration : 4000
+}
 
 function capturePointer(element, pointerId) {
-  if (!element || !element.setPointerCapture) {
+  if (!element.setPointerCapture) {
     return
   }
 
@@ -266,7 +201,7 @@ function capturePointer(element, pointerId) {
 }
 
 function releasePointer(element, pointerId) {
-  if (!element || !element.releasePointerCapture) {
+  if (!element.releasePointerCapture) {
     return
   }
 
@@ -274,74 +209,4 @@ function releasePointer(element, pointerId) {
     element.releasePointerCapture(pointerId)
   } catch {
   }
-}
-
-function scheduleToastStackUpdate() {
-  cancelAnimationFrame(window.__totToastStackFrame || 0)
-  window.__totToastStackFrame = requestAnimationFrame(() => updateToastStack())
-}
-
-function updateToastStack() {
-  const toasts = document.querySelectorAll('tot-toast[open]')
-  const gap = 8
-  let offset = 0
-
-  for (let i = 0; i < toasts.length; i++) {
-    const toast = toasts[i]
-    toast.style.setProperty('--tot-toast-stack-offset', `${offset}px`)
-    const rect = toast.getBoundingClientRect()
-    offset += rect.height + gap
-  }
-}
-
-function normalizeShowOptions(options) {
-  if (typeof options === 'string') {
-    return {
-      message: options,
-      duration: 4000,
-    }
-  }
-
-  const config = options && typeof options === 'object' ? options : {}
-  return {
-    message: String(config.message ?? config.content ?? ''),
-    duration: Number.isFinite(Number(config.duration)) ? Number(config.duration) : 4000,
-  }
-}
-
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
-    detail: detail || {},
-  }))
-}
-
-function setBooleanAttribute(element, name, value) {
-  if (value === true || value === '' || value === name) {
-    element.setAttribute(name, '')
-  } else {
-    element.removeAttribute(name)
-  }
-}
-
-function setNullableAttribute(element, name, value) {
-  if (value === null || value === undefined) {
-    element.removeAttribute(name)
-  } else {
-    element.setAttribute(name, String(value))
-  }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
 }

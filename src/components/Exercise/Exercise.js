@@ -29,9 +29,18 @@ const exerciseStyle = `
     min-width: 0;
   }
 
-  .exercise__footer tot-button {
+  .exercise__footer tot-button,
+  .exercise__fullscreen-footer tot-button {
     flex: 0 0 auto;
     min-width: 5.5rem;
+  }
+
+  .exercise__fullscreen-footer {
+    align-items: center;
+    display: flex;
+    gap: var(--tot-spacing-2x-small, .25rem);
+    justify-content: flex-end;
+    min-width: 0;
   }
 
   .exercise-slot {
@@ -384,7 +393,6 @@ export class TotExercise extends HTMLElement {
   static get observedAttributes() {
     return [
       'value',
-      'markdown',
       'streaming',
       'label',
       'help-text',
@@ -395,14 +403,12 @@ export class TotExercise extends HTMLElement {
     super()
     exerciseId += 1
     this._value = null
-    this._slotMarkdown = ''
     this._slotPrefix = `exercise-${exerciseId}`
     this._answersShown = new Map()
     this._inputResponses = new Map()
     this._choiceResponses = new Map()
     this._matchResponses = new Map()
     this._selectedMatchId = ''
-    this._mutationObserver = null
     this._elements = null
     this._exerciseSource = undefined
     this._exerciseResult = null
@@ -420,11 +426,7 @@ export class TotExercise extends HTMLElement {
       return this.getAttribute('value') || ''
     }
 
-    if (this.hasAttribute('markdown')) {
-      return this.getAttribute('markdown') || ''
-    }
-
-    return this._slotMarkdown
+    return ''
   }
 
   set value(value) {
@@ -435,12 +437,88 @@ export class TotExercise extends HTMLElement {
     }
   }
 
-  get markdown() {
-    return this.value
+  get responses() {
+    const result = this.getExerciseResult()
+    const responses = []
+    for (let i = 0; i < result.placeholders.length; i++) {
+      const placeholder = result.placeholders[i]
+      responses.push({
+        responseId: placeholder.responseId,
+        task: placeholder.task,
+        problem: placeholder.problem,
+        type: placeholder.type,
+        side: placeholder.side,
+        value: this.getResponseValue(placeholder, result),
+        correct: this.isPlaceholderCorrect(placeholder, result),
+      })
+    }
+    return responses
   }
 
-  set markdown(value) {
-    this.value = value
+  set responses(value) {
+    const responses = Array.isArray(value) ? value : []
+    const result = this.getExerciseResult()
+    const byResponseId = new Map()
+    for (let i = 0; i < result.placeholders.length; i++) {
+      byResponseId.set(result.placeholders[i].responseId, result.placeholders[i])
+    }
+
+    const provided = new Map()
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i]
+      if (!response || typeof response !== 'object') {
+        continue
+      }
+
+      const responseId = typeof response.responseId === 'string'
+        ? response.responseId
+        : createResponseId(response)
+      if (byResponseId.has(responseId)) {
+        provided.set(responseId, response)
+      }
+    }
+
+    this._inputResponses.clear()
+    this._choiceResponses.clear()
+    this._matchResponses.clear()
+    this._selectedMatchId = ''
+
+    for (let i = 0; i < result.placeholders.length; i++) {
+      const placeholder = result.placeholders[i]
+      const response = provided.get(placeholder.responseId)
+      if (!response || typeof response.value !== 'string' || response.value === '') {
+        continue
+      }
+
+      if (placeholder.type === 'input') {
+        this._inputResponses.set(placeholder.id, response.value)
+      } else if (placeholder.type === 'choice') {
+        this._choiceResponses.set(placeholder.id, response.value)
+      }
+    }
+
+    for (let i = 0; i < result.placeholders.length; i++) {
+      const placeholder = result.placeholders[i]
+      if (placeholder.type !== 'match' || this._matchResponses.has(placeholder.id)) {
+        continue
+      }
+
+      const response = provided.get(placeholder.responseId)
+      const paired = response && typeof response.value === 'string'
+        ? byResponseId.get(response.value)
+        : null
+      if (!paired || paired.type !== 'match' || paired.task !== placeholder.task || paired.side === placeholder.side) {
+        continue
+      }
+      if (this._matchResponses.has(paired.id)) {
+        continue
+      }
+
+      this._matchResponses.set(placeholder.id, paired.id)
+      this._matchResponses.set(paired.id, placeholder.id)
+    }
+
+    this.renderControls()
   }
 
   get label() {
@@ -468,20 +546,11 @@ export class TotExercise extends HTMLElement {
   }
 
   connectedCallback() {
-    this.captureSlotMarkdown()
-    this.observeLightDom()
     this.render()
   }
 
-  disconnectedCallback() {
-    if (this._mutationObserver) {
-      this._mutationObserver.disconnect()
-      this._mutationObserver = null
-    }
-  }
-
   attributeChangedCallback(name) {
-    if (name === 'value' || name === 'markdown') {
+    if (name === 'value') {
       this._value = null
       this.render()
       return
@@ -495,6 +564,15 @@ export class TotExercise extends HTMLElement {
     this.updateMarkdownProperties()
   }
 
+  validate() {
+    const placeholders = this.getExerciseResult().placeholders
+    for (let i = 0; i < placeholders.length; i++) {
+      this._answersShown.set(placeholders[i].id, true)
+    }
+    this.renderControls()
+    emit(this, 'validate')
+  }
+
   reset() {
     this._answersShown.clear()
     this._inputResponses.clear()
@@ -502,8 +580,8 @@ export class TotExercise extends HTMLElement {
     this._matchResponses.clear()
     this._selectedMatchId = ''
     this.renderControls()
-    emit(this, 'reset', this.getEventDetail())
-    emit(this, 'change', this.getEventDetail())
+    emit(this, 'reset')
+    emit(this, 'change')
   }
 
   render() {
@@ -546,15 +624,42 @@ export class TotExercise extends HTMLElement {
     markdown.value = result.markdown
     exercise.insertBefore(markdown, footer)
 
+    const fullscreenFooter = document.createElement('div')
+    const fullscreenRevealButton = document.createElement('tot-button')
+    const fullscreenResetButton = document.createElement('tot-button')
+    fullscreenFooter.className = 'exercise__fullscreen-footer'
+    fullscreenFooter.slot = 'fullscreen-footer'
+    fullscreenFooter.setAttribute('part', 'fullscreen-footer')
+    fullscreenRevealButton.className = 'exercise__fullscreen-reveal-all'
+    fullscreenRevealButton.setAttribute('size', 'small')
+    fullscreenRevealButton.setAttribute('variant', 'primary')
+    fullscreenResetButton.className = 'exercise__fullscreen-reset'
+    fullscreenResetButton.setAttribute('size', 'small')
+    fullscreenResetButton.setAttribute('label', 'Reset exercise')
+    fullscreenFooter.appendChild(fullscreenRevealButton)
+    fullscreenFooter.appendChild(fullscreenResetButton)
+    markdown.appendChild(fullscreenFooter)
+
     this._elements = {
+      fullscreenFooter,
       markdown,
-      resetButton: root.querySelector('.exercise__reset'),
-      revealAllButton: root.querySelector('.exercise__reveal-all'),
+      resetButtons: [
+        root.querySelector('.exercise__reset'),
+        fullscreenResetButton,
+      ],
+      revealAllButtons: [
+        root.querySelector('.exercise__reveal-all'),
+        fullscreenRevealButton,
+      ],
     }
-    this._elements.revealAllButton.addEventListener('click', () => {
-      this.toggleAllAnswers(this.getExerciseResult().placeholders)
-    })
-    this._elements.resetButton.addEventListener('click', () => this.reset())
+    for (let i = 0; i < this._elements.revealAllButtons.length; i++) {
+      this._elements.revealAllButtons[i].addEventListener('click', () => {
+        this.toggleAllAnswers(this.getExerciseResult().placeholders)
+      })
+    }
+    for (let i = 0; i < this._elements.resetButtons.length; i++) {
+      this._elements.resetButtons[i].addEventListener('click', () => this.reset())
+    }
   }
 
   updateMarkdownProperties(result = this.getExerciseResult()) {
@@ -581,14 +686,16 @@ export class TotExercise extends HTMLElement {
   }
 
   updateFooter(placeholders) {
-    const revealAllButton = this._elements?.revealAllButton
-    if (!revealAllButton) {
+    const revealAllButtons = this._elements?.revealAllButtons
+    if (!revealAllButtons) {
       return
     }
 
     const label = this.areAllAnswersShown(placeholders) ? 'Hide' : 'Validate'
-    if (revealAllButton.getAttribute('label') !== label) {
-      revealAllButton.setAttribute('label', label)
+    for (let i = 0; i < revealAllButtons.length; i++) {
+      if (revealAllButtons[i].getAttribute('label') !== label) {
+        revealAllButtons[i].setAttribute('label', label)
+      }
     }
   }
 
@@ -610,6 +717,9 @@ export class TotExercise extends HTMLElement {
       const slot = this.createExerciseSlot(placeholder, result)
       this._renderedSlots.set(placeholder.id, slot)
       fragment.appendChild(slot)
+    }
+    if (this._elements.fullscreenFooter) {
+      fragment.appendChild(this._elements.fullscreenFooter)
     }
     markdown.replaceChildren(fragment)
     this._renderedStructure = structure
@@ -683,7 +793,11 @@ export class TotExercise extends HTMLElement {
     input.setAttribute('aria-label', 'Answer')
     input.style.setProperty('--exercise-input-width', `${width}ch`)
     input.addEventListener('input', () => {
-      this._inputResponses.set(placeholder.id, input.value)
+      if (input.value === '') {
+        this._inputResponses.delete(placeholder.id)
+      } else {
+        this._inputResponses.set(placeholder.id, input.value)
+      }
       this.updatePlaceholderFeedback(placeholder.id)
       this.emitUserChange()
     })
@@ -897,9 +1011,13 @@ export class TotExercise extends HTMLElement {
   }
 
   toggleAllAnswers(placeholders) {
-    const shown = !this.areAllAnswersShown(placeholders)
+    if (!this.areAllAnswersShown(placeholders)) {
+      this.validate()
+      return
+    }
+
     for (let i = 0; i < placeholders.length; i++) {
-      this._answersShown.set(placeholders[i].id, shown)
+      this._answersShown.set(placeholders[i].id, false)
     }
     this.renderControls()
   }
@@ -1040,87 +1158,25 @@ export class TotExercise extends HTMLElement {
   }
 
   emitUserChange() {
-    emit(this, 'change', this.getEventDetail())
-  }
-
-  getEventDetail() {
-    return {
-      value: this.value,
-      responses: this.getResponses(),
-    }
-  }
-
-  getResponses() {
-    const result = this.getExerciseResult()
-    const responses = []
-    for (let i = 0; i < result.placeholders.length; i++) {
-      const placeholder = result.placeholders[i]
-      responses.push({
-        task: placeholder.task,
-        problem: placeholder.problem,
-        type: placeholder.type,
-        side: placeholder.side,
-        value: this.getResponseValue(placeholder, result),
-        correct: this.isPlaceholderCorrect(placeholder, result),
-      })
-    }
-    return responses
+    emit(this, 'change')
   }
 
   getResponseValue(placeholder, result) {
     if (placeholder.type === 'input') {
-      return this._inputResponses.get(placeholder.id) || ''
+      return this._inputResponses.has(placeholder.id) ? this._inputResponses.get(placeholder.id) : null
     }
 
     if (placeholder.type === 'choice') {
-      return this._choiceResponses.get(placeholder.id) || ''
+      return this._choiceResponses.has(placeholder.id) ? this._choiceResponses.get(placeholder.id) : null
     }
 
     if (placeholder.type === 'match') {
       const pairedId = this._matchResponses.get(placeholder.id)
       const paired = result.byId.get(pairedId)
-      return paired ? {
-        task: paired.task,
-        problem: paired.problem,
-        side: paired.side,
-        content: paired.content,
-      } : null
+      return paired ? paired.responseId : null
     }
 
-    return ''
-  }
-
-  captureSlotMarkdown() {
-    if (this.hasAttribute('value') || this.hasAttribute('markdown') || this._value !== null) {
-      return
-    }
-
-    this._slotMarkdown = getLightDomMarkdown(this)
-  }
-
-  observeLightDom() {
-    if (this._mutationObserver) {
-      return
-    }
-
-    this._mutationObserver = new MutationObserver(() => {
-      if (this.hasAttribute('value') || this.hasAttribute('markdown') || this._value !== null) {
-        return
-      }
-
-      const markdown = getLightDomMarkdown(this)
-      if (markdown === this._slotMarkdown) {
-        return
-      }
-
-      this._slotMarkdown = markdown
-      this.render()
-    })
-    this._mutationObserver.observe(this, {
-      characterData: true,
-      childList: true,
-      subtree: true,
-    })
+    return null
   }
 }
 
@@ -1157,6 +1213,7 @@ function buildExerciseMarkdown(markdown, slotPrefix) {
       key: String(attributes.key || ''),
       options: parseOptions(attributes.options),
     }
+    placeholder.responseId = createResponseId(placeholder)
 
     placeholders.push(placeholder)
     byId.set(placeholder.id, placeholder)
@@ -1386,41 +1443,19 @@ function cleanMap(map, allowedKeys, allowedValues = null) {
   }
 }
 
-function getLightDomMarkdown(element) {
-  let markdown = ''
-  const childNodes = element.childNodes || []
-  for (let i = 0; i < childNodes.length; i++) {
-    markdown += getLightDomMarkdownFromNode(childNodes[i])
-  }
-  return markdown
+function createResponseId(response) {
+  return JSON.stringify([
+    normalizeId(response.task),
+    normalizeId(response.problem),
+    normalizeId(response.type),
+    normalizeId(response.side),
+  ])
 }
 
-function getLightDomMarkdownFromNode(node) {
-  if (node.nodeType === 3 || node.nodeType === 4) {
-    return node.nodeValue || ''
-  }
-
-  if (node.nodeType !== 1) {
-    return ''
-  }
-
-  if (typeof node.hasAttribute === 'function' && node.hasAttribute('slot')) {
-    return ''
-  }
-
-  let markdown = ''
-  const childNodes = node.childNodes || []
-  for (let i = 0; i < childNodes.length; i++) {
-    markdown += getLightDomMarkdownFromNode(childNodes[i])
-  }
-  return markdown
-}
-
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function emit(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

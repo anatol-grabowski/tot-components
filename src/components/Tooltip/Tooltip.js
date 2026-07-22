@@ -10,16 +10,18 @@ const tooltipStyle = `
     box-sizing: border-box;
   }
 
-  .trigger {
+  .base,
+  .anchor {
     display: inline-block;
     max-width: 100%;
   }
 
-  .trigger ::slotted(*) {
+  .anchor ::slotted(*) {
     max-width: 100%;
   }
 
-  .tooltip {
+  .panel {
+    display: block;
     left: 0;
     max-width: min(var(--tot-tooltip-panel-max-width, 24rem), calc(100vw - 1rem));
     min-width: var(--tot-tooltip-panel-min-width, 0);
@@ -28,16 +30,17 @@ const tooltipStyle = `
     z-index: var(--tot-z-index-tooltip, 1500);
   }
 
-  .tooltip[hidden] {
+  .panel[hidden] {
     display: none;
   }
 
-  .tooltip__surface {
+  .surface {
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
     border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
     border-radius: var(--tot-border-radius-medium, 4px);
     box-shadow: var(--tot-shadow-large, 0 2px 8px rgb(15 23 42 / 12%));
     color: var(--tot-input-color, #1e293b);
+    display: block;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
     line-height: var(--tot-line-height-dense, 1.4);
@@ -47,11 +50,12 @@ const tooltipStyle = `
     padding: var(--tot-tooltip-panel-padding, var(--tot-spacing-small, .75rem));
   }
 
-  .tooltip__content {
+  .content {
+    display: block;
     min-width: 0;
   }
 
-  .tooltip__content ::slotted(*) {
+  .content ::slotted(*) {
     margin-top: 0;
   }
 `
@@ -73,7 +77,7 @@ const placements = [
 
 export class TotTooltip extends HTMLElement {
   static get observedAttributes() {
-    return ['content', 'text', 'open', 'trigger', 'placement', 'position', 'offset']
+    return ['content', 'open', 'activation', 'placement', 'offset']
   }
 
   constructor() {
@@ -81,13 +85,46 @@ export class TotTooltip extends HTMLElement {
     this._positionFrame = 0
     this._hideTimer = 0
     this._visualViewport = null
+    this._listeningWhileOpen = false
     this._handleWindowChange = () => this.schedulePanelPosition()
     this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
     this._handleKeyDown = event => this.handleKeyDown(event)
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${tooltipStyle}</style>
+      <span class="base" part="base">
+        <span class="anchor" part="anchor"><slot></slot></span>
+        <span class="panel" part="panel" role="tooltip" hidden>
+          <span class="surface" part="surface">
+            <span class="content" part="content"><slot name="content"></slot></span>
+          </span>
+        </span>
+      </span>
+    `
+
+    this._baseElement = root.querySelector('.base')
+    this._anchorElement = root.querySelector('.anchor')
+    this._panelElement = root.querySelector('.panel')
+    this._surfaceElement = root.querySelector('.surface')
+    this._contentElement = root.querySelector('.content')
+    this._contentSlot = root.querySelector('slot[name="content"]')
+
+    this._anchorElement.addEventListener('pointerdown', event => this.handleAnchorPointerDown(event))
+    this._anchorElement.addEventListener('pointerenter', () => this.handleAnchorEnter())
+    this._anchorElement.addEventListener('pointerleave', event => this.handleAnchorLeave(event))
+    this._anchorElement.addEventListener('click', event => this.handleAnchorClick(event))
+    this._anchorElement.addEventListener('focusin', () => this.handleAnchorEnter())
+    this._anchorElement.addEventListener('focusout', event => this.handleAnchorLeave(event))
+    this._panelElement.addEventListener('pointerdown', () => this.handlePanelEnter())
+    this._panelElement.addEventListener('pointerenter', () => this.handlePanelEnter())
+    this._panelElement.addEventListener('pointerleave', event => this.handlePanelLeave(event))
+    this._panelElement.addEventListener('focusin', () => this.handlePanelEnter())
+    this._panelElement.addEventListener('focusout', event => this.handlePanelLeave(event))
+    this._contentSlot.addEventListener('slotchange', () => this.schedulePanelPosition())
   }
 
   get content() {
-    return this.getAttribute('content') || this.getAttribute('text') || ''
+    return this.getAttribute('content') || ''
   }
 
   set content(value) {
@@ -102,16 +139,16 @@ export class TotTooltip extends HTMLElement {
     setBooleanAttribute(this, 'open', value)
   }
 
-  get trigger() {
-    return this.getAttribute('trigger') || 'hover'
+  get activation() {
+    return normalizeActivation(this.getAttribute('activation'))
   }
 
-  set trigger(value) {
-    setNullableAttribute(this, 'trigger', value)
+  set activation(value) {
+    setNullableAttribute(this, 'activation', value)
   }
 
   get placement() {
-    return normalizePlacement(this.getAttribute('placement') || this.getAttribute('position') || 'bottom-start')
+    return normalizePlacement(this.getAttribute('placement'))
   }
 
   set placement(value) {
@@ -128,35 +165,27 @@ export class TotTooltip extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
-    document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
-    document.addEventListener('keydown', this._handleKeyDown)
-    window.addEventListener('resize', this._handleWindowChange)
-    document.addEventListener('scroll', this._handleWindowChange, true)
-    this._visualViewport = window.visualViewport || null
-    if (this._visualViewport) {
-      this._visualViewport.addEventListener('resize', this._handleWindowChange)
-      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
-    }
+    this.syncContent()
+    this.syncOpenState()
   }
 
   disconnectedCallback() {
-    document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
-    document.removeEventListener('keydown', this._handleKeyDown)
-    window.removeEventListener('resize', this._handleWindowChange)
-    document.removeEventListener('scroll', this._handleWindowChange, true)
-    if (this._visualViewport) {
-      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
-      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
-      this._visualViewport = null
-    }
+    this.stopOpenListeners()
     cancelAnimationFrame(this._positionFrame)
     clearTimeout(this._hideTimer)
   }
 
-  attributeChangedCallback() {
-    this.render()
-    if (this.open) {
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
+    if (name === 'content') {
+      this.syncContent()
+      this.schedulePanelPosition()
+    } else if (name === 'open') {
+      this.syncOpenState()
+    } else if (this.open) {
       this.schedulePanelPosition()
     }
   }
@@ -172,58 +201,95 @@ export class TotTooltip extends HTMLElement {
 
   toggle() {
     this.open = !this.open
-    if (this.open) {
-      this.schedulePanelPosition()
-    }
+  }
+
+  getBase() {
+    return this._baseElement
+  }
+
+  getAnchor() {
+    return this._anchorElement
+  }
+
+  getPanel() {
+    return this._panelElement
+  }
+
+  getSurface() {
+    return this._surfaceElement
+  }
+
+  getContent() {
+    return this._contentElement
   }
 
   render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
+    this.syncContent()
+    this.syncOpenState()
+  }
 
-    root.innerHTML = `<style>${tooltipStyle}</style>
-      <span class="trigger" part="trigger"><slot></slot></span>
-      <div class="tooltip" part="panel" role="tooltip" ${open ? '' : 'hidden'}>
-        <div class="tooltip__surface" part="surface">
-          <div class="tooltip__content" part="content"><slot name="content">${escapeHtml(this.content)}</slot></div>
-        </div>
-      </div>
-    `
+  syncContent() {
+    this._contentSlot.textContent = this.content
+  }
 
-    const trigger = root.querySelector('.trigger')
-    const panel = root.querySelector('.tooltip')
-    const contentSlot = root.querySelector('slot[name="content"]')
-
-    trigger.addEventListener('pointerdown', (event) => this.handleTriggerPointerDown(event))
-    trigger.addEventListener('pointerenter', (event) => this.handleTriggerEnter(event))
-    trigger.addEventListener('pointerleave', (event) => this.handleTriggerLeave(event))
-    trigger.addEventListener('click', (event) => this.handleTriggerClick(event))
-    trigger.addEventListener('focusin', (event) => this.handleTriggerEnter(event))
-    trigger.addEventListener('focusout', (event) => this.handleTriggerLeave(event))
-    panel.addEventListener('pointerdown', () => this.handlePanelEnter())
-    panel.addEventListener('pointerenter', (event) => this.handlePanelEnter(event))
-    panel.addEventListener('pointerleave', (event) => this.handlePanelLeave(event))
-    panel.addEventListener('focusin', (event) => this.handlePanelEnter(event))
-    panel.addEventListener('focusout', (event) => this.handlePanelLeave(event))
-    contentSlot.addEventListener('slotchange', () => this.schedulePanelPosition())
-
-    if (open) {
+  syncOpenState() {
+    this._panelElement.hidden = !this.open
+    if (this.open && this.isConnected) {
+      this.startOpenListeners()
       this.schedulePanelPosition()
+      return
+    }
+
+    clearTimeout(this._hideTimer)
+    cancelAnimationFrame(this._positionFrame)
+    this.stopOpenListeners()
+  }
+
+  startOpenListeners() {
+    if (this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = true
+    document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    document.addEventListener('keydown', this._handleKeyDown)
+    window.addEventListener('resize', this._handleWindowChange)
+    document.addEventListener('scroll', this._handleWindowChange, true)
+    this._visualViewport = window.visualViewport || null
+    if (this._visualViewport) {
+      this._visualViewport.addEventListener('resize', this._handleWindowChange)
+      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
     }
   }
 
-  handleTriggerPointerDown(event) {
-    if (this.trigger !== 'hover' || !isTouchLikeEvent(event)) {
+  stopOpenListeners() {
+    if (!this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = false
+    document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    document.removeEventListener('keydown', this._handleKeyDown)
+    window.removeEventListener('resize', this._handleWindowChange)
+    document.removeEventListener('scroll', this._handleWindowChange, true)
+    if (this._visualViewport) {
+      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
+      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
+      this._visualViewport = null
+    }
+  }
+
+  handleAnchorPointerDown(event) {
+    if (this.activation !== 'hover' || !isTouchLikeEvent(event)) {
       return
     }
 
     clearTimeout(this._hideTimer)
     this.open = true
-    this.schedulePanelPosition()
   }
 
-  handleTriggerEnter(event) {
-    if (this.trigger !== 'hover') {
+  handleAnchorEnter() {
+    if (this.activation !== 'hover') {
       return
     }
 
@@ -231,12 +297,8 @@ export class TotTooltip extends HTMLElement {
     this.open = true
   }
 
-  handleTriggerLeave(event) {
-    if (this.trigger !== 'hover') {
-      return
-    }
-
-    if (isTouchLikeEvent(event)) {
+  handleAnchorLeave(event) {
+    if (this.activation !== 'hover' || isTouchLikeEvent(event)) {
       return
     }
 
@@ -244,25 +306,21 @@ export class TotTooltip extends HTMLElement {
   }
 
   handlePanelEnter() {
-    if (this.trigger === 'hover') {
+    if (this.activation === 'hover') {
       clearTimeout(this._hideTimer)
     }
   }
 
   handlePanelLeave(event) {
-    if (this.trigger !== 'hover') {
-      return
-    }
-
-    if (isTouchLikeEvent(event)) {
+    if (this.activation !== 'hover' || isTouchLikeEvent(event)) {
       return
     }
 
     this.scheduleHide()
   }
 
-  handleTriggerClick(event) {
-    if (this.trigger !== 'click') {
+  handleAnchorClick(event) {
+    if (this.activation !== 'click') {
       return
     }
 
@@ -275,7 +333,7 @@ export class TotTooltip extends HTMLElement {
       return
     }
 
-    if (this.trigger !== 'click' && !(this.trigger === 'hover' && isCoarsePointer())) {
+    if (this.activation !== 'click' && !(this.activation === 'hover' && isCoarsePointer())) {
       return
     }
 
@@ -307,24 +365,21 @@ export class TotTooltip extends HTMLElement {
   }
 
   schedulePanelPosition() {
+    if (!this.open || !this.isConnected) {
+      return
+    }
+
     cancelAnimationFrame(this._positionFrame)
     this._positionFrame = requestAnimationFrame(() => this.updatePanelPosition())
   }
 
   updatePanelPosition() {
-    if (!this.open || !this.shadowRoot) {
+    if (!this.open) {
       return
     }
 
-    const trigger = this.shadowRoot.querySelector('.trigger')
-    const panel = this.shadowRoot.querySelector('.tooltip')
-    const surface = this.shadowRoot.querySelector('.tooltip__surface')
-    if (!trigger || !panel || !surface) {
-      return
-    }
-
-    const triggerRect = trigger.getBoundingClientRect()
-    if (!triggerRect.width && !triggerRect.height) {
+    const anchorRect = this._anchorElement.getBoundingClientRect()
+    if (!anchorRect.width && !anchorRect.height) {
       return
     }
 
@@ -333,22 +388,25 @@ export class TotTooltip extends HTMLElement {
     const gap = this.offset
     const viewportWidth = Math.max(0, viewport.width - margin * 2)
 
-    panel.style.maxWidth = `min(var(--tot-tooltip-panel-max-width, 24rem), ${Math.floor(viewportWidth)}px)`
-    panel.style.setProperty('--tot-tooltip-panel-max-height', 'none')
+    this._panelElement.style.maxWidth = `min(var(--tot-tooltip-panel-max-width, 24rem), ${Math.floor(viewportWidth)}px)`
+    this._panelElement.style.setProperty('--tot-tooltip-panel-max-height', 'none')
 
-    const panelRect = panel.getBoundingClientRect()
+    const panelRect = this._panelElement.getBoundingClientRect()
     const panelWidth = Math.min(panelRect.width, viewportWidth)
     const panelHeight = panelRect.height
-    const placement = choosePlacement(this.placement, triggerRect, panelWidth, panelHeight, viewport, gap, margin)
-    const coords = getPlacementCoordinates(placement, triggerRect, panelWidth, panelHeight, viewport, gap, margin)
-    const availableHeight = getAvailableHeight(placement, triggerRect, viewport, gap, margin)
+    const placement = choosePlacement(this.placement, anchorRect, panelWidth, panelHeight, viewport, gap, margin)
+    const coords = getPlacementCoordinates(placement, anchorRect, panelWidth, panelHeight, viewport, gap, margin)
+    const availableHeight = getAvailableHeight(placement, anchorRect, viewport, gap, margin)
 
-    panel.style.left = `${Math.round(coords.left)}px`
-    panel.style.top = `${Math.round(coords.top)}px`
-    panel.style.setProperty('--tot-tooltip-panel-max-height', `${Math.floor(availableHeight)}px`)
+    this._panelElement.style.left = `${Math.round(coords.left)}px`
+    this._panelElement.style.top = `${Math.round(coords.top)}px`
+    this._panelElement.style.setProperty('--tot-tooltip-panel-max-height', `${Math.floor(availableHeight)}px`)
   }
 }
 
+function normalizeActivation(value) {
+  return value === 'click' || value === 'none' ? value : 'hover'
+}
 
 function isTouchLikeEvent(event) {
   if (!event || !('pointerType' in event)) {
@@ -362,13 +420,12 @@ function isCoarsePointer() {
   return typeof matchMedia === 'function' && matchMedia('(hover: none), (pointer: coarse)').matches
 }
 
-function choosePlacement(preferredPlacement, triggerRect, panelWidth, panelHeight, viewport, gap, margin) {
-  const base = preferredPlacement.split('-')[0]
+function choosePlacement(preferredPlacement, anchorRect, panelWidth, panelHeight, viewport, gap, margin) {
   const candidates = getPlacementCandidates(preferredPlacement)
 
   for (let i = 0; i < candidates.length; i++) {
     const placement = candidates[i]
-    const space = getPlacementSpace(placement, triggerRect, viewport, gap, margin)
+    const space = getPlacementSpace(placement, anchorRect, viewport, gap, margin)
     if (space.width >= panelWidth && space.height >= panelHeight) {
       return placement
     }
@@ -377,7 +434,7 @@ function choosePlacement(preferredPlacement, triggerRect, panelWidth, panelHeigh
   let best = candidates[0]
   let bestArea = -1
   for (let i = 0; i < candidates.length; i++) {
-    const space = getPlacementSpace(candidates[i], triggerRect, viewport, gap, margin)
+    const space = getPlacementSpace(candidates[i], anchorRect, viewport, gap, margin)
     const area = space.width * space.height
     if (area > bestArea) {
       best = candidates[i]
@@ -385,11 +442,7 @@ function choosePlacement(preferredPlacement, triggerRect, panelWidth, panelHeigh
     }
   }
 
-  if (base === 'bottom' || base === 'top' || base === 'left' || base === 'right') {
-    return best
-  }
-
-  return preferredPlacement
+  return best
 }
 
 function getPlacementCandidates(placement) {
@@ -407,55 +460,53 @@ function getPlacementCandidates(placement) {
   return [placement]
 }
 
-function getPlacementSpace(placement, triggerRect, viewport, gap, margin) {
+function getPlacementSpace(placement, anchorRect, viewport, gap, margin) {
   const base = placement.split('-')[0]
   if (base === 'top') {
     return {
       width: viewport.width - margin * 2,
-      height: Math.max(0, triggerRect.top - viewport.top - gap - margin),
+      height: Math.max(0, anchorRect.top - viewport.top - gap - margin),
     }
   }
 
   if (base === 'bottom') {
     return {
       width: viewport.width - margin * 2,
-      height: Math.max(0, viewport.bottom - triggerRect.bottom - gap - margin),
+      height: Math.max(0, viewport.bottom - anchorRect.bottom - gap - margin),
     }
   }
 
   if (base === 'left') {
     return {
-      width: Math.max(0, triggerRect.left - viewport.left - gap - margin),
+      width: Math.max(0, anchorRect.left - viewport.left - gap - margin),
       height: viewport.height - margin * 2,
     }
   }
 
   return {
-    width: Math.max(0, viewport.right - triggerRect.right - gap - margin),
+    width: Math.max(0, viewport.right - anchorRect.right - gap - margin),
     height: viewport.height - margin * 2,
   }
 }
 
-function getPlacementCoordinates(placement, triggerRect, panelWidth, panelHeight, viewport, gap, margin) {
+function getPlacementCoordinates(placement, anchorRect, panelWidth, panelHeight, viewport, gap, margin) {
   const base = placement.split('-')[0]
   const align = placement.includes('-') ? placement.split('-')[1] : 'center'
-  let left = triggerRect.left
-  let top = triggerRect.bottom + gap
+  let left = anchorRect.left
+  let top = anchorRect.bottom + gap
 
   if (base === 'top') {
-    top = triggerRect.top - panelHeight - gap
+    top = anchorRect.top - panelHeight - gap
   } else if (base === 'left') {
-    left = triggerRect.left - panelWidth - gap
-    top = alignCrossAxis(align, triggerRect.top, triggerRect.bottom, panelHeight)
+    left = anchorRect.left - panelWidth - gap
+    top = alignCrossAxis(align, anchorRect.top, anchorRect.bottom, panelHeight)
   } else if (base === 'right') {
-    left = triggerRect.right + gap
-    top = alignCrossAxis(align, triggerRect.top, triggerRect.bottom, panelHeight)
-  } else {
-    top = triggerRect.bottom + gap
+    left = anchorRect.right + gap
+    top = alignCrossAxis(align, anchorRect.top, anchorRect.bottom, panelHeight)
   }
 
   if (base === 'top' || base === 'bottom') {
-    left = alignCrossAxis(align, triggerRect.left, triggerRect.right, panelWidth)
+    left = alignCrossAxis(align, anchorRect.left, anchorRect.right, panelWidth)
   }
 
   left = clamp(left, viewport.left + margin, viewport.right - panelWidth - margin)
@@ -476,27 +527,21 @@ function alignCrossAxis(align, start, end, size) {
   return start + (end - start - size) / 2
 }
 
-function getAvailableHeight(placement, triggerRect, viewport, gap, margin) {
+function getAvailableHeight(placement, anchorRect, viewport, gap, margin) {
   const base = placement.split('-')[0]
   if (base === 'top') {
-    return Math.max(0, triggerRect.top - viewport.top - gap - margin)
+    return Math.max(0, anchorRect.top - viewport.top - gap - margin)
   }
 
   if (base === 'bottom') {
-    return Math.max(0, viewport.bottom - triggerRect.bottom - gap - margin)
+    return Math.max(0, viewport.bottom - anchorRect.bottom - gap - margin)
   }
 
   return Math.max(0, viewport.height - margin * 2)
 }
 
 function normalizePlacement(value) {
-  const normalized = String(value || 'bottom-start')
-    .trim()
-    .toLowerCase()
-    .replace('bottom-right', 'bottom-start')
-    .replace('bottom-left', 'bottom-end')
-    .replace('top-right', 'top-start')
-    .replace('top-left', 'top-end')
+  const normalized = String(value || 'bottom-start').trim().toLowerCase()
 
   for (let i = 0; i < placements.length; i++) {
     if (placements[i] === normalized) {
@@ -552,17 +597,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
 }

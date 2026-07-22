@@ -27,7 +27,7 @@ registerDemo({
         </div>
         <tot-dialog id="customDialog" header="Apply edits">
           <div class="stack">
-            <tot-message type="info" content="Footer buttons are provided through the footer slot."></tot-message>
+            <tot-notification type="info" content="Footer buttons are provided through the footer slot." open></tot-notification>
             <tot-input label="Change summary" value="Update labels and spacing" clearable></tot-input>
           </div>
           <tot-button slot="footer" id="skipCustomDialog" label="Skip"></tot-button>
@@ -57,17 +57,11 @@ registerDemo({
 
     const dialogs = wrapper.querySelectorAll('tot-dialog')
     for (let i = 0; i < dialogs.length; i++) {
-      dialogs[i].addEventListener('show', (event) => {
-        logEvent(dialogs[i], 'show', event.detail)
+      dialogs[i].addEventListener('show', () => {
+        logEvent(dialogs[i], 'show')
       })
-      dialogs[i].addEventListener('hide', (event) => {
+      dialogs[i].addEventListener('hide', event => {
         logEvent(dialogs[i], 'hide', event.detail)
-      })
-      dialogs[i].addEventListener('confirm', (event) => {
-        logEvent(dialogs[i], 'confirm', event.detail)
-      })
-      dialogs[i].addEventListener('cancel', (event) => {
-        logEvent(dialogs[i], 'cancel', event.detail)
       })
     }
 

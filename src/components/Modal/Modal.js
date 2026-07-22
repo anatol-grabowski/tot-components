@@ -8,15 +8,26 @@ const modalStyle = `
   }
 
   .overlay {
+    --tot-overlay-stack-index: 0;
     align-items: center;
-    background: var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%));
+    background: transparent;
     display: flex;
     inset: 0;
     justify-content: center;
     overscroll-behavior: contain;
     padding: var(--tot-spacing-medium, 1rem);
+    pointer-events: none;
     position: fixed;
-    z-index: var(--tot-z-index-dialog, 1200);
+    z-index: calc(var(--tot-z-index-dialog, 1200) + var(--tot-overlay-stack-index));
+  }
+
+  .overlay[data-topmost] {
+    background: var(--tot-overlay-background-color, hsl(240deg 4% 46% / 50%));
+    pointer-events: auto;
+  }
+
+  .overlay:not([data-topmost]) .modal {
+    pointer-events: none;
   }
 
   .overlay[hidden] {
@@ -37,7 +48,9 @@ const modalStyle = `
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
+    position: relative;
     width: var(--tot-modal-width, 34rem);
+    z-index: 1;
   }
 
   .modal__header {
@@ -136,6 +149,12 @@ const modalStyle = `
   }
 `
 
+const overlayStack = []
+let overlayHistoryToken = ''
+let overlayHistoryActive = false
+let ignoreNextPopState = false
+let historyResetTimer = 0
+
 export class TotModal extends HTMLElement {
   static get observedAttributes() {
     return ['header', 'open', 'close-on-overlay', 'closeonoverlay']
@@ -144,15 +163,45 @@ export class TotModal extends HTMLElement {
   constructor() {
     super()
     this._wasOpen = false
-    this._historyPushed = false
-    this._historyToken = ''
-    this._ignoreNextPopState = false
-    this._skipHistoryOnDeactivate = false
     this._previouslyFocused = null
-    this._handleKeyDown = event => this.handleKeyDown(event)
-    this._handlePopState = event => this.handlePopState(event)
+    this._focusFrame = 0
     this._touchStartY = 0
     this._overlayPointerStarted = false
+    this._pendingHideReason = 'programmatic'
+    this._skipHistoryOnDeactivate = false
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${modalStyle}</style>
+      <div class="overlay" part="overlay" hidden>
+        <section class="modal" part="base" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+          <header class="modal__header" part="header">
+            <div class="modal__title" id="modal-title" part="title"><slot name="header"></slot></div>
+            <button class="modal__close" part="close-button" type="button" aria-label="Close">×</button>
+          </header>
+          <div class="modal__body" part="body"><slot name="body"><slot></slot></slot></div>
+          <footer class="modal__footer" part="footer" hidden><slot name="footer"></slot></footer>
+        </section>
+      </div>
+    `
+
+    this._overlayElement = root.querySelector('.overlay')
+    this._baseElement = root.querySelector('.modal')
+    this._headerElement = root.querySelector('.modal__header')
+    this._titleElement = root.querySelector('.modal__title')
+    this._bodyElement = root.querySelector('.modal__body')
+    this._footerElement = root.querySelector('.modal__footer')
+    this._closeButton = root.querySelector('.modal__close')
+    this._headerSlot = root.querySelector('slot[name="header"]')
+    this._footerSlot = root.querySelector('slot[name="footer"]')
+
+    this._footerSlot.addEventListener('slotchange', () => this._syncFooter())
+    this._closeButton.addEventListener('click', () => this._requestClose('close'))
+    this._overlayElement.addEventListener('pointerdown', event => this._handleOverlayPointerDown(event))
+    this._overlayElement.addEventListener('pointercancel', () => this._handleOverlayPointerCancel())
+    this._overlayElement.addEventListener('click', event => this._handleOverlayClick(event))
+    this._overlayElement.addEventListener('wheel', event => this._handleOverlayWheel(event), { passive: false })
+    this._overlayElement.addEventListener('touchstart', event => this._handleOverlayTouchStart(event), { passive: true })
+    this._overlayElement.addEventListener('touchmove', event => this._handleOverlayTouchMove(event), { passive: false })
   }
 
   get header() {
@@ -168,9 +217,11 @@ export class TotModal extends HTMLElement {
   }
 
   set open(value) {
+    if (!value) {
+      this._pendingHideReason = 'programmatic'
+    }
     setBooleanAttribute(this, 'open', value)
   }
-
 
   get closeOnOverlay() {
     if (this.hasAttribute('close-on-overlay')) {
@@ -193,20 +244,34 @@ export class TotModal extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
-    this.syncOpenState()
+    this._syncAll()
+    this._syncOpenState()
   }
 
   disconnectedCallback() {
+    cancelAnimationFrame(this._focusFrame)
+    this._focusFrame = 0
+
     if (this._wasOpen) {
-      this.deactivateModal(true)
+      this._deactivateOverlay(true, false)
       this._wasOpen = false
     }
   }
 
-  attributeChangedCallback() {
-    this.render()
-    this.syncOpenState()
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
+    if (name === 'header') {
+      this._syncHeader()
+      return
+    }
+
+    if (name === 'open') {
+      this._syncVisibility()
+      this._syncOpenState()
+    }
   }
 
   show() {
@@ -214,140 +279,167 @@ export class TotModal extends HTMLElement {
   }
 
   hide() {
-    this.open = false
+    this._hide('programmatic')
   }
 
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
+  getOverlay() {
+    return this._overlayElement
+  }
 
-    root.innerHTML = `<style>${modalStyle}</style>
-      <div class="overlay" part="overlay" ${open ? '' : 'hidden'}>
-        <section class="modal" part="base" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
-          <header class="modal__header" part="header">
-            <div class="modal__title" id="modal-title" part="title"><slot name="header">${escapeHtml(this.header)}</slot></div>
-            <button class="modal__close" part="close-button" type="button" aria-label="Close">×</button>
-          </header>
-          <div class="modal__body" part="body"><slot name="body"><slot></slot></slot></div>
-          <footer class="modal__footer" part="footer"><slot name="footer"></slot></footer>
-        </section>
-      </div>
-    `
+  getBase() {
+    return this._baseElement
+  }
 
-    const overlay = root.querySelector('.overlay')
-    const closeButton = root.querySelector('.modal__close')
-    const footer = root.querySelector('.modal__footer')
-    const footerSlot = root.querySelector('slot[name="footer"]')
-    const syncFooter = () => {
-      footer.hidden = !hasAssignedSlotContent(footerSlot)
+  getHeader() {
+    return this._headerElement
+  }
+
+  getTitle() {
+    return this._titleElement
+  }
+
+  getBody() {
+    return this._bodyElement
+  }
+
+  getFooter() {
+    return this._footerElement
+  }
+
+  getCloseButton() {
+    return this._closeButton
+  }
+
+  _syncAll() {
+    this._syncHeader()
+    this._syncVisibility()
+    this._syncFooter()
+  }
+
+  _syncHeader() {
+    this._headerSlot.textContent = this.header
+  }
+
+  _syncVisibility() {
+    this._overlayElement.hidden = !this.open
+  }
+
+  _syncFooter() {
+    this._footerElement.hidden = !hasAssignedSlotContent(this._footerSlot)
+  }
+
+  _syncOpenState() {
+    if (!this.isConnected) {
+      return
     }
 
-    syncFooter()
-    footerSlot.addEventListener('slotchange', syncFooter)
-
-    overlay.addEventListener('pointerdown', (event) => {
-      this._overlayPointerStarted = event.target === overlay
-    })
-    overlay.addEventListener('pointercancel', () => {
-      this._overlayPointerStarted = false
-    })
-    overlay.addEventListener('click', (event) => {
-      const shouldClose = this._overlayPointerStarted && event.target === overlay
-      this._overlayPointerStarted = false
-      if (shouldClose && this.closeOnOverlay) {
-        this.hide()
-      }
-    })
-    overlay.addEventListener('wheel', (event) => this.handleOverlayWheel(event), { passive: false })
-    overlay.addEventListener('touchstart', (event) => this.handleOverlayTouchStart(event), { passive: true })
-    overlay.addEventListener('touchmove', (event) => this.handleOverlayTouchMove(event), { passive: false })
-    closeButton.addEventListener('click', () => this.hide())
-  }
-
-  syncOpenState() {
     const open = this.open
     if (open === this._wasOpen) {
       return
     }
 
     if (open) {
-      this.activateModal()
+      this._activateOverlay()
     } else {
-      this.deactivateModal(this._skipHistoryOnDeactivate)
+      this._deactivateOverlay(this._skipHistoryOnDeactivate, true)
       this._skipHistoryOnDeactivate = false
     }
 
     this._wasOpen = open
   }
 
-  activateModal() {
+  _activateOverlay() {
     this._previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    lockPageScroll()
-    document.addEventListener('keydown', this._handleKeyDown)
-    window.addEventListener('popstate', this._handlePopState)
-    this.pushHistoryState()
-    emit(this, 'show', this.getEventDetail())
+    registerOverlay(this)
+    this._emitShow()
 
-    requestAnimationFrame(() => {
-      const closeButton = this.shadowRoot?.querySelector('.modal__close')
-      const modal = this.shadowRoot?.querySelector('.modal')
-      const focusTarget = closeButton || modal
-      if (focusTarget instanceof HTMLElement) {
-        focusTarget.focus()
+    cancelAnimationFrame(this._focusFrame)
+    this._focusFrame = requestAnimationFrame(() => {
+      this._focusFrame = 0
+      if (!this.open || !this.isConnected || !isTopOverlay(this)) {
+        return
       }
+
+      const target = this._getInitialFocusTarget() || this._baseElement
+      target.focus()
     })
   }
 
-  deactivateModal(skipHistory) {
-    document.removeEventListener('keydown', this._handleKeyDown)
-    window.removeEventListener('popstate', this._handlePopState)
-    unlockPageScroll()
+  _deactivateOverlay(skipHistory, emitEvent) {
+    cancelAnimationFrame(this._focusFrame)
+    this._focusFrame = 0
 
-    if (!skipHistory) {
-      this.removeHistoryState()
-    } else {
-      this._historyPushed = false
-      this._historyToken = ''
-    }
-
+    const reason = this._pendingHideReason || 'programmatic'
+    const wasTop = unregisterOverlay(this, skipHistory)
     const previouslyFocused = this._previouslyFocused
     this._previouslyFocused = null
-    if (previouslyFocused && document.contains(previouslyFocused)) {
+    this._pendingHideReason = 'programmatic'
+
+    if (wasTop && previouslyFocused && document.contains(previouslyFocused)) {
       previouslyFocused.focus()
     }
 
-    emit(this, 'hide', this.getEventDetail())
+    if (emitEvent) {
+      this._emitHide(reason)
+    }
   }
 
-  handleKeyDown(event) {
-    if (event.key !== 'Escape' || !this.open) {
+  _hide(reason) {
+    if (!this.open) {
       return
     }
 
-    if (event.defaultPrevented || hasActiveFullscreenLayer()) {
-      return
-    }
-
-    event.preventDefault()
-    this.hide()
+    this._pendingHideReason = String(reason || 'programmatic')
+    this.removeAttribute('open')
   }
 
-  handleOverlayWheel(event) {
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.overlay'), event.deltaY)) {
+  _requestClose(reason) {
+    this._hide(reason)
+  }
+
+  _getInitialFocusTarget() {
+    return this._closeButton || this._baseElement
+  }
+
+  _emitShow() {
+    emitEvent(this, 'show')
+  }
+
+  _emitHide() {
+    emitEvent(this, 'hide')
+  }
+
+  _handleOverlayPointerDown(event) {
+    this._overlayPointerStarted = isTopOverlay(this) && event.target === this._overlayElement
+  }
+
+  _handleOverlayPointerCancel() {
+    this._overlayPointerStarted = false
+  }
+
+  _handleOverlayClick(event) {
+    const shouldClose = this._overlayPointerStarted && isTopOverlay(this) && event.target === this._overlayElement
+    this._overlayPointerStarted = false
+
+    if (shouldClose && this.closeOnOverlay) {
+      this._requestClose('overlay')
+    }
+  }
+
+  _handleOverlayWheel(event) {
+    if (!isTopOverlay(this) || !shouldAllowScroll(event, this._overlayElement, event.deltaY)) {
       event.preventDefault()
     }
   }
 
-  handleOverlayTouchStart(event) {
-    if (event.touches.length !== 1) {
-      return
+  _handleOverlayTouchStart(event) {
+    if (event.touches.length === 1) {
+      this._touchStartY = event.touches[0].clientY
     }
-
-    this._touchStartY = event.touches[0].clientY
   }
 
-  handleOverlayTouchMove(event) {
-    if (event.touches.length !== 1) {
+  _handleOverlayTouchMove(event) {
+    if (!isTopOverlay(this) || event.touches.length !== 1) {
       event.preventDefault()
       return
     }
@@ -356,97 +448,166 @@ export class TotModal extends HTMLElement {
     const deltaY = this._touchStartY - currentY
     this._touchStartY = currentY
 
-    if (!shouldAllowScroll(event, this.shadowRoot?.querySelector('.overlay'), deltaY)) {
+    if (!shouldAllowScroll(event, this._overlayElement, deltaY)) {
       event.preventDefault()
     }
   }
-
-  handlePopState(event) {
-    if (this._ignoreNextPopState) {
-      this._ignoreNextPopState = false
-      return
-    }
-
-    if (!this.open || !this._historyPushed) {
-      return
-    }
-
-    const state = event && event.state
-    if (state && state.totModalToken === this._historyToken) {
-      return
-    }
-
-    this._skipHistoryOnDeactivate = true
-    this.open = false
-  }
-
-  pushHistoryState() {
-    if (this._historyPushed || typeof history === 'undefined') {
-      return
-    }
-
-    this._historyToken = `tot-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`
-
-    try {
-      const currentState = history.state && typeof history.state === 'object' ? history.state : {}
-      history.pushState({ ...currentState, totModalToken: this._historyToken }, '')
-      this._historyPushed = true
-    } catch (error) {
-      this._historyPushed = false
-    }
-  }
-
-  removeHistoryState() {
-    if (!this._historyPushed || typeof history === 'undefined') {
-      this._historyPushed = false
-      this._historyToken = ''
-      return
-    }
-
-    const state = history.state
-    const isCurrentModalState = state && state.totModalToken === this._historyToken
-    this._historyPushed = false
-    this._historyToken = ''
-
-    if (!isCurrentModalState) {
-      return
-    }
-
-    this._ignoreNextPopState = false
-    markModalHistoryNavigation()
-    history.back()
-  }
-
-  getEventDetail() {
-    return {
-      open: this.open,
-      header: this.header,
-    }
-  }
 }
 
-function markModalHistoryNavigation() {
-  if (typeof window === 'undefined') {
+function registerOverlay(element) {
+  if (overlayStack.indexOf(element) !== -1) {
     return
   }
 
-  const count = Number(window.__totModalHistoryNavigationCount) || 0
-  window.__totModalHistoryNavigationCount = count + 1
+  const wasEmpty = overlayStack.length === 0
+  overlayStack.push(element)
+  if (wasEmpty) {
+    beginPageScrollContainment()
+    document.addEventListener('keydown', handleOverlayKeyDown)
+    window.addEventListener('popstate', handleOverlayPopState)
+    pushOverlayHistoryState()
+  }
+  syncOverlayStack()
 }
 
-function hasActiveFullscreenLayer() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
+function unregisterOverlay(element, skipHistory) {
+  const index = overlayStack.indexOf(element)
+  if (index === -1) {
     return false
   }
 
-  return (window.__totFullscreenOpenCount || 0) > 0 || document.documentElement.hasAttribute('data-tot-fullscreen-open')
+  const wasTop = index === overlayStack.length - 1
+  overlayStack.splice(index, 1)
+  syncOverlayStack()
+
+  if (overlayStack.length === 0) {
+    document.removeEventListener('keydown', handleOverlayKeyDown)
+    window.removeEventListener('popstate', handleOverlayPopState)
+    endPageScrollContainment()
+    removeOverlayHistoryState(skipHistory)
+  }
+
+  return wasTop
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function syncOverlayStack() {
+  const topIndex = overlayStack.length - 1
+  for (let i = 0; i < overlayStack.length; i++) {
+    const element = overlayStack[i]
+    const overlay = element._overlayElement
+    const base = element._baseElement
+    const isTopmost = i === topIndex
+
+    overlay.style.setProperty('--tot-overlay-stack-index', String(i))
+    overlay.toggleAttribute('data-topmost', isTopmost)
+    overlay.inert = !isTopmost
+    if (isTopmost) {
+      base.removeAttribute('aria-hidden')
+    } else {
+      base.setAttribute('aria-hidden', 'true')
+    }
+  }
+}
+
+function isTopOverlay(element) {
+  return overlayStack[overlayStack.length - 1] === element
+}
+
+function handleOverlayKeyDown(event) {
+  if (event.key !== 'Escape' || event.defaultPrevented || hasActiveFullscreenLayer()) {
+    return
+  }
+
+  const top = overlayStack[overlayStack.length - 1]
+  if (!top || !top.open) {
+    return
+  }
+
+  event.preventDefault()
+  top._requestClose('escape')
+}
+
+function handleOverlayPopState(event) {
+  if (ignoreNextPopState) {
+    ignoreNextPopState = false
+    clearTimeout(historyResetTimer)
+    historyResetTimer = 0
+    return
+  }
+
+  const top = overlayStack[overlayStack.length - 1]
+  if (!top || !overlayHistoryActive) {
+    return
+  }
+
+  if (event.state && event.state.totOverlayToken === overlayHistoryToken) {
+    return
+  }
+
+  overlayHistoryActive = false
+  overlayHistoryToken = ''
+  top._skipHistoryOnDeactivate = true
+  top._requestClose('back')
+
+  if (overlayStack.length > 0) {
+    pushOverlayHistoryState()
+  }
+}
+
+function pushOverlayHistoryState() {
+  if (overlayHistoryActive || typeof history === 'undefined') {
+    return
+  }
+
+  overlayHistoryToken = `tot-overlay-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+  try {
+    const currentState = history.state && typeof history.state === 'object' ? history.state : {}
+    history.pushState({ ...currentState, totOverlayToken: overlayHistoryToken }, '')
+    overlayHistoryActive = true
+  } catch {
+    overlayHistoryActive = false
+    overlayHistoryToken = ''
+  }
+}
+
+function removeOverlayHistoryState(skipHistory) {
+  if (!overlayHistoryActive || typeof history === 'undefined') {
+    overlayHistoryActive = false
+    overlayHistoryToken = ''
+    return
+  }
+
+  const token = overlayHistoryToken
+  const state = history.state
+  const isCurrentOverlayState = state && state.totOverlayToken === token
+  overlayHistoryActive = false
+  overlayHistoryToken = ''
+
+  if (!isCurrentOverlayState) {
+    return
+  }
+
+  if (skipHistory) {
+    const nextState = { ...state }
+    delete nextState.totOverlayToken
+    history.replaceState(nextState, '')
+    return
+  }
+
+  ignoreNextPopState = true
+  clearTimeout(historyResetTimer)
+  historyResetTimer = window.setTimeout(() => {
+    ignoreNextPopState = false
+    historyResetTimer = 0
+  }, 1000)
+  history.back()
+}
+
+function emitEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 
@@ -466,23 +627,33 @@ function setNullableAttribute(element, name, value) {
   }
 }
 
-function lockPageScroll() {
-  const state = getScrollLockState()
+function beginPageScrollContainment() {
+  const state = getSharedScrollLockState()
+
+  // Firefox compatibility: do not lock scrolling by fixing and negatively
+  // offsetting <body>. With a fixed Shadow DOM overlay Firefox can stop painting
+  // the page underneath, making a translucent backdrop appear opaque. The
+  // overlay's wheel/touch handlers contain user scrolling; this shared counter
+  // also prevents nested components from applying that unsafe body lock.
   state.count += 1
 }
 
-function unlockPageScroll() {
-  const state = getScrollLockState()
+function endPageScrollContainment() {
+  const state = getSharedScrollLockState()
   state.count = Math.max(0, state.count - 1)
 }
 
-function getScrollLockState() {
-  if (!window.__totScrollLockState) {
-    window.__totScrollLockState = {
-      count: 0,
-    }
+function getSharedScrollLockState() {
+  const state = window.__totScrollLockState && typeof window.__totScrollLockState === 'object'
+    ? window.__totScrollLockState
+    : {}
+
+  if (!Number.isFinite(state.count)) {
+    state.count = 0
   }
-  return window.__totScrollLockState
+
+  window.__totScrollLockState = state
+  return state
 }
 
 function shouldAllowScroll(event, boundary, deltaY) {
@@ -519,17 +690,12 @@ function shouldAllowScroll(event, boundary, deltaY) {
   return false
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      '\'': '&#39;',
-    }
-    return replacements[match]
-  })
+function hasActiveFullscreenLayer() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return false
+  }
+
+  return (window.__totFullscreenOpenCount || 0) > 0 || document.documentElement.hasAttribute('data-tot-fullscreen-open')
 }
 
 function hasAssignedSlotContent(slot) {

@@ -2,40 +2,42 @@ import { registerDemo } from '../demoCommon.js'
 
 const configuredItems = [
   { type: 'label', label: 'Edit' },
-  { value: 'undo', label: 'Undo' },
-  { value: 'redo', label: 'Redo' },
+  { type: 'item', value: 'undo', label: 'Undo', suffix: '⌘Z' },
+  { type: 'item', value: 'redo', label: 'Redo', suffix: '⇧⌘Z' },
   { type: 'divider' },
-  { value: 'cut', label: 'Cut' },
-  { value: 'copy', label: 'Copy', checked: true },
-  { value: 'paste', label: 'Paste', disabled: true },
-  { value: 'sync', label: 'Syncing ⏳', disabled: true },
+  { type: 'item', value: 'cut', label: 'Cut', suffix: '✂️' },
+  { type: 'item', value: 'copy', label: 'Copy', suffix: '✓' },
+  { type: 'item', value: 'paste', label: 'Paste', disabled: true },
+  { type: 'item', value: 'sync', label: 'Syncing', suffix: '⏳', disabled: true },
   { type: 'divider' },
   { type: 'label', label: 'Search' },
   {
+    type: 'item',
     value: 'find',
     label: 'Find',
     items: [
-      { value: 'find-current', label: 'Find…' },
-      { value: 'find-next', label: 'Find next' },
-      { value: 'find-previous', label: 'Find previous' },
+      { type: 'item', value: 'find-current', label: 'Find…' },
+      { type: 'item', value: 'find-next', label: 'Find next' },
+      { type: 'item', value: 'find-previous', label: 'Find previous' },
     ],
   },
   {
+    type: 'item',
     value: 'transform',
     label: 'Transformations',
-    children: [
-      { value: 'uppercase', label: 'Make uppercase' },
-      { value: 'lowercase', label: 'Make lowercase' },
-      { value: 'capitalize', label: 'Capitalize' },
+    items: [
+      { type: 'item', value: 'uppercase', label: 'Make uppercase' },
+      { type: 'item', value: 'lowercase', label: 'Make lowercase' },
+      { type: 'item', value: 'capitalize', label: 'Capitalize' },
     ],
   },
 ]
 
 const compactItems = [
-  { value: 'new', label: 'New file' },
-  { value: 'open', label: 'Open…' },
+  { type: 'item', value: 'new', label: 'New file' },
+  { type: 'item', value: 'open', label: 'Open…' },
   { type: 'divider' },
-  { value: 'save', label: 'Save', checked: true },
+  { type: 'item', value: 'save', label: 'Save', suffix: '⌘S' },
 ]
 
 registerDemo({
@@ -46,21 +48,28 @@ registerDemo({
     row.className = 'stack'
     row.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Configured from one nested JSON array</div>
+        <div class="demo-label">Configured from one canonical nested array</div>
         <tot-menu id="configuredMenu" style="max-width: 240px;"></tot-menu>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Default slot content takes precedence over JSON</div>
-        <tot-menu id="slottedMenu" items='[{"value":"json","label":"Ignored JSON item"}]' style="max-width: 240px;">
+        <div class="demo-label">Slotted items with suffix text and an icon</div>
+        <tot-menu id="slottedMenu" style="max-width: 240px;">
           <tot-menu-label>Clipboard</tot-menu-label>
-          <tot-menu-item value="cut">Cut</tot-menu-item>
-          <tot-menu-item value="copy" checked>Copy</tot-menu-item>
+          <tot-menu-item value="cut">
+            Cut
+            <svg slot="suffix" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5.2 6.2 2.5 3.5M5.2 9.8l-2.7 2.7M6.1 7.1l6.4-4.6M6.1 8.9l6.4 4.6" fill="none" stroke="currentColor" stroke-linecap="round"></path>
+              <circle cx="4" cy="4" r="2" fill="none" stroke="currentColor"></circle>
+              <circle cx="4" cy="12" r="2" fill="none" stroke="currentColor"></circle>
+            </svg>
+          </tot-menu-item>
+          <tot-menu-item value="copy" suffix="✓">Copy</tot-menu-item>
           <tot-menu-item value="paste" disabled>Paste</tot-menu-item>
           <tot-divider></tot-divider>
           <tot-menu-item value="more">
             More actions
             <tot-menu slot="submenu">
-              <tot-menu-item value="duplicate">Duplicate</tot-menu-item>
+              <tot-menu-item value="duplicate" suffix="⌘D">Duplicate</tot-menu-item>
               <tot-menu-item value="archive">Archive</tot-menu-item>
               <tot-menu-item value="delete" disabled>Delete</tot-menu-item>
             </tot-menu>
@@ -94,7 +103,7 @@ registerDemo({
         logEvent(menus[i], 'select', {
           value: event.detail.value,
           label: event.detail.label,
-          checked: event.detail.checked,
+          suffix: event.detail.item.suffix,
         })
       })
     }

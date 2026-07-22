@@ -54,16 +54,6 @@ const textareaStyle = `
     width: 100%;
   }
 
-  .textarea--small {
-    --textarea-spacing: var(--tot-input-spacing-small, .5rem);
-    --textarea-font-size: var(--tot-input-font-size-small, .75rem);
-  }
-
-  .textarea--large {
-    --textarea-spacing: var(--tot-input-spacing-large, 1rem);
-    --textarea-font-size: var(--tot-input-font-size-large, 1rem);
-  }
-
   .textarea:hover:not(.textarea--disabled) {
     background: var(--tot-input-background-color-hover, #fff);
     border-color: var(--tot-input-border-color-hover, #94a3b8);
@@ -109,27 +99,12 @@ const textareaStyle = `
     width: 100%;
   }
 
-  .textarea--small .textarea__control {
-    min-height: var(--tot-input-height-medium, 2.25rem);
-    padding-block: var(--tot-spacing-2x-small, .25rem);
+  .textarea--size-auto .textarea__control {
+    field-sizing: content;
   }
 
-  .textarea--large .textarea__control {
-    min-height: 3.5rem;
-    padding-block: var(--tot-spacing-small, .75rem);
-  }
-
-  .textarea--resize-none .textarea__control {
+  .textarea--size-none .textarea__control {
     resize: none;
-  }
-
-  .textarea--resize-auto .textarea__control {
-    field-sizing: content;
-    resize: both;
-  }
-
-  .textarea--auto-size .textarea__control {
-    field-sizing: content;
   }
 
   .textarea__control::placeholder {
@@ -211,22 +186,6 @@ const textareaStyle = `
 
   .help-text:empty {
     display: none;
-  }
-
-  .form-control--small .label {
-    font-size: var(--tot-input-label-font-size-small, .8125rem);
-  }
-
-  .form-control--small .help-text {
-    font-size: var(--tot-input-help-text-font-size-small, .75rem);
-  }
-
-  .form-control--large .label {
-    font-size: var(--tot-input-label-font-size-large, 1rem);
-  }
-
-  .form-control--large .help-text {
-    font-size: var(--tot-input-help-text-font-size-large, .875rem);
   }
 
   .fullscreen {
@@ -318,20 +277,16 @@ const textareaStyle = `
   }
 `
 
-const sizes = ['small', 'medium', 'large']
-const resizeModes = ['auto', 'none']
+const sizingModes = ['default', 'auto', 'none']
 
 export class TotTextarea extends HTMLElement {
   static get observedAttributes() {
     return [
-      'auto-size',
-      'autosize',
       'label',
       'help-text',
       'placeholder',
       'disabled',
       'size',
-      'resize',
       'rows',
       'value',
     ]
@@ -353,14 +308,6 @@ export class TotTextarea extends HTMLElement {
 
   get fullscreen() {
     return this._fullscreen
-  }
-
-  get autoSize() {
-    return this.hasAttribute('auto-size') || this.hasAttribute('autosize')
-  }
-
-  set autoSize(value) {
-    setBooleanAttribute(this, 'auto-size', value)
   }
 
   get value() {
@@ -420,19 +367,11 @@ export class TotTextarea extends HTMLElement {
   }
 
   get size() {
-    return getSupportedValue(this.getAttribute('size'), sizes, 'medium')
+    return getSupportedValue(this.getAttribute('size'), sizingModes, 'default')
   }
 
   set size(value) {
-    this.setAttribute('size', getSupportedValue(value, sizes, 'medium'))
-  }
-
-  get resize() {
-    return getSupportedValue(this.getAttribute('resize'), resizeModes, 'auto')
-  }
-
-  set resize(value) {
-    this.setAttribute('resize', getSupportedValue(value, resizeModes, 'auto'))
+    this.setAttribute('size', getSupportedValue(value, sizingModes, 'default'))
   }
 
   get rows() {
@@ -494,13 +433,13 @@ export class TotTextarea extends HTMLElement {
 
     const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${textareaStyle}</style>
-      <label class="form-control" part="form-control">
-        <span class="label" part="form-control-label"><slot name="label"></slot></span>
-        <span class="textarea" part="base">
+      <label class="form-control" part="base">
+        <span class="label" part="label"><slot name="label"></slot></span>
+        <span class="textarea" part="control">
           <textarea class="textarea__control" part="textarea"></textarea>
           <button class="textarea__fullscreen-button" part="fullscreen-button" type="button" aria-label="Open fullscreen editor">⛶</button>
         </span>
-        <span class="help-text" part="form-control-help-text"><slot name="help-text"></slot></span>
+        <span class="help-text" part="help-text"><slot name="help-text"></slot></span>
       </label>
       <div class="fullscreen" part="fullscreen" hidden>
         <section class="fullscreen__panel" role="dialog" aria-modal="true" aria-label="Fullscreen textarea editor">
@@ -541,12 +480,12 @@ export class TotTextarea extends HTMLElement {
 
     const inlineTextarea = this._elements.inlineTextarea
     const fullscreenTextarea = this._elements.fullscreenTextarea
-    inlineTextarea.addEventListener('input', () => this.handleTextareaInput(inlineTextarea))
-    inlineTextarea.addEventListener('change', () => this.handleTextareaChange(inlineTextarea))
+    inlineTextarea.addEventListener('input', event => this.handleTextareaInput(event, inlineTextarea))
+    inlineTextarea.addEventListener('change', event => this.handleTextareaChange(event, inlineTextarea))
     inlineTextarea.addEventListener('focus', () => this.handleTextareaFocus())
     inlineTextarea.addEventListener('blur', () => this.handleTextareaBlur())
-    fullscreenTextarea.addEventListener('input', () => this.handleTextareaInput(fullscreenTextarea))
-    fullscreenTextarea.addEventListener('change', () => this.handleTextareaChange(fullscreenTextarea))
+    fullscreenTextarea.addEventListener('input', event => this.handleTextareaInput(event, fullscreenTextarea))
+    fullscreenTextarea.addEventListener('change', event => this.handleTextareaChange(event, fullscreenTextarea))
     fullscreenTextarea.addEventListener('focus', () => this.handleTextareaFocus())
     fullscreenTextarea.addEventListener('blur', () => this.handleTextareaBlur())
     fullscreenTextarea.addEventListener('keydown', event => this.handleFullscreenKeyDown(event))
@@ -563,17 +502,16 @@ export class TotTextarea extends HTMLElement {
     }
 
     const size = this.size
-    const resize = this.resize
     const disabled = this.disabled
-    const textareaClasses = ['textarea', `textarea--${size}`, `textarea--resize-${resize}`]
+    const textareaClasses = ['textarea']
+    if (size !== 'default') {
+      textareaClasses.push(`textarea--size-${size}`)
+    }
     if (disabled) {
       textareaClasses.push('textarea--disabled')
     }
-    if (this.autoSize) {
-      textareaClasses.push('textarea--auto-size')
-    }
 
-    elements.formControl.className = `form-control form-control--${size}`
+    elements.formControl.className = 'form-control'
     elements.textarea.className = textareaClasses.join(' ')
     elements.labelSlot.textContent = this.label
     elements.helpTextSlot.textContent = this.helpText
@@ -605,7 +543,7 @@ export class TotTextarea extends HTMLElement {
     window.addEventListener('popstate', this._handlePopState)
     this.pushFullscreenHistoryState()
     this.render()
-    emit(this, 'fullscreen-change', this.getEventDetail())
+    dispatchComposedEvent(this, 'fullscreen-change')
 
     requestAnimationFrame(() => {
       const textarea = this.getFullscreenTextarea()
@@ -638,7 +576,7 @@ export class TotTextarea extends HTMLElement {
 
     if (shouldRender) {
       this.render()
-      emit(this, 'fullscreen-change', this.getEventDetail())
+      dispatchComposedEvent(this, 'fullscreen-change')
 
       requestAnimationFrame(() => {
         this.getInlineTextarea()?.focus()
@@ -654,23 +592,26 @@ export class TotTextarea extends HTMLElement {
     this._value = this._focusValue
     this.updateTextareaValues()
     this.updateResetButton()
-    emit(this, 'input', this.getEventDetail())
-    emit(this, 'change', this.getEventDetail())
-    emit(this, 'reset', this.getEventDetail())
+    const textarea = this.getFullscreenTextarea() || this.getInlineTextarea()
+    if (textarea) {
+      dispatchComposedEvent(textarea, 'input')
+      dispatchComposedEvent(textarea, 'change')
+    }
+    dispatchComposedEvent(this, 'reset')
   }
 
-  handleTextareaInput(textarea) {
+  handleTextareaInput(event, textarea) {
     this._value = textarea.value
     this.updateTextareaValues(textarea)
     this.updateResetButton()
-    emit(this, 'input', this.getEventDetail())
+    this.forwardEventIfNeeded(event)
   }
 
-  handleTextareaChange(textarea) {
+  handleTextareaChange(event, textarea) {
     this._value = textarea.value
     this.updateTextareaValues(textarea)
     this.updateResetButton()
-    emit(this, 'change', this.getEventDetail())
+    this.forwardEventIfNeeded(event)
   }
 
   handleTextareaFocus() {
@@ -775,22 +716,17 @@ export class TotTextarea extends HTMLElement {
     return this._elements?.fullscreenTextarea || null
   }
 
-  getEventDetail() {
-    return {
-      fullscreen: this._fullscreen,
-      resize: this.resize,
-      rows: this.rows,
-      size: this.size,
-      value: this.value,
+  forwardEventIfNeeded(event) {
+    if (!event.composed) {
+      dispatchComposedEvent(this, event.type)
     }
   }
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function dispatchComposedEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

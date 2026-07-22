@@ -14,21 +14,21 @@ const suggestionsStyle = `
   }
 
   .suggestions {
-    --suggestions-font-size: var(--tot-input-font-size-small, .8125rem);
-    --suggestions-gap: var(--tot-spacing-2x-small, .25rem);
-    --suggestions-group-gap: var(--tot-spacing-x-small, .5rem);
-    --suggestions-separator-gap: var(--tot-spacing-x-small, .5rem);
-    --suggestions-tile-min-height: 1.4rem;
-    --suggestions-tile-padding-block: .0625rem;
-    --suggestions-tile-padding-inline: .4rem;
+    --tot-suggestions-font-size: var(--tot-input-font-size-small, .8125rem);
+    --tot-suggestions-gap: var(--tot-spacing-2x-small, .25rem);
+    --tot-suggestions-group-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-suggestions-separator-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-suggestions-tile-min-height: 1.4rem;
+    --tot-suggestions-tile-padding-block: .0625rem;
+    --tot-suggestions-tile-padding-inline: .4rem;
 
     align-items: flex-start;
     color: var(--tot-input-color, #1e293b);
     display: flex;
     flex-wrap: wrap;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--suggestions-font-size);
-    gap: var(--suggestions-gap) var(--suggestions-group-gap);
+    font-size: var(--tot-suggestions-font-size);
+    gap: var(--tot-suggestions-gap) var(--tot-suggestions-group-gap);
     line-height: var(--tot-line-height-dense, 1.35);
     max-width: 100%;
     min-width: 0;
@@ -36,23 +36,23 @@ const suggestionsStyle = `
   }
 
   .suggestions--medium {
-    --suggestions-font-size: var(--tot-input-font-size-medium, .875rem);
-    --suggestions-gap: var(--tot-spacing-x-small, .5rem);
-    --suggestions-group-gap: var(--tot-spacing-small, .75rem);
-    --suggestions-separator-gap: var(--tot-spacing-small, .75rem);
-    --suggestions-tile-min-height: 1.75rem;
-    --suggestions-tile-padding-block: .125rem;
-    --suggestions-tile-padding-inline: .55rem;
+    --tot-suggestions-font-size: var(--tot-input-font-size-medium, .875rem);
+    --tot-suggestions-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-suggestions-group-gap: var(--tot-spacing-small, .75rem);
+    --tot-suggestions-separator-gap: var(--tot-spacing-small, .75rem);
+    --tot-suggestions-tile-min-height: 1.75rem;
+    --tot-suggestions-tile-padding-block: .125rem;
+    --tot-suggestions-tile-padding-inline: .55rem;
   }
 
   .suggestions--large {
-    --suggestions-font-size: var(--tot-input-font-size-large, 1rem);
-    --suggestions-gap: var(--tot-spacing-x-small, .5rem);
-    --suggestions-group-gap: var(--tot-spacing-small, .75rem);
-    --suggestions-separator-gap: var(--tot-spacing-small, .75rem);
-    --suggestions-tile-min-height: 2.1rem;
-    --suggestions-tile-padding-block: .1875rem;
-    --suggestions-tile-padding-inline: .7rem;
+    --tot-suggestions-font-size: var(--tot-input-font-size-large, 1rem);
+    --tot-suggestions-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-suggestions-group-gap: var(--tot-spacing-small, .75rem);
+    --tot-suggestions-separator-gap: var(--tot-spacing-small, .75rem);
+    --tot-suggestions-tile-min-height: 2.1rem;
+    --tot-suggestions-tile-padding-block: .1875rem;
+    --tot-suggestions-tile-padding-inline: .7rem;
   }
 
   .suggestions--expanded {
@@ -68,7 +68,7 @@ const suggestionsStyle = `
     background: var(--tot-panel-border-color, var(--tot-color-neutral-300, #cbd5e1));
     flex: 0 0 var(--tot-panel-border-width, 1px);
     margin-block: .1875rem;
-    margin-inline: calc((var(--suggestions-separator-gap) - var(--suggestions-group-gap)) / 2) calc(var(--suggestions-separator-gap) / 2);
+    margin-inline: calc((var(--tot-suggestions-separator-gap) - var(--tot-suggestions-group-gap)) / 2) calc(var(--tot-suggestions-separator-gap) / 2);
     min-height: 1rem;
   }
 
@@ -88,10 +88,10 @@ const suggestionsStyle = `
     line-height: inherit;
     margin: 0;
     max-width: min(100%, 18rem);
-    min-height: var(--suggestions-tile-min-height);
+    min-height: var(--tot-suggestions-tile-min-height);
     min-width: 0;
     overflow: hidden;
-    padding: var(--suggestions-tile-padding-block) var(--suggestions-tile-padding-inline);
+    padding: var(--tot-suggestions-tile-padding-block) var(--tot-suggestions-tile-padding-inline);
     text-align: start;
     transition:
       var(--tot-transition-fast, 150ms) background-color,
@@ -136,10 +136,10 @@ const suggestionsStyle = `
     line-height: inherit;
     margin: 0;
     max-width: min(100%, 18rem);
-    min-height: var(--suggestions-tile-min-height);
+    min-height: var(--tot-suggestions-tile-min-height);
     min-width: 0;
     overflow: hidden;
-    padding: var(--suggestions-tile-padding-block) calc(var(--suggestions-tile-padding-inline) * .8);
+    padding: var(--tot-suggestions-tile-padding-block) calc(var(--tot-suggestions-tile-padding-inline) * .8);
     text-align: start;
     transition:
       var(--tot-transition-fast, 150ms) background-color,
@@ -186,27 +186,28 @@ export class TotSuggestions extends HTMLElement {
   constructor() {
     super()
     this._suggestionGroups = null
-    this._isRendering = false
     this._lineVisibleCount = null
-    this._measureRaf = 0
+    this._measureFrame = 0
     this._resizeObserver = null
     this._lastMeasuredWidth = -1
-    this._handleRootClick = (event) => this.handleClick(event)
-    this._handleResize = () => this.handleResize()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${suggestionsStyle}</style>
+      <div class="suggestions suggestions--small" part="base" role="list"></div>
+    `
+
+    this._baseElement = root.querySelector('.suggestions')
+    this._baseElement.addEventListener('click', event => this._handleClick(event))
   }
 
   get suggestions() {
-    if (this._suggestionGroups) {
-      return cloneGroups(this._suggestionGroups)
-    }
-
-    return parseSuggestions(this.getAttribute('suggestions'))
+    return cloneGroups(this._getSuggestionGroups())
   }
 
   set suggestions(value) {
     this._suggestionGroups = normalizeSuggestionGroups(value)
-    this.resetLineLimit()
-    this.render()
+    this._resetLineLimit()
+    this._render()
   }
 
   get limit() {
@@ -218,8 +219,7 @@ export class TotSuggestions extends HTMLElement {
   }
 
   get lineLimit() {
-    const value = this.getAttribute('line-limit') || this.getAttribute('lines')
-    return parseLimit(value)
+    return parseLimit(this.getAttribute('line-limit') || this.getAttribute('lines'))
   }
 
   set lineLimit(value) {
@@ -243,12 +243,13 @@ export class TotSuggestions extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this._render()
+    this._startObserving()
   }
 
   disconnectedCallback() {
-    this.stopObserving()
-    this.cancelMeasure()
+    this._stopObserving()
+    this._cancelMeasure()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -256,33 +257,27 @@ export class TotSuggestions extends HTMLElement {
       return
     }
 
-    if (this._isRendering) {
-      return
-    }
-
     if (name === 'suggestions') {
       this._suggestionGroups = null
     }
 
-    if (name !== 'expanded') {
-      this.resetLineLimit()
+    if (name !== 'expanded' || !this.expanded) {
+      this._resetLineLimit()
     }
 
-    this.render()
+    this._render()
   }
 
-  render() {
-    if (!this.isConnected && !this.shadowRoot) {
-      return
-    }
+  getBase() {
+    return this._baseElement
+  }
 
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const groups = this.suggestions
+  _render() {
+    const groups = this._getSuggestionGroups()
     const total = countSuggestions(groups)
     const expanded = this.expanded
     const limit = this.limit
     const lineLimit = this.lineLimit
-    const size = this.size
     let visibleCount = total
 
     if (!expanded && limit > 0) {
@@ -294,63 +289,52 @@ export class TotSuggestions extends HTMLElement {
     }
 
     const hiddenCount = expanded ? 0 : Math.max(0, total - visibleCount)
-    const classes = ['suggestions', `suggestions--${size}`]
+    this._syncClasses(expanded)
 
-    if (expanded) {
-      classes.push('suggestions--expanded')
+    const fragment = document.createDocumentFragment()
+    this._appendSuggestions(fragment, groups, visibleCount)
+    this._appendAction(fragment, total, hiddenCount, expanded, limit, lineLimit)
+    this._baseElement.replaceChildren(fragment)
+
+    if (this.isConnected) {
+      this._startObserving()
     }
 
-    this._isRendering = true
-    root.innerHTML = `<style>${suggestionsStyle}</style>
-      <div class="${escapeAttribute(classes.join(' '))}" part="base" role="list">
-        ${this.renderGroups(groups, visibleCount)}
-        ${this.renderAction(total, hiddenCount, expanded, limit, lineLimit)}
-      </div>
-    `
-    this._isRendering = false
-
-    root.removeEventListener('click', this._handleRootClick)
-    root.addEventListener('click', this._handleRootClick)
-    this.startObserving()
-
     if (!expanded && lineLimit > 0 && this._lineVisibleCount === null) {
-      this.scheduleMeasure()
+      this._scheduleMeasure()
     }
   }
 
-  renderGroups(groups, visibleCount) {
-    const html = []
+  _syncClasses(expanded) {
+    const size = this.size
+    this._baseElement.classList.remove(
+      'suggestions--small',
+      'suggestions--medium',
+      'suggestions--large',
+    )
+    this._baseElement.classList.add(`suggestions--${size}`)
+    this._baseElement.classList.toggle('suggestions--expanded', expanded)
+  }
+
+  _appendSuggestions(fragment, groups, visibleCount) {
     let remaining = visibleCount
     let flatIndex = 0
     let renderedGroups = 0
 
-    for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-      if (remaining <= 0) {
-        break
-      }
-
+    for (let groupIndex = 0; groupIndex < groups.length && remaining > 0; groupIndex++) {
       const group = groups[groupIndex]
       let groupRendered = false
-      for (let index = 0; index < group.length; index++) {
-        if (remaining <= 0) {
-          break
-        }
 
+      for (let index = 0; index < group.length && remaining > 0; index++) {
         if (!groupRendered && renderedGroups > 0) {
-          html.push('<span class="suggestion-separator" part="separator" aria-hidden="true"></span>')
+          const separator = document.createElement('span')
+          separator.className = 'suggestion-separator'
+          separator.setAttribute('part', 'separator')
+          separator.setAttribute('aria-hidden', 'true')
+          fragment.append(separator)
         }
 
-        const suggestion = group[index]
-        html.push(`<button
-          class="suggestion"
-          type="button"
-          part="suggestion"
-          data-group-index="${groupIndex}"
-          data-index="${index}"
-          data-flat-index="${flatIndex}"
-          title="${escapeAttribute(suggestion)}"
-          role="listitem"
-        ><span class="suggestion__text" part="suggestion-text">${escapeHtml(suggestion)}</span></button>`)
+        fragment.append(this._createSuggestion(group[index], groupIndex, index, flatIndex))
         remaining -= 1
         flatIndex += 1
         groupRendered = true
@@ -360,27 +344,53 @@ export class TotSuggestions extends HTMLElement {
         renderedGroups += 1
       }
     }
-
-    return html.join('')
   }
 
-  renderAction(total, hiddenCount, expanded, limit, lineLimit) {
+  _createSuggestion(suggestion, groupIndex, index, flatIndex) {
+    const button = document.createElement('button')
+    button.className = 'suggestion'
+    button.type = 'button'
+    button.dataset.groupIndex = String(groupIndex)
+    button.dataset.index = String(index)
+    button.dataset.flatIndex = String(flatIndex)
+    button.setAttribute('part', 'suggestion')
+    button.setAttribute('role', 'listitem')
+    button.title = suggestion
+
+    const text = document.createElement('span')
+    text.className = 'suggestion__text'
+    text.setAttribute('part', 'suggestion-text')
+    text.textContent = suggestion
+    button.append(text)
+    return button
+  }
+
+  _appendAction(fragment, total, hiddenCount, expanded, limit, lineLimit) {
     if (hiddenCount > 0) {
-      return `<button class="suggestions-action suggestions-action--more" type="button" part="more" aria-label="Show ${hiddenCount} more suggestions">
-        <span class="suggestions-action__text">...+${hiddenCount}</span>
-      </button>`
+      fragment.append(this._createAction('more', `Show ${hiddenCount} more suggestions`, `...+${hiddenCount}`))
+      return
     }
 
     if (expanded && total > 0 && (limit > 0 || lineLimit > 0)) {
-      return `<button class="suggestions-action suggestions-action--collapse" type="button" part="collapse" aria-label="Collapse suggestions">
-        <span class="suggestions-action__text">collapse</span>
-      </button>`
+      fragment.append(this._createAction('collapse', 'Collapse suggestions', 'collapse'))
     }
-
-    return ''
   }
 
-  handleClick(event) {
+  _createAction(action, label, text) {
+    const button = document.createElement('button')
+    button.className = `suggestions-action suggestions-action--${action}`
+    button.type = 'button'
+    button.setAttribute('part', action)
+    button.setAttribute('aria-label', label)
+
+    const content = document.createElement('span')
+    content.className = 'suggestions-action__text'
+    content.textContent = text
+    button.append(content)
+    return button
+  }
+
+  _handleClick(event) {
     const moreButton = closestElement(event.target, '.suggestions-action--more')
     if (moreButton) {
       event.preventDefault()
@@ -400,14 +410,14 @@ export class TotSuggestions extends HTMLElement {
       return
     }
 
-    emit(this, 'select', this.getEventDetail(button))
+    emit(this, 'select', this._getEventDetail(button))
   }
 
-  getEventDetail(button) {
+  _getEventDetail(button) {
     const groupIndex = parseDataIndex(button, 'groupIndex')
     const index = parseDataIndex(button, 'index')
     const flatIndex = parseDataIndex(button, 'flatIndex')
-    const groups = this.suggestions
+    const groups = this._getSuggestionGroups()
     const suggestion = groups[groupIndex]?.[index] || ''
 
     return {
@@ -420,105 +430,98 @@ export class TotSuggestions extends HTMLElement {
     }
   }
 
-  handleResize() {
+  _handleResize() {
     if (this.expanded || this.lineLimit <= 0) {
       return
     }
 
-    const base = this.getBase()
-    if (!base) {
-      return
-    }
-
-    const width = Math.round(base.getBoundingClientRect().width)
+    const width = Math.round(this._baseElement.getBoundingClientRect().width)
     if (width === this._lastMeasuredWidth) {
       return
     }
 
     this._lastMeasuredWidth = width
     this._lineVisibleCount = null
-    this.cancelMeasure()
-    this.render()
+    this._cancelMeasure()
+    this._render()
   }
 
-  scheduleMeasure() {
-    this.cancelMeasure()
-    this._measureRaf = requestAnimationFrame(() => {
-      this._measureRaf = 0
-      this.measureLineLimit()
+  _scheduleMeasure() {
+    this._cancelMeasure()
+    this._measureFrame = requestAnimationFrame(() => {
+      this._measureFrame = 0
+      this._measureLineLimit()
     })
   }
 
-  cancelMeasure() {
-    if (!this._measureRaf) {
+  _cancelMeasure() {
+    if (!this._measureFrame) {
       return
     }
 
-    cancelAnimationFrame(this._measureRaf)
-    this._measureRaf = 0
+    cancelAnimationFrame(this._measureFrame)
+    this._measureFrame = 0
   }
 
-  measureLineLimit() {
+  _measureLineLimit() {
     if (this.expanded || this.lineLimit <= 0) {
       return
     }
 
-    const base = this.getBase()
-    if (!base) {
+    const baseRect = this._baseElement.getBoundingClientRect()
+    const width = Math.round(baseRect.width)
+    if (width <= 0) {
       return
     }
 
-    const items = base.querySelectorAll('.suggestion')
-    const total = countSuggestions(this.suggestions)
-    this._lastMeasuredWidth = Math.round(base.getBoundingClientRect().width)
+    const items = this._baseElement.querySelectorAll('.suggestion')
+    const total = countSuggestions(this._getSuggestionGroups())
+    this._lastMeasuredWidth = width
 
     if (!items.length || !total) {
       this._lineVisibleCount = total
       return
     }
 
-    const visibleCount = getVisibleCountByLines(base, items, this.lineLimit)
-    if (visibleCount >= total) {
-      this._lineVisibleCount = total
-      return
-    }
+    const visibleCount = getVisibleCountByLines(this._baseElement, items, this.lineLimit)
+    const nextVisibleCount = visibleCount >= total
+      ? total
+      : Math.max(1, visibleCount - 1)
 
-    this._lineVisibleCount = Math.max(1, visibleCount - 1)
-    this.render()
+    if (nextVisibleCount !== this._lineVisibleCount) {
+      this._lineVisibleCount = nextVisibleCount
+      this._render()
+    }
   }
 
-  resetLineLimit() {
+  _getSuggestionGroups() {
+    if (!this._suggestionGroups) {
+      this._suggestionGroups = parseSuggestions(this.getAttribute('suggestions'))
+    }
+    return this._suggestionGroups
+  }
+
+  _resetLineLimit() {
     this._lineVisibleCount = null
     this._lastMeasuredWidth = -1
-    this.cancelMeasure()
+    this._cancelMeasure()
   }
 
-  startObserving() {
-    if (!('ResizeObserver' in window)) {
-      return
-    }
-
-    const base = this.getBase()
-    if (!base) {
+  _startObserving() {
+    if (!this.isConnected || !('ResizeObserver' in window)) {
       return
     }
 
     if (!this._resizeObserver) {
-      this._resizeObserver = new ResizeObserver(this._handleResize)
+      this._resizeObserver = new ResizeObserver(() => this._handleResize())
     }
 
     this._resizeObserver.disconnect()
-    this._resizeObserver.observe(base)
+    this._resizeObserver.observe(this._baseElement)
   }
 
-  stopObserving() {
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect()
-    }
-  }
-
-  getBase() {
-    return this.shadowRoot?.querySelector('.suggestions')
+  _stopObserving() {
+    this._resizeObserver?.disconnect()
   }
 }
 
@@ -674,19 +677,4 @@ function setNullableNumberAttribute(element, name, value) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
 
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
-}

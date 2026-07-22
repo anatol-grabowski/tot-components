@@ -24,33 +24,33 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Click and programmatic triggers</div>
+        <div class="demo-label">Click and programmatic activation</div>
         <div class="row">
-          <tot-tooltip id="clickTooltip" trigger="click" placement="bottom-start">
+          <tot-tooltip id="clickTooltip" activation="click" placement="bottom-start">
             <tot-button label="Click tooltip" caret></tot-button>
             <div slot="content" class="stack" style="min-width: 16rem;">
               <tot-input label="Quick note" placeholder="Type inside tooltip" clearable></tot-input>
               <tot-button size="small" variant="create" label="Save"></tot-button>
             </div>
           </tot-tooltip>
-          <tot-tooltip id="manualTooltip" trigger="manual" content="Shown and hidden from JavaScript.">
-            <tot-button id="manualTooltipButton" label="Toggle manual"></tot-button>
+          <tot-tooltip id="programmaticTooltip" activation="none" content="Shown and hidden from JavaScript.">
+            <tot-button id="programmaticTooltipButton" label="Toggle programmatically"></tot-button>
           </tot-tooltip>
         </div>
       </div>
     `
 
     const clickTooltip = wrapper.querySelector('#clickTooltip')
-    const manualTooltip = wrapper.querySelector('#manualTooltip')
-    const manualTooltipButton = wrapper.querySelector('#manualTooltipButton')
+    const programmaticTooltip = wrapper.querySelector('#programmaticTooltip')
+    const programmaticTooltipButton = wrapper.querySelector('#programmaticTooltipButton')
 
     clickTooltip.addEventListener('click', () => {
       logEvent(clickTooltip, 'click', { open: clickTooltip.open })
     })
 
-    manualTooltipButton.addEventListener('click', () => {
-      manualTooltip.toggle()
-      logEvent(manualTooltip, 'toggle', { open: manualTooltip.open })
+    programmaticTooltipButton.addEventListener('click', () => {
+      programmaticTooltip.toggle()
+      logEvent(programmaticTooltip, 'toggle', { open: programmaticTooltip.open })
     })
 
     container.appendChild(wrapper)

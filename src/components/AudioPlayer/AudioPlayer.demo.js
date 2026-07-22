@@ -50,7 +50,7 @@ registerDemo({
     const demoAudio = row.querySelector('tot-audio-player')
     demoAudio.blob = makeDemoAudioBlob()
 
-    const eventNames = ['loaded', 'play', 'pause', 'seek', 'error']
+    const eventNames = ['loaded', 'play', 'pause', 'ended', 'seek', 'error']
     for (let i = 0; i < eventNames.length; i++) {
       demoAudio.addEventListener(eventNames[i], (event) => {
         logEvent(demoAudio, eventNames[i], event.detail || {})

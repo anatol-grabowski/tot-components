@@ -244,20 +244,20 @@ registerDemo({
     setupStaticSlotDemo(wrapper)
     setupInteractiveSlotDemo(wrapper)
 
-    markdown.addEventListener('fullscreen-change', (event) => {
-      logEvent(markdown, 'fullscreen-change', event.detail)
+    markdown.addEventListener('fullscreen-change', () => {
+      logEvent(markdown, 'fullscreen-change', { fullscreen: markdown.fullscreen })
     })
 
-    pandoc.addEventListener('fullscreen-change', (event) => {
-      logEvent(pandoc, 'fullscreen-change', event.detail)
+    pandoc.addEventListener('fullscreen-change', () => {
+      logEvent(pandoc, 'fullscreen-change', { fullscreen: pandoc.fullscreen })
     })
 
-    staticSlot.addEventListener('fullscreen-change', (event) => {
-      logEvent(staticSlot, 'fullscreen-change', event.detail)
+    staticSlot.addEventListener('fullscreen-change', () => {
+      logEvent(staticSlot, 'fullscreen-change', { fullscreen: staticSlot.fullscreen })
     })
 
-    interactiveSlots.addEventListener('fullscreen-change', (event) => {
-      logEvent(interactiveSlots, 'fullscreen-change', event.detail)
+    interactiveSlots.addEventListener('fullscreen-change', () => {
+      logEvent(interactiveSlots, 'fullscreen-change', { fullscreen: interactiveSlots.fullscreen })
     })
 
     container.appendChild(wrapper)

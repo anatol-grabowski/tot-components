@@ -1,5 +1,9 @@
 const listStyle = `
   :host {
+    --tot-list-edge-size: 1.75rem;
+    --tot-list-edge-color: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    --tot-list-shadow-color: color-mix(in srgb, var(--tot-color-neutral-900, #0f172a) 18%, transparent);
+
     display: block;
     max-width: 100%;
     min-width: 0;
@@ -27,6 +31,16 @@ const listStyle = `
     max-width: 100%;
     min-height: var(--tot-list-min-height, 6rem);
     min-width: 0;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  .viewport {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    min-width: 0;
     overflow: auto;
     overflow-anchor: none;
     overscroll-behavior: contain;
@@ -34,9 +48,9 @@ const listStyle = `
     width: 100%;
   }
 
-  .list:focus-visible {
+  .viewport:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: var(--tot-focus-ring-offset, 1px);
+    outline-offset: calc(-1 * var(--tot-focus-ring-offset, 1px));
   }
 
   .content {
@@ -62,7 +76,7 @@ const listStyle = `
   }
 
   .item + .item {
-    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-100, #f1f5f9);
+    border-block-start: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-100, #f1f5f9);
   }
 
   .item:focus-visible {
@@ -77,12 +91,119 @@ const listStyle = `
     text-align: center;
   }
 
-  .status[hidden] {
-    display: none;
-  }
-
   .status--error {
     color: var(--tot-color-danger-700, #b91c1c);
+  }
+
+  .edge {
+    inset-inline: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transition: var(--tot-transition-fast, 150ms) opacity;
+    z-index: 1;
+  }
+
+  .edge--start {
+    background:
+      linear-gradient(
+        to bottom,
+        var(--tot-list-edge-color) 0%,
+        var(--tot-list-edge-color) 22%,
+        transparent 100%
+      );
+    box-shadow: 0 .5rem .7rem -.7rem var(--tot-list-shadow-color) inset;
+    height: var(--tot-list-edge-size);
+    inset-block: 0 auto;
+  }
+
+  .edge--end {
+    background:
+      linear-gradient(
+        to top,
+        var(--tot-list-edge-color) 0%,
+        var(--tot-list-edge-color) 22%,
+        transparent 100%
+      );
+    box-shadow: 0 -.5rem .7rem -.7rem var(--tot-list-shadow-color) inset;
+    height: var(--tot-list-edge-size);
+    inset-block: auto 0;
+  }
+
+  :host([horizontal]) .viewport {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  :host([horizontal]) .content {
+    display: flex;
+    height: 100%;
+    min-height: 100%;
+    min-width: 100%;
+    width: max-content;
+  }
+
+  :host([horizontal]) .items {
+    display: flex;
+    flex: 0 0 auto;
+    min-height: 100%;
+  }
+
+  :host([horizontal]) .item {
+    flex: 0 0 auto;
+    min-height: 100%;
+  }
+
+  :host([horizontal]) .item + .item {
+    border-block-start: 0;
+    border-inline-start: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-100, #f1f5f9);
+  }
+
+  :host([horizontal]) .status {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    min-height: 100%;
+  }
+
+  :host([horizontal]) .edge {
+    height: auto;
+    inset-block: 0;
+    width: var(--tot-list-edge-size);
+  }
+
+  :host([horizontal]) .edge--start {
+    background:
+      linear-gradient(
+        to right,
+        var(--tot-list-edge-color) 0%,
+        var(--tot-list-edge-color) 22%,
+        transparent 100%
+      );
+    box-shadow: .5rem 0 .7rem -.7rem var(--tot-list-shadow-color) inset;
+    inset-inline: 0 auto;
+  }
+
+  :host([horizontal]) .edge--end {
+    background:
+      linear-gradient(
+        to left,
+        var(--tot-list-edge-color) 0%,
+        var(--tot-list-edge-color) 22%,
+        transparent 100%
+      );
+    box-shadow: -.5rem 0 .7rem -.7rem var(--tot-list-shadow-color) inset;
+    inset-inline: auto 0;
+  }
+
+  :host([edge-shadows]) .list--has-start .edge--start,
+  :host([edge-shadows]) .list--has-end .edge--end {
+    opacity: 1;
+  }
+
+  .status[hidden] {
+    display: none !important;
   }
 `
 
@@ -91,41 +212,60 @@ export class TotList extends HTMLElement {
     return [
       'items',
       'buffer-size',
-      'buffersize',
-      'page-size',
-      'pagesize',
-      'estimated-item-height',
-      'estimateditemheight',
+      'estimated-item-size',
+      'edge-shadows',
+      'horizontal',
     ]
   }
 
   constructor() {
     super()
     this._items = []
-    this._providedSource = undefined
-    this._source = null
+    this._itemsSource = undefined
     this._iterator = null
+    this._iteratorHasMore = false
     this._loader = null
-    this._hasMore = false
+    this._loaderHasMore = false
     this._isLoading = false
+    this._loadPromise = null
+    this._requestedIndex = -1
     this._error = null
     this._sourceToken = 0
     this._rendered = false
     this._visibleFirst = 0
     this._visibleLast = -1
-    this._topPadding = 0
-    this._bottomPadding = 0
-    this._heightCache = new Map()
-    this._cumulativeHeights = [0]
+    this._sizeCache = new Map()
+    this._cumulativeSizes = [0]
     this._scrollFrame = 0
     this._measureFrame = 0
+    this._edgeFrame = 0
     this._needsRender = false
     this._resizeObserver = null
     this._templateObserver = null
-    this._handleScroll = () => this.scheduleVisibleRangeUpdate()
+    this._base = null
+    this._scroller = null
+    this._startSpacer = null
+    this._itemsContainer = null
+    this._endSpacer = null
+    this._loadingStatus = null
+    this._emptyStatus = null
+    this._endStatus = null
+    this._errorStatus = null
+    this._errorMessage = null
+    this._handleScroll = () => {
+      this.scheduleVisibleRangeUpdate()
+      this.scheduleEdgeUpdate()
+    }
     this._handleClick = event => this.handleItemClick(event)
-    this._handleResize = () => this.scheduleMeasure()
-    this._handleWindowResize = () => this.scheduleVisibleRangeUpdate()
+    this._handleResize = () => {
+      this.scheduleMeasure()
+      this.scheduleVisibleRangeUpdate()
+      this.scheduleEdgeUpdate()
+    }
+    this._handleWindowResize = () => {
+      this.scheduleVisibleRangeUpdate()
+      this.scheduleEdgeUpdate()
+    }
   }
 
   get items() {
@@ -133,15 +273,12 @@ export class TotList extends HTMLElement {
   }
 
   set items(value) {
-    this.setDataSource(Array.isArray(value) ? value : [])
-  }
+    this._itemsSource = normalizeItemsSource(value)
 
-  get dataSource() {
-    return this._providedSource
-  }
-
-  set dataSource(value) {
-    this.setDataSource(value)
+    if (this.isConnected) {
+      this.resetItemsSource(this._itemsSource)
+      void this.fillBuffer()
+    }
   }
 
   get loadMore() {
@@ -149,46 +286,65 @@ export class TotList extends HTMLElement {
   }
 
   set loadMore(value) {
-    this.setDataSource(value)
+    this._loader = typeof value === 'function' ? value : null
+    this._loaderHasMore = Boolean(this._loader)
+    this._error = null
+
+    if (this.isConnected) {
+      this.updateStatus()
+      void this.fillBuffer()
+    }
   }
 
   get bufferSize() {
-    return normalizePositiveNumber(this.getAttribute('buffer-size') || this.getAttribute('buffersize'), 600)
+    return normalizePositiveNumber(this.getAttribute('buffer-size'), 600)
   }
 
   set bufferSize(value) {
     setNullableAttribute(this, 'buffer-size', value)
   }
 
-  get pageSize() {
-    return normalizePositiveInteger(this.getAttribute('page-size') || this.getAttribute('pagesize'), 30)
+  get estimatedItemSize() {
+    return normalizePositiveNumber(this.getAttribute('estimated-item-size'), 48)
   }
 
-  set pageSize(value) {
-    setNullableAttribute(this, 'page-size', value)
+  set estimatedItemSize(value) {
+    setNullableAttribute(this, 'estimated-item-size', value)
   }
 
-  get estimatedItemHeight() {
-    return normalizePositiveNumber(this.getAttribute('estimated-item-height') || this.getAttribute('estimateditemheight'), 48)
+  get edgeShadows() {
+    return this.hasAttribute('edge-shadows')
   }
 
-  set estimatedItemHeight(value) {
-    setNullableAttribute(this, 'estimated-item-height', value)
+  set edgeShadows(value) {
+    setBooleanAttribute(this, 'edge-shadows', value)
+  }
+
+  get horizontal() {
+    return this.hasAttribute('horizontal')
+  }
+
+  set horizontal(value) {
+    setBooleanAttribute(this, 'horizontal', value)
   }
 
   connectedCallback() {
     this.render()
+    this.attachListeners()
+    this.setupResizeObserver()
+    this.setupTemplateObserver()
+    this.updateOrientation()
 
-    if (this._providedSource !== undefined) {
-      this.resetSource(this._providedSource)
-      return
-    }
+    const source = this._itemsSource !== undefined
+      ? this._itemsSource
+      : parseItems(this.getAttribute('items'))
 
-    this.resetSource(parseItems(this.getAttribute('items')))
+    this.resetItemsSource(source)
+    void this.fillBuffer()
   }
 
   disconnectedCallback() {
-    window.removeEventListener('resize', this._handleWindowResize)
+    this.detachListeners()
     this.cancelFrames()
     this.teardownResizeObserver()
     this.teardownTemplateObserver()
@@ -196,105 +352,32 @@ export class TotList extends HTMLElement {
 
   attributeChangedCallback(name) {
     if (name === 'items') {
-      this._providedSource = undefined
+      this._itemsSource = undefined
       if (this.isConnected) {
-        this.resetSource(parseItems(this.getAttribute('items')))
+        this.resetItemsSource(parseItems(this.getAttribute('items')))
+        void this.fillBuffer()
       }
       return
     }
 
-    this.rebuildCumulativeHeights()
+    if (name === 'edge-shadows') {
+      this.scheduleEdgeUpdate()
+      return
+    }
+
+    if (name === 'horizontal') {
+      this._sizeCache.clear()
+      this.updateOrientation()
+      this.resetScrollPosition()
+    }
+
+    this.rebuildCumulativeSizes()
     this.scheduleVisibleRangeUpdate()
-  }
-
-  setDataSource(source) {
-    this._providedSource = source
-
-    if (this.isConnected) {
-      this.resetSource(source)
-    }
-  }
-
-  async refresh() {
-    const source = this._providedSource !== undefined ? this._providedSource : parseItems(this.getAttribute('items'))
-    this.resetSource(source)
-  }
-
-  async loadNextPage() {
-    if (this._isLoading || !this._hasMore || this._error) {
-      return []
-    }
-
-    const token = this._sourceToken
-    this._isLoading = true
-    this.updateStatus()
-    emit(this, 'load-start', this.getEventDetail())
-
-    try {
-      let result
-
-      if (this._iterator) {
-        result = await readIteratorPage(this._iterator, this.pageSize)
-      } else if (this._loader) {
-        result = await this._loader({
-          offset: this._items.length,
-          pageSize: this.pageSize,
-          items: this._items.slice(),
-        })
-      } else {
-        result = {
-          items: [],
-          hasMore: false,
-        }
-      }
-
-      if (token !== this._sourceToken) {
-        return []
-      }
-
-      const normalized = normalizeLoadResult(result, Boolean(this._iterator))
-      const nextItems = normalized.items
-
-      for (let i = 0; i < nextItems.length; i++) {
-        this._items.push(nextItems[i])
-      }
-
-      this._hasMore = normalized.hasMore
-      this.rebuildCumulativeHeights()
-      this.updateVisibleRange()
-      emit(this, 'load-end', {
-        ...this.getEventDetail(),
-        added: nextItems.length,
-      })
-
-      this.loadMoreIfNeeded()
-      return nextItems
-    } catch (error) {
-      if (token !== this._sourceToken) {
-        return []
-      }
-
-      this._error = error
-      this._hasMore = false
-      this.updateStatus()
-      emit(this, 'error', {
-        ...this.getEventDetail(),
-        error,
-      })
-      return []
-    } finally {
-      if (token === this._sourceToken) {
-        this._isLoading = false
-        this.updateStatus()
-        this.loadMoreIfNeeded()
-      }
-    }
   }
 
   handleItemClick(event) {
     const itemElement = event.target?.closest?.('.item')
-    const scroller = this.getScroller()
-    if (!itemElement || !scroller || !scroller.contains(itemElement)) {
+    if (!itemElement || !this._scroller?.contains(itemElement)) {
       return
     }
 
@@ -308,138 +391,249 @@ export class TotList extends HTMLElement {
 
   async scrollToIndex(index, options) {
     const targetIndex = Math.max(0, normalizeInteger(index, 0))
+    await this.fillBuffer(targetIndex)
 
-    while (this._hasMore && this._items.length <= targetIndex && !this._error) {
-      const loadedItems = await this.loadNextPage()
-      if (loadedItems.length === 0) {
-        break
-      }
-    }
-
-    if (this._items.length === 0) {
+    if (this._items.length === 0 || !this._scroller) {
       return
     }
 
     const clampedIndex = Math.min(targetIndex, this._items.length - 1)
-    const scroller = this.getScroller()
-    if (!scroller) {
-      return
-    }
-
     const align = normalizeAlign(options)
-    const itemTop = this.getOffsetForIndex(clampedIndex)
-    const itemBottom = this.getOffsetForIndex(clampedIndex + 1)
-    let nextScrollTop = itemTop
+    const itemStart = this.getOffsetForIndex(clampedIndex)
+    const itemEnd = this.getOffsetForIndex(clampedIndex + 1)
+    const viewportSize = this.getViewportSize()
+    const currentPosition = this.getScrollPosition()
+    let nextPosition = itemStart
 
     if (align === 'center') {
-      nextScrollTop = itemTop - (scroller.clientHeight - (itemBottom - itemTop)) / 2
+      nextPosition = itemStart - (viewportSize - (itemEnd - itemStart)) / 2
     } else if (align === 'end') {
-      nextScrollTop = itemBottom - scroller.clientHeight
+      nextPosition = itemEnd - viewportSize
     } else if (align === 'nearest') {
-      const currentTop = scroller.scrollTop
-      const currentBottom = currentTop + scroller.clientHeight
-      if (itemTop >= currentTop && itemBottom <= currentBottom) {
+      const currentEnd = currentPosition + viewportSize
+      if (itemStart >= currentPosition && itemEnd <= currentEnd) {
         return
       }
-      nextScrollTop = Math.abs(itemTop - currentTop) < Math.abs(itemBottom - currentBottom) ? itemTop : itemBottom - scroller.clientHeight
+      nextPosition = Math.abs(itemStart - currentPosition) < Math.abs(itemEnd - currentEnd)
+        ? itemStart
+        : itemEnd - viewportSize
     }
 
-    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight)
-    scroller.scrollTop = clamp(nextScrollTop, 0, maxScrollTop)
+    const maxPosition = Math.max(0, this.getScrollSize() - viewportSize)
+    this.setScrollPosition(clamp(nextPosition, 0, maxPosition))
     this.updateVisibleRange()
-  }
-
-  async scrollToItem(index, options) {
-    await this.scrollToIndex(index, options)
   }
 
   render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+    if (this._rendered) {
+      return
+    }
+
+    const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `
       <style>${listStyle}</style>
-      <div class="list" part="base" role="list" tabindex="0">
-        <div class="content" part="content">
-          <div class="spacer spacer--top" part="top-spacer"></div>
-          <div class="items" part="items"></div>
-          <div class="spacer spacer--bottom" part="bottom-spacer"></div>
-          <div class="status status--loading" part="loading" hidden><slot name="loading">Loading...</slot></div>
-          <div class="status status--empty" part="empty" hidden><slot name="empty">No items.</slot></div>
-          <div class="status status--end" part="end" hidden><slot name="end">End of list.</slot></div>
-          <div class="status status--error" part="error" hidden><slot name="error"><span class="error-message"></span></slot></div>
+      <div class="list" part="base">
+        <div class="viewport" part="viewport" role="list" tabindex="0">
+          <div class="content" part="content">
+            <div class="spacer spacer--start" part="start-spacer"></div>
+            <div class="items" part="items"></div>
+            <div class="status status--loading" part="loading" hidden><slot name="loading">Loading...</slot></div>
+            <div class="status status--error" part="error" hidden><slot name="error"><span class="error-message"></span></slot></div>
+            <div class="spacer spacer--end" part="end-spacer"></div>
+            <div class="status status--empty" part="empty" hidden><slot name="empty">No items.</slot></div>
+            <div class="status status--end" part="end" hidden><slot name="end">End of list.</slot></div>
+          </div>
         </div>
+        <span class="edge edge--start" part="start-shadow" aria-hidden="true"></span>
+        <span class="edge edge--end" part="end-shadow" aria-hidden="true"></span>
       </div>
     `
 
+    this._base = root.querySelector('.list')
+    this._scroller = root.querySelector('.viewport')
+    this._startSpacer = root.querySelector('.spacer--start')
+    this._itemsContainer = root.querySelector('.items')
+    this._endSpacer = root.querySelector('.spacer--end')
+    this._loadingStatus = root.querySelector('.status--loading')
+    this._emptyStatus = root.querySelector('.status--empty')
+    this._endStatus = root.querySelector('.status--end')
+    this._errorStatus = root.querySelector('.status--error')
+    this._errorMessage = root.querySelector('.error-message')
     this._rendered = true
-    this.teardownResizeObserver()
-    this.setupResizeObserver()
-    this.teardownTemplateObserver()
-    this.setupTemplateObserver()
+  }
 
-    const scroller = this.getScroller()
-    if (scroller) {
-      scroller.addEventListener('scroll', this._handleScroll, { passive: true })
-      scroller.addEventListener('click', this._handleClick)
+  attachListeners() {
+    this._scroller?.addEventListener('scroll', this._handleScroll, { passive: true })
+    this._scroller?.addEventListener('click', this._handleClick)
+    window.addEventListener('resize', this._handleWindowResize)
+  }
+
+  detachListeners() {
+    this._scroller?.removeEventListener('scroll', this._handleScroll)
+    this._scroller?.removeEventListener('click', this._handleClick)
+    window.removeEventListener('resize', this._handleWindowResize)
+  }
+
+  updateOrientation() {
+    if (!this._scroller) {
+      return
     }
 
-    window.removeEventListener('resize', this._handleWindowResize)
-    window.addEventListener('resize', this._handleWindowResize)
+    this._scroller.setAttribute('aria-orientation', this.horizontal ? 'horizontal' : 'vertical')
+  }
 
+  resetScrollPosition() {
+    if (!this._scroller) {
+      return
+    }
+
+    this._scroller.scrollTop = 0
+    this._scroller.scrollLeft = 0
+  }
+
+  resetItemsSource(source) {
+    this._sourceToken += 1
+    this._items = []
+    this._iterator = null
+    this._iteratorHasMore = false
+    this._loaderHasMore = Boolean(this._loader)
+    this._isLoading = false
+    this._loadPromise = null
+    this._requestedIndex = -1
+    this._error = null
+    this._visibleFirst = 0
+    this._visibleLast = -1
+    this._sizeCache.clear()
+    this._cumulativeSizes = [0]
+    this._needsRender = true
+    this.resetScrollPosition()
+
+    if (Array.isArray(source)) {
+      this._items = source.slice()
+    } else if (isItemsIterator(source)) {
+      this._iterator = getIterator(source)
+      this._iteratorHasMore = true
+    }
+
+    this.rebuildCumulativeSizes()
     this.updateVisibleRange()
     this.updateStatus()
   }
 
-  resetSource(source) {
-    this._sourceToken += 1
-    this._items = []
-    this._source = source
-    this._iterator = null
-    this._loader = null
-    this._hasMore = false
-    this._isLoading = false
-    this._error = null
-    this._visibleFirst = 0
-    this._visibleLast = -1
-    this._topPadding = 0
-    this._bottomPadding = 0
-    this._heightCache.clear()
-    this._cumulativeHeights = [0]
-    this._needsRender = true
+  async fillBuffer(targetIndex = -1) {
+    this._requestedIndex = Math.max(this._requestedIndex, targetIndex)
 
-    const scroller = this.getScroller()
-    if (scroller) {
-      scroller.scrollTop = 0
+    if (this._loadPromise) {
+      const loadedItems = await this._loadPromise
+      if (this.hasMore() && this.shouldLoadMore(targetIndex)) {
+        const moreItems = await this.fillBuffer(targetIndex)
+        return loadedItems.concat(moreItems)
+      }
+      return loadedItems
     }
 
-    if (Array.isArray(source)) {
-      this._items = source.slice()
-      this._hasMore = false
-      this.rebuildCumulativeHeights()
-      this.updateVisibleRange()
-      this.updateStatus()
-      return
+    if (!this.hasMore() || this._error) {
+      return []
     }
 
-    if (typeof source === 'function') {
-      this._loader = source
-      this._hasMore = true
-      this.updateVisibleRange()
-      this.updateStatus()
-      void this.loadNextPage()
-      return
-    }
+    let loadPromise
+    loadPromise = this.performLoad().finally(() => {
+      if (this._loadPromise === loadPromise) {
+        this._loadPromise = null
+      }
+    })
+    this._loadPromise = loadPromise
+    return loadPromise
+  }
 
-    if (isIterator(source)) {
-      this._iterator = source
-      this._hasMore = true
-      this.updateVisibleRange()
-      this.updateStatus()
-      void this.loadNextPage()
-      return
-    }
-
-    this.updateVisibleRange()
+  async performLoad() {
+    const token = this._sourceToken
+    const addedItems = []
+    this._isLoading = true
     this.updateStatus()
+    emit(this, 'load-start', this.getEventDetail())
+
+    try {
+      while (token === this._sourceToken && this.hasMore() && this.shouldLoadMore(this._requestedIndex)) {
+        const nextItems = await this.readNextItems()
+
+        if (token !== this._sourceToken) {
+          return addedItems
+        }
+
+        for (let i = 0; i < nextItems.length; i++) {
+          this._items.push(nextItems[i])
+          addedItems.push(nextItems[i])
+        }
+
+        if (nextItems.length > 0) {
+          this.rebuildCumulativeSizes()
+          this.updateVisibleRange()
+        }
+      }
+    } catch (error) {
+      if (token === this._sourceToken) {
+        this._error = error
+        this._iteratorHasMore = false
+        this._loaderHasMore = false
+        emit(this, 'error', {
+          ...this.getEventDetail(),
+          error,
+        })
+      }
+    } finally {
+      if (token === this._sourceToken) {
+        this._isLoading = false
+        this._requestedIndex = -1
+        this.updateVisibleRange()
+        this.updateStatus()
+
+        if (!this._error) {
+          emit(this, 'load-end', {
+            ...this.getEventDetail(),
+            added: addedItems.length,
+          })
+        }
+      }
+    }
+
+    return addedItems
+  }
+
+  async readNextItems() {
+    if (this._iteratorHasMore && this._iterator) {
+      const result = await this._iterator.next()
+      if (!result.done) {
+        return [result.value]
+      }
+      this._iteratorHasMore = false
+    }
+
+    if (this._loaderHasMore && this._loader) {
+      const result = await this._loader()
+      if (!Array.isArray(result)) {
+        throw new TypeError('TotList loadMore must return an array')
+      }
+      if (result.length > 0) {
+        return result
+      }
+      this._loaderHasMore = false
+    }
+
+    return []
+  }
+
+  hasMore() {
+    return this._iteratorHasMore || this._loaderHasMore
+  }
+
+  shouldLoadMore(targetIndex) {
+    if (targetIndex >= this._items.length) {
+      return true
+    }
+
+    const viewportEnd = this.getScrollPosition() + this.getViewportSize() + this.bufferSize
+    return this.getOffsetForIndex(this._items.length) <= viewportEnd + 1
   }
 
   scheduleVisibleRangeUpdate() {
@@ -454,41 +648,33 @@ export class TotList extends HTMLElement {
   }
 
   updateVisibleRange() {
-    if (!this._rendered) {
-      return
-    }
-
-    const scroller = this.getScroller()
-    if (!scroller) {
+    if (!this._rendered || !this._scroller || !this._startSpacer || !this._endSpacer) {
       return
     }
 
     const count = this._items.length
-    const topSpacer = this.shadowRoot.querySelector('.spacer--top')
-    const bottomSpacer = this.shadowRoot.querySelector('.spacer--bottom')
     const previousFirst = this._visibleFirst
     const previousLast = this._visibleLast
-    const previousScrollTop = scroller.scrollTop
+    const previousPosition = this.getScrollPosition()
 
     if (count === 0) {
       this._visibleFirst = 0
       this._visibleLast = -1
-      this._topPadding = 0
-      this._bottomPadding = 0
-      topSpacer.style.height = '0px'
-      bottomSpacer.style.height = '0px'
+      this.setSpacerSize(this._startSpacer, 0)
+      this.setSpacerSize(this._endSpacer, 0)
       this.renderItems()
-      this.restoreScrollTop(scroller, previousScrollTop)
+      this.restoreScrollPosition(previousPosition)
       this.loadMoreIfNeeded()
+      this.scheduleEdgeUpdate()
       return
     }
 
-    const scrollTop = scroller.scrollTop
-    const viewportHeight = scroller.clientHeight || 0
+    const scrollPosition = this.getScrollPosition()
+    const viewportSize = this.getViewportSize()
     const bufferSize = this.bufferSize
-    const startPosition = Math.max(0, scrollTop - bufferSize)
-    const endPosition = scrollTop + viewportHeight + bufferSize
-    let firstIndex = scrollTop < bufferSize / 2 ? 0 : this.findIndexAtPosition(startPosition)
+    const startPosition = Math.max(0, scrollPosition - bufferSize)
+    const endPosition = scrollPosition + viewportSize + bufferSize
+    let firstIndex = scrollPosition < bufferSize / 2 ? 0 : this.findIndexAtPosition(startPosition)
     let lastIndex = this.findIndexAtPosition(endPosition)
 
     while (lastIndex < count - 1 && this.getOffsetForIndex(lastIndex + 1) < endPosition) {
@@ -498,41 +684,37 @@ export class TotList extends HTMLElement {
     firstIndex = clamp(firstIndex, 0, count - 1)
     lastIndex = clamp(Math.max(firstIndex, lastIndex), 0, count - 1)
 
-    const nextTopPadding = this.getOffsetForIndex(firstIndex)
-    const nextBottomPadding = Math.max(0, this.getOffsetForIndex(count) - this.getOffsetForIndex(lastIndex + 1))
+    const nextStartPadding = this.getOffsetForIndex(firstIndex)
+    const nextEndPadding = Math.max(0, this.getOffsetForIndex(count) - this.getOffsetForIndex(lastIndex + 1))
     const rangeChanged = firstIndex !== previousFirst || lastIndex !== previousLast
 
     this._visibleFirst = firstIndex
     this._visibleLast = lastIndex
-    this._topPadding = nextTopPadding
-    this._bottomPadding = nextBottomPadding
 
-    topSpacer.style.height = `${Math.round(nextTopPadding)}px`
-    bottomSpacer.style.height = `${Math.round(nextBottomPadding)}px`
+    this.setSpacerSize(this._startSpacer, nextStartPadding)
+    this.setSpacerSize(this._endSpacer, nextEndPadding)
 
     if (rangeChanged || this._needsRender) {
       this.renderItems()
     }
 
-    this.restoreScrollTop(scroller, previousScrollTop)
+    this.restoreScrollPosition(previousPosition)
     this.loadMoreIfNeeded()
+    this.scheduleEdgeUpdate()
   }
 
   renderItems() {
-    const itemsContainer = this.shadowRoot?.querySelector('.items')
-    if (!itemsContainer) {
+    if (!this._itemsContainer) {
       return
     }
 
     this._needsRender = false
-
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect()
-    }
-
-    itemsContainer.innerHTML = ''
+    this._resizeObserver?.disconnect()
+    this._itemsContainer.replaceChildren()
 
     if (this._visibleLast < this._visibleFirst) {
+      this.observeVisibleItems()
+      this.scheduleEdgeUpdate()
       return
     }
 
@@ -555,11 +737,11 @@ export class TotList extends HTMLElement {
       itemElement.dataset.index = String(index)
       itemElement._totItem = item
       itemElement._totItemContext = context
-      itemElement.append(renderItemContent(this, template, item, context))
+      itemElement.append(createItemContent(template, item, context))
       fragment.append(itemElement)
     }
 
-    itemsContainer.append(fragment)
+    this._itemsContainer.append(fragment)
     this.observeVisibleItems()
     this.scheduleMeasure()
   }
@@ -569,31 +751,32 @@ export class TotList extends HTMLElement {
       return
     }
 
-    const items = this.shadowRoot.querySelectorAll('.item')
+    if (this._scroller) {
+      this._resizeObserver.observe(this._scroller)
+    }
+
+    const items = this._itemsContainer?.children || []
     for (let i = 0; i < items.length; i++) {
       this._resizeObserver.observe(items[i])
     }
   }
 
   setupResizeObserver() {
-    if (typeof ResizeObserver === 'undefined') {
+    if (typeof ResizeObserver === 'undefined' || this._resizeObserver) {
       return
     }
 
     this._resizeObserver = new ResizeObserver(this._handleResize)
+    this.observeVisibleItems()
   }
 
   teardownResizeObserver() {
-    if (!this._resizeObserver) {
-      return
-    }
-
-    this._resizeObserver.disconnect()
+    this._resizeObserver?.disconnect()
     this._resizeObserver = null
   }
 
   setupTemplateObserver() {
-    if (typeof MutationObserver === 'undefined') {
+    if (typeof MutationObserver === 'undefined' || this._templateObserver) {
       return
     }
 
@@ -603,17 +786,14 @@ export class TotList extends HTMLElement {
     })
     this._templateObserver.observe(this, {
       attributes: true,
+      characterData: true,
       childList: true,
       subtree: true,
     })
   }
 
   teardownTemplateObserver() {
-    if (!this._templateObserver) {
-      return
-    }
-
-    this._templateObserver.disconnect()
+    this._templateObserver?.disconnect()
     this._templateObserver = null
   }
 
@@ -629,21 +809,22 @@ export class TotList extends HTMLElement {
   }
 
   measureVisibleItems() {
-    const itemElements = this.shadowRoot?.querySelectorAll('.item') || []
+    const itemElements = this._itemsContainer?.children || []
     let changed = false
 
     for (let i = 0; i < itemElements.length; i++) {
       const itemElement = itemElements[i]
       const index = normalizeInteger(itemElement.dataset.index, -1)
-      const height = itemElement.getBoundingClientRect().height
+      const rect = itemElement.getBoundingClientRect()
+      const size = this.horizontal ? rect.width : rect.height
 
-      if (index < 0 || height <= 0) {
+      if (index < 0 || size <= 0) {
         continue
       }
 
-      const previousHeight = this._heightCache.get(index)
-      if (previousHeight === undefined || Math.abs(previousHeight - height) > 0.5) {
-        this._heightCache.set(index, height)
+      const previousSize = this._sizeCache.get(index)
+      if (previousSize === undefined || Math.abs(previousSize - size) > 0.5) {
+        this._sizeCache.set(index, size)
         changed = true
       }
     }
@@ -652,21 +833,21 @@ export class TotList extends HTMLElement {
       return
     }
 
-    this.rebuildCumulativeHeights()
+    this.rebuildCumulativeSizes()
     this.updateVisibleRange()
   }
 
-  rebuildCumulativeHeights() {
-    const heights = [0]
+  rebuildCumulativeSizes() {
+    const sizes = [0]
     let total = 0
-    const estimatedHeight = this.estimatedItemHeight
+    const estimatedSize = this.estimatedItemSize
 
     for (let i = 0; i < this._items.length; i++) {
-      total += this._heightCache.get(i) || estimatedHeight
-      heights.push(total)
+      total += this._sizeCache.get(i) || estimatedSize
+      sizes.push(total)
     }
 
-    this._cumulativeHeights = heights
+    this._cumulativeSizes = sizes
   }
 
   findIndexAtPosition(position) {
@@ -674,13 +855,12 @@ export class TotList extends HTMLElement {
       return 0
     }
 
-    const heights = this._cumulativeHeights
     let left = 0
     let right = this._items.length - 1
 
     while (left < right) {
       const mid = Math.floor((left + right + 1) / 2)
-      if (heights[mid] <= position) {
+      if (this._cumulativeSizes[mid] <= position) {
         left = mid
       } else {
         right = mid - 1
@@ -695,65 +875,135 @@ export class TotList extends HTMLElement {
       return 0
     }
 
-    if (index >= this._cumulativeHeights.length) {
-      return this._cumulativeHeights[this._cumulativeHeights.length - 1] || 0
+    if (index >= this._cumulativeSizes.length) {
+      return this._cumulativeSizes[this._cumulativeSizes.length - 1] || 0
     }
 
-    return this._cumulativeHeights[index] || 0
+    return this._cumulativeSizes[index] || 0
   }
 
+  setSpacerSize(spacer, size) {
+    if (this.horizontal) {
+      spacer.style.width = `${Math.round(size)}px`
+      spacer.style.height = ''
+    } else {
+      spacer.style.width = ''
+      spacer.style.height = `${Math.round(size)}px`
+    }
+  }
 
-  restoreScrollTop(scroller, scrollTop) {
-    if (Math.abs(scroller.scrollTop - scrollTop) <= 0.5) {
+  getScrollPosition() {
+    if (!this._scroller) {
+      return 0
+    }
+    return this.horizontal ? this._scroller.scrollLeft : this._scroller.scrollTop
+  }
+
+  setScrollPosition(value) {
+    if (!this._scroller) {
       return
     }
 
-    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight)
-    scroller.scrollTop = clamp(scrollTop, 0, maxScrollTop)
+    if (this.horizontal) {
+      this._scroller.scrollLeft = value
+    } else {
+      this._scroller.scrollTop = value
+    }
+  }
+
+  getViewportSize() {
+    if (!this._scroller) {
+      return 0
+    }
+    return this.horizontal ? this._scroller.clientWidth : this._scroller.clientHeight
+  }
+
+  getScrollSize() {
+    if (!this._scroller) {
+      return 0
+    }
+    return this.horizontal ? this._scroller.scrollWidth : this._scroller.scrollHeight
+  }
+
+  restoreScrollPosition(position) {
+    const currentPosition = this.getScrollPosition()
+    if (Math.abs(currentPosition - position) <= 0.5) {
+      return
+    }
+
+    const maxPosition = Math.max(0, this.getScrollSize() - this.getViewportSize())
+    this.setScrollPosition(clamp(position, 0, maxPosition))
   }
 
   loadMoreIfNeeded() {
-    if (!this._hasMore || this._isLoading || this._error) {
+    if (!this.hasMore() || this._isLoading || this._error) {
       return
     }
 
-    const scroller = this.getScroller()
-    if (!scroller) {
-      return
-    }
-
-    const threshold = Math.max(this.bufferSize, scroller.clientHeight)
-    const remaining = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
-
-    if (remaining <= threshold || scroller.scrollHeight <= scroller.clientHeight + threshold / 2) {
-      void this.loadNextPage()
+    if (this.shouldLoadMore(-1)) {
+      void this.fillBuffer()
     }
   }
 
   updateStatus() {
-    const root = this.shadowRoot
-    if (!root) {
+    if (!this._loadingStatus) {
       return
     }
 
-    const loading = root.querySelector('.status--loading')
-    const empty = root.querySelector('.status--empty')
-    const end = root.querySelector('.status--end')
-    const error = root.querySelector('.status--error')
-    const errorMessage = root.querySelector('.error-message')
+    const hasMore = this.hasMore()
+    this._loadingStatus.hidden = !this._isLoading
+    this._emptyStatus.hidden = Boolean(this._error) || this._isLoading || this._items.length > 0 || hasMore
+    this._endStatus.hidden = Boolean(this._error) || this._isLoading || this._items.length === 0 || hasMore
+    this._errorStatus.hidden = !this._error
 
-    loading.hidden = !this._isLoading
-    empty.hidden = Boolean(this._error) || this._isLoading || this._items.length > 0 || this._hasMore
-    end.hidden = Boolean(this._error) || this._isLoading || this._items.length === 0 || this._hasMore
-    error.hidden = !this._error
-
-    if (errorMessage) {
-      errorMessage.textContent = getErrorMessage(this._error)
+    if (this._errorMessage) {
+      this._errorMessage.textContent = getErrorMessage(this._error)
     }
+
+    this.scheduleEdgeUpdate()
+  }
+
+  scheduleEdgeUpdate() {
+    if (this._edgeFrame) {
+      return
+    }
+
+    this._edgeFrame = requestAnimationFrame(() => {
+      this._edgeFrame = 0
+      this.updateEdges()
+    })
+  }
+
+  updateEdges() {
+    if (!this._base || !this._scroller) {
+      return
+    }
+
+    if (!this.edgeShadows) {
+      this._base.classList.remove('list--has-start', 'list--has-end')
+      return
+    }
+
+    const maxPosition = Math.max(0, this.getScrollSize() - this.getViewportSize())
+    const position = clamp(this.getScrollPosition(), 0, maxPosition)
+    this._base.classList.toggle('list--has-start', position > 1)
+    this._base.classList.toggle('list--has-end', maxPosition - position > 1)
+  }
+
+  getBase() {
+    return this._base
   }
 
   getScroller() {
-    return this.shadowRoot?.querySelector('.list') || null
+    return this._scroller
+  }
+
+  getItemsContainer() {
+    return this._itemsContainer
+  }
+
+  getRenderedItems() {
+    return Array.from(this._itemsContainer?.children || [])
   }
 
   getEventDetail() {
@@ -761,7 +1011,7 @@ export class TotList extends HTMLElement {
       count: this._items.length,
       first: this._visibleFirst,
       last: this._visibleLast,
-      hasMore: this._hasMore,
+      hasMore: this.hasMore(),
       loading: this._isLoading,
     }
   }
@@ -776,16 +1026,15 @@ export class TotList extends HTMLElement {
       cancelAnimationFrame(this._measureFrame)
       this._measureFrame = 0
     }
+
+    if (this._edgeFrame) {
+      cancelAnimationFrame(this._edgeFrame)
+      this._edgeFrame = 0
+    }
   }
 }
 
-function renderItemContent(host, template, item, context) {
-  const renderer = host.renderItem || host.itemRenderer
-  if (typeof renderer === 'function') {
-    const rendered = renderer(item, context)
-    return normalizeRenderedContent(rendered)
-  }
-
+function createItemContent(template, item, context) {
   if (template) {
     const fragment = template.content.cloneNode(true)
     hydrateTemplate(fragment, item, context)
@@ -798,27 +1047,8 @@ function renderItemContent(host, template, item, context) {
   return itemElement
 }
 
-function normalizeRenderedContent(value) {
-  if (value instanceof Node) {
-    return value
-  }
-
-  const fragment = document.createDocumentFragment()
-
-  if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) {
-      fragment.append(normalizeRenderedContent(value[i]))
-    }
-    return fragment
-  }
-
-  const span = document.createElement('span')
-  span.textContent = value === null || value === undefined ? '' : String(value)
-  return span
-}
-
 function getItemTemplate(element) {
-  return element.querySelector('template[slot="item"], template[data-slot="item"], template:not([slot])')
+  return element.querySelector('template[slot="item"]')
 }
 
 function hydrateTemplate(node, item, context) {
@@ -904,45 +1134,32 @@ function getItemText(item) {
   return safeStringify(item)
 }
 
+function normalizeItemsSource(value) {
+  if (Array.isArray(value) || isItemsIterator(value)) {
+    return value
+  }
+  throw new TypeError('TotList items must be an array, iterator, or iterable')
+}
+
 function parseItems(value) {
   if (!value) {
     return []
   }
 
-  const parsed = parseJson(value, [])
-  return Array.isArray(parsed) ? parsed : []
-}
-
-function parseJson(value, fallback) {
   try {
-    return JSON.parse(value)
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
   } catch (error) {
-    return fallback
+    return []
   }
 }
 
-function isIterator(value) {
-  return value && (typeof value.next === 'function' || typeof value[Symbol.iterator] === 'function' || typeof value[Symbol.asyncIterator] === 'function')
-}
-
-async function readIteratorPage(iteratorSource, pageSize) {
-  const iterator = getIterator(iteratorSource)
-  const items = []
-  let hasMore = true
-
-  for (let i = 0; i < pageSize; i++) {
-    const result = await iterator.next()
-    if (result.done) {
-      hasMore = false
-      break
-    }
-    items.push(result.value)
-  }
-
-  return {
-    items,
-    hasMore,
-  }
+function isItemsIterator(value) {
+  return Boolean(value) && (
+    typeof value.next === 'function'
+    || typeof value[Symbol.iterator] === 'function'
+    || typeof value[Symbol.asyncIterator] === 'function'
+  )
 }
 
 function getIterator(source) {
@@ -955,35 +1172,6 @@ function getIterator(source) {
   }
 
   return source[Symbol.iterator]()
-}
-
-function normalizeLoadResult(result, fromIterator) {
-  if (Array.isArray(result)) {
-    return {
-      items: result,
-      hasMore: fromIterator || result.length > 0,
-    }
-  }
-
-  if (!result) {
-    return {
-      items: [],
-      hasMore: false,
-    }
-  }
-
-  if (typeof result === 'object') {
-    const items = Array.isArray(result.items) ? result.items : Array.isArray(result.data) ? result.data : []
-    return {
-      items,
-      hasMore: typeof result.hasMore === 'boolean' ? result.hasMore : items.length > 0,
-    }
-  }
-
-  return {
-    items: [],
-    hasMore: false,
-  }
 }
 
 function safeStringify(value) {
@@ -1000,10 +1188,6 @@ function normalizePositiveNumber(value, fallback) {
     return fallback
   }
   return number
-}
-
-function normalizePositiveInteger(value, fallback) {
-  return Math.max(1, Math.floor(normalizePositiveNumber(value, fallback)))
 }
 
 function normalizeInteger(value, fallback) {
@@ -1049,6 +1233,14 @@ function setNullableAttribute(element, name, value) {
     element.removeAttribute(name)
   } else {
     element.setAttribute(name, String(value))
+  }
+}
+
+function setBooleanAttribute(element, name, value) {
+  if (value === true || value === '' || value === name) {
+    element.setAttribute(name, '')
+  } else {
+    element.removeAttribute(name)
   }
 }
 

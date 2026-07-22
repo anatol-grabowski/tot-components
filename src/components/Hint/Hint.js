@@ -10,16 +10,18 @@ const hintStyle = `
     box-sizing: border-box;
   }
 
-  .trigger {
+  .base,
+  .anchor {
     display: inline-block;
     max-width: 100%;
   }
 
-  .trigger ::slotted(*) {
+  .anchor ::slotted(*) {
     max-width: 100%;
   }
 
-  .hint {
+  .panel {
+    display: block;
     left: 0;
     max-width: min(var(--tot-hint-max-width, 18rem), calc(100vw - 1rem));
     pointer-events: none;
@@ -28,15 +30,16 @@ const hintStyle = `
     z-index: var(--tot-z-index-tooltip, 1500);
   }
 
-  .hint[hidden] {
+  .panel[hidden] {
     display: none;
   }
 
-  .hint__surface {
+  .surface {
     background: var(--tot-tooltip-background-color, var(--tot-color-neutral-800, #1f2937));
     border-radius: var(--tot-tooltip-border-radius, var(--tot-border-radius-medium, 4px));
     box-shadow: var(--tot-shadow-medium, 0 2px 4px rgb(15 23 42 / 12%));
     color: var(--tot-tooltip-color, var(--tot-color-neutral-0, #fff));
+    display: block;
     font-family: var(--tot-tooltip-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-tooltip-font-size, var(--tot-font-size-small, .875rem));
     font-weight: var(--tot-tooltip-font-weight, var(--tot-font-weight-normal, 400));
@@ -44,29 +47,62 @@ const hintStyle = `
     overflow-wrap: anywhere;
     padding: var(--tot-tooltip-padding, .25rem .5rem);
   }
+
+  .content {
+    display: block;
+  }
 `
 
 export class TotHint extends HTMLElement {
   static get observedAttributes() {
-    return ['text', 'content', 'open', 'trigger', 'offset']
+    return ['content', 'open', 'activation', 'offset']
   }
 
   constructor() {
     super()
-    this._lastPoint = null
+    this._point = null
     this._positionFrame = 0
     this._hideTimer = 0
     this._touchMode = false
     this._visualViewport = null
-    this._handleWindowChange = () => this.schedulePosition()
+    this._listeningWhileOpen = false
+    this._handleWindowChange = () => this.schedulePanelPosition()
+    this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
+    this._handleKeyDown = event => this.handleKeyDown(event)
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${hintStyle}</style>
+      <span class="base" part="base">
+        <span class="anchor" part="anchor"><slot></slot></span>
+        <span class="panel" part="panel" role="tooltip" hidden>
+          <span class="surface" part="surface">
+            <span class="content" part="content"></span>
+          </span>
+        </span>
+      </span>
+    `
+
+    this._baseElement = root.querySelector('.base')
+    this._anchorElement = root.querySelector('.anchor')
+    this._panelElement = root.querySelector('.panel')
+    this._surfaceElement = root.querySelector('.surface')
+    this._contentElement = root.querySelector('.content')
+
+    this._anchorElement.addEventListener('pointerdown', event => this.handleAnchorPointerDown(event))
+    this._anchorElement.addEventListener('pointerenter', event => this.handleAnchorPointerEnter(event))
+    this._anchorElement.addEventListener('pointermove', event => this.handleAnchorPointerMove(event))
+    this._anchorElement.addEventListener('pointerleave', event => this.handleAnchorPointerLeave(event))
+    this._anchorElement.addEventListener('click', event => this.handleAnchorClick(event))
+    this._anchorElement.addEventListener('focusin', () => this.handleAnchorFocusIn())
+    this._anchorElement.addEventListener('focusout', () => this.handleAnchorFocusOut())
   }
 
-  get text() {
-    return this.getAttribute('text') || this.getAttribute('content') || ''
+  get content() {
+    return this.getAttribute('content') || ''
   }
 
-  set text(value) {
-    setNullableAttribute(this, 'text', value)
+  set content(value) {
+    setNullableAttribute(this, 'content', value)
   }
 
   get open() {
@@ -77,12 +113,12 @@ export class TotHint extends HTMLElement {
     setBooleanAttribute(this, 'open', value)
   }
 
-  get trigger() {
-    return this.getAttribute('trigger') || 'hover'
+  get activation() {
+    return normalizeActivation(this.getAttribute('activation'))
   }
 
-  set trigger(value) {
-    setNullableAttribute(this, 'trigger', value)
+  set activation(value) {
+    setNullableAttribute(this, 'activation', value)
   }
 
   get offset() {
@@ -95,7 +131,109 @@ export class TotHint extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this.syncContent()
+    this.syncOpenState()
+  }
+
+  disconnectedCallback() {
+    this.stopOpenListeners()
+    cancelAnimationFrame(this._positionFrame)
+    clearTimeout(this._hideTimer)
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
+    if (name === 'content') {
+      this.syncContent()
+      this.schedulePanelPosition()
+    } else if (name === 'open') {
+      this.syncOpenState()
+    } else if (this.open) {
+      this.schedulePanelPosition()
+    }
+  }
+
+  show() {
+    this._touchMode = false
+    clearTimeout(this._hideTimer)
+    this._point = getAnchorPoint(this._anchorElement)
+    this.open = true
+    this.schedulePanelPosition()
+  }
+
+  showAt(clientX, clientY) {
+    const x = Number(clientX)
+    const y = Number(clientY)
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      this.show()
+      return
+    }
+
+    this._touchMode = false
+    clearTimeout(this._hideTimer)
+    this._point = { x, y }
+    this.open = true
+    this.schedulePanelPosition()
+  }
+
+  hide() {
+    this.open = false
+  }
+
+  getBase() {
+    return this._baseElement
+  }
+
+  getAnchor() {
+    return this._anchorElement
+  }
+
+  getPanel() {
+    return this._panelElement
+  }
+
+  getSurface() {
+    return this._surfaceElement
+  }
+
+  getContent() {
+    return this._contentElement
+  }
+
+  render() {
+    this.syncContent()
+    this.syncOpenState()
+  }
+
+  syncContent() {
+    this._contentElement.textContent = this.content
+  }
+
+  syncOpenState() {
+    this._panelElement.hidden = !this.open
+    if (this.open && this.isConnected) {
+      this.startOpenListeners()
+      this.schedulePanelPosition()
+      return
+    }
+
+    cancelAnimationFrame(this._positionFrame)
+    clearTimeout(this._hideTimer)
+    this._touchMode = false
+    this.stopOpenListeners()
+  }
+
+  startOpenListeners() {
+    if (this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = true
+    document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    document.addEventListener('keydown', this._handleKeyDown)
     window.addEventListener('resize', this._handleWindowChange)
     document.addEventListener('scroll', this._handleWindowChange, true)
     this._visualViewport = window.visualViewport || null
@@ -105,7 +243,14 @@ export class TotHint extends HTMLElement {
     }
   }
 
-  disconnectedCallback() {
+  stopOpenListeners() {
+    if (!this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = false
+    document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
+    document.removeEventListener('keydown', this._handleKeyDown)
     window.removeEventListener('resize', this._handleWindowChange)
     document.removeEventListener('scroll', this._handleWindowChange, true)
     if (this._visualViewport) {
@@ -113,80 +258,18 @@ export class TotHint extends HTMLElement {
       this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
       this._visualViewport = null
     }
-    cancelAnimationFrame(this._positionFrame)
-    clearTimeout(this._hideTimer)
   }
 
-  attributeChangedCallback() {
-    this.render()
-    if (this.open) {
-      this.schedulePosition()
-    }
-  }
-
-  show(eventOrPoint) {
-    this.rememberPoint(eventOrPoint)
-    if (!this._lastPoint) {
-      this._lastPoint = getHostPoint(this)
-    }
-    this.open = true
-    this.schedulePosition()
-  }
-
-  showAt(x, y) {
-    this._lastPoint = {
-      x: Number(x),
-      y: Number(y),
-    }
-    this.open = true
-    this.schedulePosition()
-  }
-
-  hide() {
-    this.open = false
-  }
-
-  toggle(eventOrPoint) {
-    if (this.open) {
-      this.hide()
-    } else {
-      this.show(eventOrPoint)
-    }
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
-
-    root.innerHTML = `<style>${hintStyle}</style>
-      <span class="trigger" part="trigger"><slot></slot></span>
-      <div class="hint" part="popup" role="tooltip" ${open ? '' : 'hidden'}>
-        <div class="hint__surface" part="surface">${escapeHtml(this.text)}</div>
-      </div>
-    `
-
-    const trigger = root.querySelector('.trigger')
-    trigger.addEventListener('pointerdown', (event) => this.handlePointerDown(event))
-    trigger.addEventListener('pointerenter', (event) => this.handlePointerEnter(event))
-    trigger.addEventListener('pointermove', (event) => this.handlePointerMove(event))
-    trigger.addEventListener('pointerleave', (event) => this.handlePointerLeave(event))
-    trigger.addEventListener('click', (event) => this.handleClick(event))
-
-    if (open) {
-      this.schedulePosition()
-    }
-  }
-
-  handlePointerDown(event) {
-    if (this.trigger !== 'hover' || !isTouchLikeEvent(event)) {
+  handleAnchorPointerDown(event) {
+    if (this.activation !== 'hover' || !isTouchLikeEvent(event)) {
       return
     }
 
     this.showForTouch()
   }
 
-  handlePointerEnter(event) {
-    if (this.trigger !== 'hover') {
+  handleAnchorPointerEnter(event) {
+    if (this.activation !== 'hover') {
       return
     }
 
@@ -197,23 +280,23 @@ export class TotHint extends HTMLElement {
 
     clearTimeout(this._hideTimer)
     this._touchMode = false
-    this.rememberPoint(event)
+    this.rememberClientPoint(event)
     this.open = true
   }
 
-  handlePointerMove(event) {
-    if (this._touchMode || isTouchLikeEvent(event)) {
+  handleAnchorPointerMove(event) {
+    if (this.activation !== 'hover' || this._touchMode || isTouchLikeEvent(event)) {
       return
     }
 
-    this.rememberPoint(event)
+    this.rememberClientPoint(event)
     if (this.open) {
-      this.schedulePosition()
+      this.schedulePanelPosition()
     }
   }
 
-  handlePointerLeave(event) {
-    if (this.trigger !== 'hover') {
+  handleAnchorPointerLeave(event) {
+    if (this.activation !== 'hover') {
       return
     }
 
@@ -222,15 +305,57 @@ export class TotHint extends HTMLElement {
       return
     }
 
-    this.open = false
+    if (!this.matches(':focus-within')) {
+      this.open = false
+    }
+  }
+
+  handleAnchorFocusIn() {
+    if (this.activation !== 'hover') {
+      return
+    }
+
+    clearTimeout(this._hideTimer)
+    this._touchMode = false
+    this._point = getAnchorPoint(this._anchorElement)
+    this.open = true
+  }
+
+  handleAnchorFocusOut() {
+    if (this.activation !== 'hover' || this._touchMode) {
+      return
+    }
+
+    queueMicrotask(() => {
+      if (!this.matches(':focus-within')) {
+        this.open = false
+      }
+    })
+  }
+
+  handleAnchorClick(event) {
+    if (this.activation !== 'click') {
+      return
+    }
+
+    event.preventDefault()
+    if (this.open) {
+      this.hide()
+      return
+    }
+
+    this._touchMode = false
+    this._point = event.detail > 0 && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+      ? { x: event.clientX, y: event.clientY }
+      : getAnchorPoint(this._anchorElement)
+    this.open = true
   }
 
   showForTouch() {
     clearTimeout(this._hideTimer)
     this._touchMode = true
-    this._lastPoint = getHostPoint(this)
+    this._point = getAnchorPoint(this._anchorElement)
     this.open = true
-    this.schedulePosition()
     this.scheduleTouchHide()
   }
 
@@ -242,67 +367,68 @@ export class TotHint extends HTMLElement {
     }, 2800)
   }
 
-  handleClick(event) {
-    if (this.trigger !== 'click') {
+  handleDocumentPointerDown(event) {
+    if (!this.open || (this.activation !== 'click' && !this._touchMode)) {
       return
     }
 
-    event.preventDefault()
-    this.toggle(event)
+    const path = event.composedPath()
+    for (let i = 0; i < path.length; i++) {
+      if (path[i] === this) {
+        return
+      }
+    }
+
+    this.hide()
   }
 
-  rememberPoint(eventOrPoint) {
-    if (!eventOrPoint) {
-      return
-    }
-
-    if (Number.isFinite(eventOrPoint.clientX) && Number.isFinite(eventOrPoint.clientY)) {
-      this._lastPoint = {
-        x: eventOrPoint.clientX,
-        y: eventOrPoint.clientY,
-      }
-      return
-    }
-
-    if (Number.isFinite(eventOrPoint.x) && Number.isFinite(eventOrPoint.y)) {
-      this._lastPoint = {
-        x: eventOrPoint.x,
-        y: eventOrPoint.y,
-      }
+  handleKeyDown(event) {
+    if (event.key === 'Escape' && this.open) {
+      this.hide()
     }
   }
 
-  schedulePosition() {
+  rememberClientPoint(event) {
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) {
+      return
+    }
+
+    this._point = {
+      x: event.clientX,
+      y: event.clientY,
+    }
+  }
+
+  schedulePanelPosition() {
+    if (!this.open || !this.isConnected) {
+      return
+    }
+
     cancelAnimationFrame(this._positionFrame)
-    this._positionFrame = requestAnimationFrame(() => this.updatePosition())
+    this._positionFrame = requestAnimationFrame(() => this.updatePanelPosition())
   }
 
-  updatePosition() {
-    if (!this.open || !this.shadowRoot) {
+  updatePanelPosition() {
+    if (!this.open) {
       return
     }
 
-    const panel = this.shadowRoot.querySelector('.hint')
-    if (!panel) {
-      return
-    }
-
-    const point = this._lastPoint || getHostPoint(this)
+    const point = this._point || getAnchorPoint(this._anchorElement)
     const viewport = getViewportRect()
     const margin = 8
     const offset = this.offset
     const viewportWidth = Math.max(0, viewport.width - margin * 2)
 
-    panel.style.maxWidth = `min(var(--tot-hint-max-width, 18rem), ${Math.floor(viewportWidth)}px)`
+    this._panelElement.style.maxWidth = `min(var(--tot-hint-max-width, 18rem), ${Math.floor(viewportWidth)}px)`
 
-    const panelRect = panel.getBoundingClientRect()
+    const panelRect = this._panelElement.getBoundingClientRect()
     const panelWidth = Math.min(panelRect.width, viewportWidth)
     const panelHeight = panelRect.height
     let left = 0
     let top = 0
 
     if (this._touchMode) {
-      const coords = getTouchPlacementCoordinates(this, panelWidth, panelHeight, viewport, offset, margin)
+      const coords = getTouchPlacementCoordinates(this._anchorElement, panelWidth, panelHeight, viewport, offset, margin)
       left = coords.left
       top = coords.top
     } else {
@@ -317,16 +443,20 @@ export class TotHint extends HTMLElement {
     left = clamp(left, viewport.left + margin, viewport.right - panelWidth - margin)
     top = clamp(top, viewport.top + margin, viewport.bottom - panelHeight - margin)
 
-    panel.style.left = `${Math.round(left)}px`
-    panel.style.top = `${Math.round(top)}px`
+    this._panelElement.style.left = `${Math.round(left)}px`
+    this._panelElement.style.top = `${Math.round(top)}px`
   }
 }
 
-function getHostPoint(element) {
+function normalizeActivation(value) {
+  return value === 'click' || value === 'none' ? value : 'hover'
+}
+
+function getAnchorPoint(element) {
   const rect = element.getBoundingClientRect()
   return {
-    x: rect.left + rect.width,
-    y: rect.top + rect.height,
+    x: rect.right,
+    y: rect.bottom,
   }
 }
 
@@ -394,17 +524,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
 }

@@ -2,25 +2,26 @@ import { registerDemo } from '../demoCommon.js'
 
 const actionItems = [
   { type: 'label', label: 'Project' },
-  { value: 'new', label: 'New project' },
-  { value: 'open', label: 'Open…' },
+  { type: 'item', value: 'new', label: 'New project', suffix: '＋' },
+  { type: 'item', value: 'open', label: 'Open…', suffix: '⌘O' },
   { type: 'divider' },
-  { value: 'archive', label: 'Archive', checked: true },
-  { value: 'sync', label: 'Syncing', loading: true },
-  { value: 'delete', label: 'Delete', disabled: true },
+  { type: 'item', value: 'archive', label: 'Archive', suffix: '✓' },
+  { type: 'item', value: 'sync', label: 'Syncing', suffix: '⏳', disabled: true },
+  { type: 'item', value: 'delete', label: 'Delete', disabled: true },
 ]
 
 const nestedItems = [
-  { value: 'profile', label: 'Profile' },
-  { value: 'billing', label: 'Billing' },
+  { type: 'item', value: 'profile', label: 'Profile' },
+  { type: 'item', value: 'billing', label: 'Billing' },
   { type: 'divider' },
   {
+    type: 'item',
     value: 'theme',
     label: 'Theme',
     items: [
-      { value: 'light', label: 'Light', checked: true },
-      { value: 'dark', label: 'Dark' },
-      { value: 'system', label: 'System' },
+      { type: 'item', value: 'light', label: 'Light', suffix: '✓' },
+      { type: 'item', value: 'dark', label: 'Dark' },
+      { type: 'item', value: 'system', label: 'System' },
     ],
   },
 ]
@@ -33,27 +34,27 @@ registerDemo({
     row.className = 'stack'
     row.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Configured by label and menuItems property</div>
+        <div class="demo-label">Configured by label and canonical menuItems</div>
         <div class="row">
           <tot-dropdown id="configuredDropdown" label="Actions"></tot-dropdown>
           <tot-dropdown id="nestedDropdown" label="Account" hoist></tot-dropdown>
         </div>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Default slot content takes precedence over menuItems</div>
+        <div class="demo-label">Slotted button and menu take precedence</div>
         <div class="row">
-          <tot-dropdown id="slottedDropdown" label="Ignored label" menu-items='[{"value":"ignored","label":"Ignored JSON item"}]'>
+          <tot-dropdown id="slottedDropdown" label="Ignored label" menu-items='[{"type":"item","value":"ignored","label":"Ignored JSON item"}]'>
             <tot-button slot="trigger" variant="primary" caret>Custom trigger</tot-button>
             <tot-menu>
               <tot-menu-label>Clipboard</tot-menu-label>
-              <tot-menu-item value="cut">Cut</tot-menu-item>
-              <tot-menu-item value="copy" checked>Copy</tot-menu-item>
+              <tot-menu-item value="cut" suffix="✂️">Cut</tot-menu-item>
+              <tot-menu-item value="copy" suffix="✓">Copy</tot-menu-item>
               <tot-menu-item value="paste" disabled>Paste</tot-menu-item>
               <tot-divider></tot-divider>
               <tot-menu-item value="more">
                 More actions
                 <tot-menu slot="submenu">
-                  <tot-menu-item value="duplicate">Duplicate</tot-menu-item>
+                  <tot-menu-item value="duplicate" suffix="⌘D">Duplicate</tot-menu-item>
                   <tot-menu-item value="archive">Archive</tot-menu-item>
                 </tot-menu>
               </tot-menu-item>
@@ -78,9 +79,9 @@ registerDemo({
     configuredDropdown.menuItems = actionItems
     nestedDropdown.menuItems = nestedItems
     persistentDropdown.menuItems = [
-      { value: 'small', label: 'Small' },
-      { value: 'medium', label: 'Medium', checked: true },
-      { value: 'large', label: 'Large' },
+      { type: 'item', value: 'small', label: 'Small' },
+      { type: 'item', value: 'medium', label: 'Medium', suffix: '✓' },
+      { type: 'item', value: 'large', label: 'Large' },
     ]
 
     const dropdowns = row.querySelectorAll('tot-dropdown')
@@ -108,9 +109,9 @@ registerDemo({
 
       if (action === 'swap-items') {
         persistentDropdown.menuItems = [
-          { value: 'left', label: 'Left' },
-          { value: 'center', label: 'Center', checked: true },
-          { value: 'right', label: 'Right' },
+          { type: 'item', value: 'left', label: 'Left' },
+          { type: 'item', value: 'center', label: 'Center', suffix: '✓' },
+          { type: 'item', value: 'right', label: 'Right' },
         ]
         logEvent(persistentDropdown, 'menu-items-update', { count: persistentDropdown.menuItems.length })
       }

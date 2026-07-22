@@ -1,51 +1,37 @@
 import { registerDemo } from '../demoCommon.js'
-import { TotToast } from '../index.js'
 
 registerDemo({
   id: 'tot-toast',
   title: 'Toast',
-  render: (container, { logEvent }) => {
+  render: (container) => {
     const wrapper = document.createElement('div')
     wrapper.className = 'stack'
     wrapper.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Simple stacked bottom toasts</div>
+        <div class="demo-label">Managed temporary toast stack</div>
         <div class="row">
           <tot-button id="showToast" label="Show toast"></tot-button>
           <tot-button id="showLongToast" label="Show longer toast"></tot-button>
+          <tot-button id="showSeveralToasts" label="Show several"></tot-button>
         </div>
       </div>
-      <div class="stack demo-group">
-        <div class="demo-label">Markup toast instance</div>
-        <div class="row">
-          <tot-button id="showMarkupToast" label="Show markup toast"></tot-button>
-        </div>
-        <tot-toast id="markupToast" message="A persistent toast instance from markup." duration="0"></tot-toast>
-      </div>
+      <tot-toast id="toasts"></tot-toast>
     `
 
-    const showToastButton = wrapper.querySelector('#showToast')
-    const showLongToastButton = wrapper.querySelector('#showLongToast')
-    const markupToast = wrapper.querySelector('#markupToast')
+    const toasts = wrapper.querySelector('#toasts')
 
-    showToastButton.addEventListener('click', () => {
-      const toast = TotToast.show('Saved')
-      toast.addEventListener('show', (toastEvent) => logEvent(toast, 'show', toastEvent.detail))
-      toast.addEventListener('hide', (toastEvent) => logEvent(toast, 'hide', toastEvent.detail))
+    wrapper.querySelector('#showToast').addEventListener('click', () => {
+      toasts.show('Saved')
     })
 
-    showLongToastButton.addEventListener('click', () => {
-      const toast = TotToast.show({
-        message: 'Your changes were saved locally and will sync when the connection is restored.',
-        duration: 4500,
-      })
-      toast.addEventListener('show', (toastEvent) => logEvent(toast, 'show', toastEvent.detail))
-      toast.addEventListener('hide', (toastEvent) => logEvent(toast, 'hide', toastEvent.detail))
+    wrapper.querySelector('#showLongToast').addEventListener('click', () => {
+      toasts.show('Your changes were saved locally and will sync when the connection is restored.', 4500)
     })
 
-    wrapper.querySelector('#showMarkupToast').addEventListener('click', () => {
-      markupToast.show()
-      logEvent(markupToast, 'show', markupToast.getEventDetail ? markupToast.getEventDetail() : {})
+    wrapper.querySelector('#showSeveralToasts').addEventListener('click', () => {
+      toasts.show('First message', 3000)
+      toasts.show('Second message', 3600)
+      toasts.show('Third message', 4200)
     })
 
     container.appendChild(wrapper)

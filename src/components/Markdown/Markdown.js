@@ -431,7 +431,7 @@ const markdownStyle = `
     color: var(--tot-input-color, #1e293b);
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     height: 100dvh;
     min-height: 0;
     min-width: 0;
@@ -464,7 +464,27 @@ const markdownStyle = `
     overscroll-behavior: contain;
     padding: var(--tot-spacing-small, .75rem);
   }
+
+  .fullscreen__footer {
+    align-items: center;
+    background: var(--tot-navbar-background-color, var(--tot-color-neutral-100, #f1f5f9));
+    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-navbar-border-color, var(--tot-panel-border-color, #e2e8f0));
+    display: flex;
+    justify-content: flex-end;
+    min-height: var(--tot-navbar-height, 2.75rem);
+    padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-small, .75rem);
+  }
+
+  .fullscreen__footer[hidden] {
+    display: none;
+  }
+
+  .fullscreen__footer slot::slotted(*) {
+    max-width: 100%;
+  }
 `
+
+const fullscreenFooterSlot = 'fullscreen-footer'
 
 const pandocStyleProperties = new Set([
   'background',
@@ -523,15 +543,13 @@ const pandocBlockedHtmlTags = new Set([
 
 export class TotMarkdown extends HTMLElement {
   static get observedAttributes() {
-    return ['value', 'markdown', 'streaming', 'label', 'help-text', 'pandoc']
+    return ['value', 'streaming', 'label', 'help-text', 'pandoc']
   }
 
   constructor() {
     super()
     this._value = null
     this._fullscreen = false
-    this._slotMarkdown = ''
-    this._mutationObserver = null
     this._elements = null
     this._renderTarget = null
     this._renderedValue = undefined
@@ -558,11 +576,7 @@ export class TotMarkdown extends HTMLElement {
       return this.getAttribute('value') || ''
     }
 
-    if (this.hasAttribute('markdown')) {
-      return this.getAttribute('markdown') || ''
-    }
-
-    return this._slotMarkdown
+    return ''
   }
 
   set value(value) {
@@ -571,14 +585,6 @@ export class TotMarkdown extends HTMLElement {
     if (this._value !== previousValue) {
       this.render()
     }
-  }
-
-  get markdown() {
-    return this.value
-  }
-
-  set markdown(value) {
-    this.value = value
   }
 
   get label() {
@@ -614,21 +620,15 @@ export class TotMarkdown extends HTMLElement {
   }
 
   connectedCallback() {
-    this.captureSlotMarkdown()
-    this.observeLightDom()
     this.render()
   }
 
   disconnectedCallback() {
     this.closeFullscreen(false, true)
-    if (this._mutationObserver) {
-      this._mutationObserver.disconnect()
-      this._mutationObserver = null
-    }
   }
 
   attributeChangedCallback(name) {
-    if (name === 'value' || name === 'markdown') {
+    if (name === 'value') {
       this._value = null
     }
     this.render()
@@ -650,9 +650,9 @@ export class TotMarkdown extends HTMLElement {
 
     const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${markdownStyle}</style>
-      <div class="form-control" part="form-control">
-        <span class="label" part="form-control-label" hidden></span>
-        <article class="markdown" part="base">
+      <div class="form-control" part="base">
+        <span class="label" part="label" hidden></span>
+        <article class="markdown" part="preview">
           <div class="markdown__content markdown-output" part="content"></div>
           <span class="markdown__actions">
             <span class="markdown__streaming-indicator" part="streaming-indicator" aria-label="Streaming" hidden>⏳</span>
@@ -661,7 +661,7 @@ export class TotMarkdown extends HTMLElement {
             </button>
           </span>
         </article>
-        <span class="help-text" part="form-control-help-text" hidden></span>
+        <span class="help-text" part="help-text" hidden></span>
       </div>
       <div class="fullscreen" part="fullscreen" hidden>
         <section class="fullscreen__panel" role="dialog" aria-modal="true" aria-label="Fullscreen markdown preview">
@@ -675,6 +675,9 @@ export class TotMarkdown extends HTMLElement {
             </span>
           </header>
           <div class="fullscreen__body markdown-output" part="fullscreen-content"></div>
+          <footer class="fullscreen__footer" part="fullscreen-footer" hidden>
+            <slot name="fullscreen-footer"></slot>
+          </footer>
         </section>
       </div>
     `
@@ -684,6 +687,8 @@ export class TotMarkdown extends HTMLElement {
       content: root.querySelector('.markdown__content'),
       fullscreen: root.querySelector('.fullscreen'),
       fullscreenContent: root.querySelector('.fullscreen__body'),
+      fullscreenFooter: root.querySelector('.fullscreen__footer'),
+      fullscreenFooterSlot: root.querySelector('slot[name="fullscreen-footer"]'),
       fullscreenIndicator: root.querySelector('.fullscreen__streaming-indicator'),
       fullscreenTitle: root.querySelector('.fullscreen__title'),
       helpText: root.querySelector('.help-text'),
@@ -695,6 +700,7 @@ export class TotMarkdown extends HTMLElement {
 
     this._elements.previewButton.addEventListener('click', () => this.openFullscreen())
     this._elements.closeButton.addEventListener('click', () => this.closeFullscreen())
+    this._elements.fullscreenFooterSlot.addEventListener('slotchange', () => this.updateFullscreenFooter())
     this._elements.fullscreen.addEventListener('wheel', event => this.handleFullscreenWheel(event), { passive: false })
     this._elements.fullscreen.addEventListener('touchstart', event => this.handleFullscreenTouchStart(event), { passive: true })
     this._elements.fullscreen.addEventListener('touchmove', event => this.handleFullscreenTouchMove(event), { passive: false })
@@ -721,10 +727,20 @@ export class TotMarkdown extends HTMLElement {
     elements.fullscreen.hidden = !this._fullscreen
     elements.previewIndicator.hidden = !streaming
     elements.fullscreenIndicator.hidden = !streaming
+    this.updateFullscreenFooter()
 
     this.moveRenderedOutput(target)
     this.updateRenderedOutput(target, pandoc)
     this.updateStreamingCaret(target, streaming)
+  }
+
+  updateFullscreenFooter() {
+    const elements = this._elements
+    if (!elements) {
+      return
+    }
+
+    elements.fullscreenFooter.hidden = elements.fullscreenFooterSlot.assignedElements().length === 0
   }
 
   moveRenderedOutput(target) {
@@ -786,7 +802,7 @@ export class TotMarkdown extends HTMLElement {
     window.addEventListener('popstate', this._handlePopState)
     this.pushFullscreenHistoryState()
     this.render()
-    emit(this, 'fullscreen-change', this.getEventDetail())
+    emit(this, 'fullscreen-change')
   }
 
   closeFullscreen(shouldRender = true, skipHistory = false) {
@@ -810,7 +826,7 @@ export class TotMarkdown extends HTMLElement {
 
     if (shouldRender) {
       this.render()
-      emit(this, 'fullscreen-change', this.getEventDetail())
+      emit(this, 'fullscreen-change')
     }
   }
 
@@ -901,47 +917,6 @@ export class TotMarkdown extends HTMLElement {
     }
   }
 
-  captureSlotMarkdown() {
-    if (this.hasAttribute('value') || this.hasAttribute('markdown') || this._value !== null) {
-      return
-    }
-
-    this._slotMarkdown = getLightDomMarkdown(this)
-  }
-
-  observeLightDom() {
-    if (this._mutationObserver) {
-      return
-    }
-
-    this._mutationObserver = new MutationObserver(() => {
-      if (this.hasAttribute('value') || this.hasAttribute('markdown') || this._value !== null) {
-        return
-      }
-
-      const markdown = getLightDomMarkdown(this)
-      if (markdown === this._slotMarkdown) {
-        return
-      }
-
-      this._slotMarkdown = markdown
-      this.render()
-    })
-    this._mutationObserver.observe(this, {
-      characterData: true,
-      childList: true,
-      subtree: true,
-    })
-  }
-
-  getEventDetail() {
-    return {
-      fullscreen: this._fullscreen,
-      pandoc: this.pandoc,
-      streaming: this.streaming,
-      value: this.value,
-    }
-  }
 }
 
 function renderMarkdown(markdown, options = {}) {
@@ -1596,6 +1571,9 @@ function renderPandocFootnotes(state, options) {
 
 function renderPandocSlotPlaceholder(content, attributes, options = {}, state = {}) {
   const name = String(attributes.keyValues.slot || '').trim()
+  if (name === fullscreenFooterSlot) {
+    return `<span${renderPandocAttributes(attributes, { defaultClass: 'pandoc-span' })}>${parseInline(content, options, state)}</span>`
+  }
   if (!name) {
     return `<span${renderPandocAttributes(attributes, { defaultClass: 'pandoc-span' })}>${parseInline(content, options, state)}</span>`
   }
@@ -1884,36 +1862,6 @@ function sanitizePandocNode(node) {
 
     sanitizePandocNode(child)
   }
-}
-
-function getLightDomMarkdown(element) {
-  let markdown = ''
-  const childNodes = element.childNodes || []
-  for (let i = 0; i < childNodes.length; i++) {
-    markdown += getLightDomMarkdownFromNode(childNodes[i])
-  }
-  return markdown
-}
-
-function getLightDomMarkdownFromNode(node) {
-  if (node.nodeType === 3 || node.nodeType === 4) {
-    return node.nodeValue || ''
-  }
-
-  if (node.nodeType !== 1) {
-    return ''
-  }
-
-  if (typeof node.hasAttribute === 'function' && node.hasAttribute('slot')) {
-    return ''
-  }
-
-  let markdown = ''
-  const childNodes = node.childNodes || []
-  for (let i = 0; i < childNodes.length; i++) {
-    markdown += getLightDomMarkdownFromNode(childNodes[i])
-  }
-  return markdown
 }
 
 function isSafeId(value) {
@@ -2233,11 +2181,10 @@ function shouldAllowScroll(event, boundary, deltaY) {
   return false
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function emit(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 

@@ -14,63 +14,67 @@ const labelsStyle = `
   }
 
   .labels {
-    --labels-entry-height: 1.65rem;
-    --labels-entry-prefix-spacing: var(--tot-spacing-2x-small, .375rem);
-    --labels-entry-spacing: var(--tot-spacing-2x-small, .375rem);
-    --labels-font-size: var(--tot-input-font-size-small, .8125rem);
-    --labels-gap: var(--tot-spacing-2x-small, .25rem);
-    --labels-label-min-height: 1.4rem;
-    --labels-label-padding-block: .0625rem;
-    --labels-label-padding-inline: .4rem;
+    --tot-labels-entry-height: 1.65rem;
+    --tot-labels-entry-prefix-spacing: var(--tot-spacing-3x-small, .125rem);
+    --tot-labels-entry-spacing: var(--tot-spacing-2x-small, .375rem);
+    --tot-labels-font-size: var(--tot-input-font-size-small, .8125rem);
+    --tot-labels-gap: var(--tot-spacing-2x-small, .25rem);
+    --tot-labels-label-min-height: 1.4rem;
+    --tot-labels-label-padding-block: .0625rem;
+    --tot-labels-label-padding-inline: .4rem;
 
     align-items: flex-start;
     color: var(--tot-input-color, #1e293b);
     display: flex;
     flex-wrap: wrap;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--labels-font-size);
-    gap: var(--labels-gap);
+    font-size: var(--tot-labels-font-size);
+    gap: var(--tot-labels-gap);
     line-height: var(--tot-line-height-dense, 1.35);
     max-width: 100%;
     min-width: 0;
   }
 
   .labels--medium {
-    --labels-entry-height: var(--tot-input-height-medium, 2.25rem);
-    --labels-entry-prefix-spacing: var(--tot-spacing-x-small, .5rem);
-    --labels-entry-spacing: var(--tot-input-spacing-medium, .75rem);
-    --labels-font-size: var(--tot-input-font-size-medium, .875rem);
-    --labels-gap: var(--tot-spacing-x-small, .5rem);
-    --labels-label-min-height: 1.75rem;
-    --labels-label-padding-block: .125rem;
-    --labels-label-padding-inline: .55rem;
+    --tot-labels-entry-height: var(--tot-input-height-medium, 2.25rem);
+    --tot-labels-entry-prefix-spacing: var(--tot-spacing-2x-small, .25rem);
+    --tot-labels-entry-spacing: var(--tot-input-spacing-medium, .75rem);
+    --tot-labels-font-size: var(--tot-input-font-size-medium, .875rem);
+    --tot-labels-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-labels-label-min-height: 1.75rem;
+    --tot-labels-label-padding-block: .125rem;
+    --tot-labels-label-padding-inline: .55rem;
   }
 
   .labels--large {
-    --labels-entry-height: var(--tot-input-height-large, 2.75rem);
-    --labels-entry-prefix-spacing: var(--tot-spacing-x-small, .5rem);
-    --labels-entry-spacing: var(--tot-input-spacing-large, 1rem);
-    --labels-font-size: var(--tot-input-font-size-large, 1rem);
-    --labels-gap: var(--tot-spacing-x-small, .5rem);
-    --labels-label-min-height: 2.1rem;
-    --labels-label-padding-block: .1875rem;
-    --labels-label-padding-inline: .7rem;
+    --tot-labels-entry-height: var(--tot-input-height-large, 2.75rem);
+    --tot-labels-entry-prefix-spacing: var(--tot-spacing-2x-small, .25rem);
+    --tot-labels-entry-spacing: var(--tot-input-spacing-large, 1rem);
+    --tot-labels-font-size: var(--tot-input-font-size-large, 1rem);
+    --tot-labels-gap: var(--tot-spacing-x-small, .5rem);
+    --tot-labels-label-min-height: 2.1rem;
+    --tot-labels-label-padding-block: .1875rem;
+    --tot-labels-label-padding-inline: .7rem;
+  }
+
+  .labels__items {
+    display: contents;
   }
 
   .label {
     align-items: center;
-    background: var(--label-background-color, hsl(200 88% 91%));
-    border: var(--tot-panel-border-width, 1px) solid var(--label-border-color, hsl(200 72% 74%));
+    background: var(--tot-label-background-color, hsl(200 88% 91%));
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-label-border-color, hsl(200 72% 74%));
     border-radius: var(--tot-border-radius-medium, 4px);
-    color: var(--label-color, hsl(200 82% 22%));
+    color: var(--tot-label-color, hsl(200 82% 22%));
     cursor: default;
     display: inline-flex;
     font-weight: var(--tot-font-weight-semibold, 600);
     max-width: min(100%, 16rem);
-    min-height: var(--labels-label-min-height);
+    min-height: var(--tot-labels-label-min-height);
     min-width: 0;
     overflow: hidden;
-    padding: var(--labels-label-padding-block) var(--labels-label-padding-inline);
+    padding: var(--tot-labels-label-padding-block) var(--tot-labels-label-padding-inline);
     position: relative;
     user-select: none;
     -webkit-user-select: none;
@@ -94,7 +98,7 @@ const labelsStyle = `
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
-    background: var(--label-background-color, hsl(200 88% 91%));
+    background: var(--tot-label-background-color, hsl(200 88% 91%));
     border: 0;
     border-radius: var(--tot-border-radius-small, 3px);
     color: inherit;
@@ -118,7 +122,7 @@ const labelsStyle = `
   }
 
   .label__remove:hover {
-    background: var(--label-border-color, hsl(200 72% 74%));
+    background: var(--tot-label-border-color, hsl(200 72% 74%));
   }
 
   .label__remove:focus-visible {
@@ -140,22 +144,26 @@ const labelsStyle = `
     }
   }
 
+  .entry[hidden] {
+    display: none;
+  }
+
   .entry {
     display: block;
     flex: 1 0 100%;
-    margin-block-start: var(--labels-gap);
+    margin-block-start: var(--tot-labels-gap);
     max-width: 100%;
     min-width: 0;
     width: 100%;
   }
 
-  .entry::part(base) {
+  .entry::part(control) {
     border-radius: var(--tot-input-border-radius-small, var(--tot-border-radius-small, 3px));
-    font-size: var(--labels-font-size);
-    height: var(--labels-entry-height);
-    min-height: var(--labels-entry-height);
-    padding-inline: var(--labels-entry-spacing);
-    padding-inline-start: var(--labels-entry-prefix-spacing);
+    font-size: var(--tot-labels-font-size);
+    height: var(--tot-labels-entry-height);
+    min-height: var(--tot-labels-entry-height);
+    padding-inline: var(--tot-labels-entry-spacing);
+    padding-inline-start: var(--tot-labels-entry-prefix-spacing);
   }
 
   .entry::part(input) {
@@ -172,12 +180,20 @@ const labelsStyle = `
     color: var(--tot-input-icon-color, #64748b);
     cursor: pointer;
     display: inline-flex;
+    flex: 0 0 auto;
     font: inherit;
-    height: 1.45em;
+    height: 1.1em;
     justify-content: center;
-    line-height: 1;
     padding: 0;
-    width: 1.45em;
+    width: 1.1em;
+  }
+
+  .add-button svg {
+    display: block;
+    height: 100%;
+    pointer-events: none;
+    stroke: currentColor;
+    width: 100%;
   }
 
   .add-button:hover:not(:disabled) {
@@ -213,23 +229,44 @@ export class TotLabels extends HTMLElement {
     this._labels = null
     this._draft = ''
     this._activeLabel = ''
-    this._isRendering = false
-    this._handleRootClick = (event) => this.handleClick(event)
-    this._handleRootKeydown = (event) => this.handleKeydown(event)
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${labelsStyle}</style>
+      <div class="labels labels--small" part="base" role="list">
+        <div class="labels__items"></div>
+        <tot-input class="entry" part="entry" size="small">
+          <button class="add-button" part="add-button" slot="prefix" type="button" aria-label="Add label">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M8 3v10M3 8h10"></path>
+            </svg>
+          </button>
+        </tot-input>
+      </div>
+    `
+
+    this._baseElement = root.querySelector('.labels')
+    this._itemsElement = root.querySelector('.labels__items')
+    this._inputElement = root.querySelector('.entry')
+    this._addButton = root.querySelector('.add-button')
+
+    this._baseElement.addEventListener('click', event => this._handleClick(event))
+    this._baseElement.addEventListener('keydown', event => this._handleKeydown(event))
+    this._inputElement.addEventListener('input', event => this._handleDraftInput(event))
+    this._inputElement.addEventListener('change', event => event.stopPropagation())
+    this._inputElement.addEventListener('clear', event => event.stopPropagation())
+    this._inputElement.addEventListener('keydown', event => this._handleDraftKeydown(event))
+    this._addButton.addEventListener('mousedown', event => event.preventDefault())
+    this._addButton.addEventListener('click', event => this._handleAddButtonClick(event))
   }
 
   get labels() {
-    if (this._labels) {
-      return this._labels.slice()
-    }
-
-    return parseLabels(this.getAttribute('labels'))
+    return this._getLabels().slice()
   }
 
   set labels(value) {
     this._labels = normalizeLabels(value)
     this._activeLabel = ''
-    this.render()
+    this._syncLabels()
   }
 
   get placeholder() {
@@ -265,7 +302,7 @@ export class TotLabels extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this._syncAll()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -273,26 +310,33 @@ export class TotLabels extends HTMLElement {
       return
     }
 
-    if (this._isRendering) {
-      return
-    }
-
     if (name === 'labels') {
       this._labels = null
       this._activeLabel = ''
+      this._syncLabels()
+      return
     }
 
     if (name === 'disabled' || name === 'readonly') {
       this._activeLabel = ''
+      this._syncInteractionState()
+      this._syncLabels()
+      return
     }
 
-    this.render()
+    if (name === 'placeholder') {
+      this._inputElement.placeholder = this.placeholder
+      return
+    }
+
+    if (name === 'size') {
+      this._syncSize()
+    }
   }
 
   focus(options) {
-    const input = this.getInputComponent()
-    if (input) {
-      input.focus(options)
+    if (!this.readonly) {
+      this._inputElement.focus(options)
     }
   }
 
@@ -308,20 +352,16 @@ export class TotLabels extends HTMLElement {
 
     const labels = this.labels
     if (hasLabel(labels, nextLabel)) {
-      this.clearDraft()
+      this._clearDraft()
       return false
     }
 
     labels.push(nextLabel)
     this._labels = labels
     this._activeLabel = ''
-    this.clearDraft()
-    this.render()
+    this._clearDraft()
+    this._syncLabels()
     this.focus()
-    emit(this, 'add', {
-      label: nextLabel,
-      labels: this.labels,
-    })
     emit(this, 'change', {
       action: 'add',
       label: nextLabel,
@@ -347,7 +387,7 @@ export class TotLabels extends HTMLElement {
     }
 
     const labels = this.labels
-    if (index < 0 || index >= labels.length) {
+    if (!Number.isInteger(index) || index < 0 || index >= labels.length) {
       return false
     }
 
@@ -357,11 +397,7 @@ export class TotLabels extends HTMLElement {
       this._activeLabel = ''
     }
 
-    this.render()
-    emit(this, 'remove', {
-      label: removedLabel,
-      labels: this.labels,
-    })
+    this._syncLabels()
     emit(this, 'change', {
       action: 'remove',
       label: removedLabel,
@@ -370,96 +406,100 @@ export class TotLabels extends HTMLElement {
     return true
   }
 
-  render() {
-    if (!this.isConnected && !this.shadowRoot) {
-      return
-    }
+  getBase() {
+    return this._baseElement
+  }
 
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const labels = this.labels
-    const disabled = this.disabled
-    const readonly = this.readonly
+  getInputComponent() {
+    return this._inputElement
+  }
+
+  _syncAll() {
+    this._syncSize()
+    this._inputElement.placeholder = this.placeholder
+    this._inputElement.value = this._draft
+    this._syncInteractionState()
+    this._syncLabels()
+  }
+
+  _syncSize() {
     const size = this.size
-    const classes = ['labels', `labels--${size}`]
-    const tiles = []
+    this._baseElement.classList.remove('labels--small', 'labels--medium', 'labels--large')
+    this._baseElement.classList.add(`labels--${size}`)
+    this._inputElement.size = size
+  }
+
+  _syncInteractionState() {
+    const readonly = this.readonly
+    this._inputElement.hidden = readonly
+    this._inputElement.disabled = this.disabled
+    this._updateAddButton()
+  }
+
+  _syncLabels() {
+    const labels = this._getLabels()
+    const interactive = !this.disabled && !this.readonly
+    const fragment = document.createDocumentFragment()
 
     for (let i = 0; i < labels.length; i++) {
-      const label = labels[i]
-      const color = getLabelColor(label)
-      const classes = ['label']
-
-      if (!disabled && !readonly && label === this._activeLabel) {
-        classes.push('label--active')
-      }
-
-      const removeButton = disabled || readonly
-        ? ''
-        : `<button class="label__remove" type="button" part="label-remove" tabindex="-1" aria-label="Remove ${escapeAttribute(label)}">×</button>`
-
-      tiles.push(`<span
-        class="${escapeAttribute(classes.join(' '))}"
-        data-index="${i}"
-        part="label"
-        role="listitem"
-        style="--label-background-color: ${color.background}; --label-border-color: ${color.border}; --label-color: ${color.text};"
-        ${disabled || readonly ? '' : 'tabindex="0"'}
-        title="${escapeAttribute(label)}"
-      >
-        <span class="label__text" part="label-text">${escapeHtml(label)}</span>
-        ${removeButton}
-      </span>`)
+      fragment.append(this._createLabelElement(labels[i], i, interactive))
     }
 
-    const entry = readonly
-      ? ''
-      : `<tot-input class="entry" size="${escapeAttribute(size)}" placeholder="${escapeAttribute(this.placeholder)}" value="${escapeAttribute(this._draft)}" ${disabled ? 'disabled' : ''}>
-          <button class="add-button" slot="prefix" type="button" aria-label="Add label" ${disabled || !this._draft.trim() ? 'disabled' : ''}>➕</button>
-        </tot-input>`
-
-    this._isRendering = true
-    root.innerHTML = `<style>${labelsStyle}</style>
-      <div class="${escapeAttribute(classes.join(' '))}" part="base" role="list">
-        ${tiles.join('')}
-        ${entry}
-      </div>
-    `
-    this._isRendering = false
-
-    const input = this.getInputComponent()
-    const addButton = root.querySelector('.add-button')
-    if (input) {
-      input.addEventListener('input', (event) => this.handleDraftInput(event))
-      input.addEventListener('change', (event) => event.stopPropagation())
-      input.addEventListener('clear', (event) => event.stopPropagation())
-      input.addEventListener('keydown', (event) => this.handleDraftKeydown(event))
-    }
-
-    if (addButton) {
-      addButton.addEventListener('mousedown', (event) => event.preventDefault())
-      addButton.addEventListener('click', (event) => this.handleAddButtonClick(event))
-    }
-
-    root.removeEventListener('click', this._handleRootClick)
-    root.removeEventListener('keydown', this._handleRootKeydown)
-    root.addEventListener('click', this._handleRootClick)
-    root.addEventListener('keydown', this._handleRootKeydown)
+    this._itemsElement.replaceChildren(fragment)
+    this._updateActiveLabel(labels)
+    this._updateAddButton()
   }
 
-  handleDraftInput(event) {
+  _createLabelElement(label, index, interactive) {
+    const color = getLabelColor(label)
+    const element = document.createElement('span')
+    element.className = 'label'
+    element.dataset.index = String(index)
+    element.setAttribute('part', 'label')
+    element.setAttribute('role', 'listitem')
+    element.title = label
+    element.style.setProperty('--tot-label-background-color', color.background)
+    element.style.setProperty('--tot-label-border-color', color.border)
+    element.style.setProperty('--tot-label-color', color.text)
+
+    if (interactive) {
+      element.tabIndex = 0
+    }
+
+    const text = document.createElement('span')
+    text.className = 'label__text'
+    text.setAttribute('part', 'label-text')
+    text.textContent = label
+    element.append(text)
+
+    if (interactive) {
+      const remove = document.createElement('button')
+      remove.className = 'label__remove'
+      remove.type = 'button'
+      remove.tabIndex = -1
+      remove.setAttribute('part', 'label-remove')
+      remove.setAttribute('aria-label', `Remove ${label}`)
+      remove.textContent = '×'
+      element.append(remove)
+    }
+
+    return element
+  }
+
+  _handleDraftInput(event) {
     event.stopPropagation()
-    const input = this.getInputComponent()
-    this._draft = input ? input.value : ''
-    this.updateAddButton()
+    this._draft = this._inputElement.value
+    this._updateAddButton()
   }
 
-  handleDraftKeydown(event) {
+  _handleDraftKeydown(event) {
     if (this.disabled || this.readonly || event.isComposing) {
       return
     }
 
     if (event.key === 'Enter') {
       event.preventDefault()
-      this.addDraft()
+      this._addDraft()
       return
     }
 
@@ -467,23 +507,23 @@ export class TotLabels extends HTMLElement {
       return
     }
 
-    const value = this.getDraftValue()
+    const value = this._getDraftValue()
     if (!value || !value.endsWith(' ')) {
       return
     }
 
     event.preventDefault()
     this._draft = value
-    this.addDraft()
+    this._addDraft()
   }
 
-  handleAddButtonClick(event) {
+  _handleAddButtonClick(event) {
     event.preventDefault()
     event.stopPropagation()
-    this.addDraft()
+    this._addDraft()
   }
 
-  handleClick(event) {
+  _handleClick(event) {
     if (this.disabled || this.readonly) {
       return
     }
@@ -498,17 +538,13 @@ export class TotLabels extends HTMLElement {
     }
 
     const labelElement = closestElement(event.target, '.label')
-    if (!labelElement) {
-      this._activeLabel = ''
-      this.updateActiveLabel()
-      return
-    }
-
-    this._activeLabel = this.labels[getElementIndex(labelElement)] || ''
-    this.updateActiveLabel()
+    this._activeLabel = labelElement
+      ? this.labels[getElementIndex(labelElement)] || ''
+      : ''
+    this._updateActiveLabel()
   }
 
-  handleKeydown(event) {
+  _handleKeydown(event) {
     if (this.disabled || this.readonly) {
       return
     }
@@ -527,56 +563,46 @@ export class TotLabels extends HTMLElement {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       this._activeLabel = this.labels[getElementIndex(labelElement)] || ''
-      this.updateActiveLabel()
+      this._updateActiveLabel()
     }
   }
 
-  addDraft() {
-    const label = this.getDraftValue().trim()
+  _addDraft() {
+    const label = this._getDraftValue().trim()
     if (!label) {
-      this.clearDraft()
+      this._clearDraft()
       return false
     }
 
     return this.addLabel(label)
   }
 
-  clearDraft() {
+  _clearDraft() {
     this._draft = ''
-    const input = this.getInputComponent()
-    if (input) {
-      input.value = ''
+    this._inputElement.value = ''
+    this._updateAddButton()
+  }
+
+  _getDraftValue() {
+    return this._inputElement.value || this._draft
+  }
+
+  _getLabels() {
+    if (!this._labels) {
+      this._labels = parseLabels(this.getAttribute('labels'))
     }
-    this.updateAddButton()
+    return this._labels
   }
 
-  getDraftValue() {
-    const input = this.getInputComponent()
-    if (input) {
-      return input.value
-    }
-    return this._draft
+  _updateAddButton() {
+    this._addButton.disabled = this.disabled || this.readonly || !this._draft.trim()
   }
 
-  getInputComponent() {
-    return this.shadowRoot?.querySelector('.entry')
-  }
-
-  updateAddButton() {
-    const addButton = this.shadowRoot?.querySelector('.add-button')
-    if (!addButton) {
-      return
-    }
-
-    addButton.disabled = this.disabled || this.readonly || !this._draft.trim()
-  }
-
-  updateActiveLabel() {
-    const labels = this.shadowRoot?.querySelectorAll('.label') || []
-    const currentLabels = this.labels
+  _updateActiveLabel(labels = this._getLabels()) {
+    const elements = this._itemsElement.querySelectorAll('.label')
     const activeAllowed = !this.disabled && !this.readonly
-    for (let i = 0; i < labels.length; i++) {
-      labels[i].classList.toggle('label--active', activeAllowed && currentLabels[i] === this._activeLabel)
+    for (let i = 0; i < elements.length; i++) {
+      elements[i].classList.toggle('label--active', activeAllowed && labels[i] === this._activeLabel)
     }
   }
 }
@@ -780,19 +806,4 @@ function setNullableAttribute(element, name, value) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
 
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
-}

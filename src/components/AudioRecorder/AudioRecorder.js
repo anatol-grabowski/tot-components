@@ -8,9 +8,8 @@ const audioRecorderStyle = `
     box-sizing: border-box;
   }
 
-  .recorder {
+  .base {
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
     border-radius: var(--tot-border-radius-large, 6px);
     color: var(--tot-input-color, #1e293b);
     display: grid;
@@ -209,12 +208,69 @@ const audioRecorderStyle = `
       0 0 4px var(--tot-color-neutral-50, #f8fafc);
   }
 
+  .status {
+    align-items: center;
+    display: inline-flex;
+    gap: var(--tot-spacing-2x-small, .25rem);
+  }
+
+  .status::before {
+    content: none;
+    flex: 0 0 auto;
+  }
+
+  .status[data-state='ready']::before,
+  .status[data-state='recording']::before {
+    border-radius: var(--tot-border-radius-circle, 50%);
+    content: '';
+    height: .625rem;
+    width: .625rem;
+  }
+
+  .status[data-state='ready']::before {
+    background: var(--tot-color-neutral-400, #94a3b8);
+  }
+
+  .status[data-state='recording']::before {
+    animation: tot-audio-recorder-recording-indicator 1.8s ease-in-out infinite;
+    background: var(--tot-color-danger-600, #dc2626);
+  }
+
+  .status[data-state='paused']::before {
+    background: linear-gradient(
+      to right,
+      var(--tot-color-warning-600, #d97706) 0 35%,
+      transparent 35% 65%,
+      var(--tot-color-warning-600, #d97706) 65% 100%
+    );
+    border-radius: 1px;
+    content: '';
+    height: .625rem;
+    width: .625rem;
+  }
+
+  @keyframes tot-audio-recorder-recording-indicator {
+    0%, 100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: .25;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status[data-state='recording']::before {
+      animation: none;
+    }
+  }
+
   .time {
     font-variant-numeric: tabular-nums;
   }
 
   canvas {
-    background: var(--tot-color-neutral-50, #f8fafc);
+    background: transparent;
     border-radius: var(--tot-border-radius-medium, 4px);
     display: block;
     height: var(--tot-audio-recorder-display-height, 72px);
@@ -230,26 +286,59 @@ const audioRecorderStyle = `
     display: block;
   }
 
+  .playback > tot-audio-player::part(base) {
+    background: transparent;
+    border-radius: 0;
+    padding-inline: 0;
+  }
+
   .playback:empty {
     display: none;
   }
 `
 
+/**
+ * Microphone recorder with pause/resume controls, a live waveform, and
+ * playback through `<tot-audio-player>`. While a recording session is active,
+ * it holds a screen wake lock when supported so the device does not lock or
+ * sleep. Browsers may deny or release the lock; recording continues normally.
+ */
 export class TotAudioRecorder extends HTMLElement {
   constructor() {
     super()
-    this._stream = null
-    this._recorder = null
-    this._chunks = []
-    this._startedAt = 0
-    this._elapsedBeforePause = 0
-    this._timer = 0
-    this._animation = 0
     this._analyser = null
+    this._animation = 0
+    this._abortEventPending = false
     this._audioContext = null
+    this._canvas = null
+    this._canvasContainer = null
+    this._chunks = []
+    this._clearAbortButton = null
+    this._colors = null
+    this._duration = 0
+    this._elapsedBeforePause = 0
+    this._initialized = false
+    this._isAbort = false
+    this._pauseButton = null
+    this._playback = null
+    this._permissionStatusTimer = 0
+    this._recordButton = null
+    this._recordingBlob = null
+    this._recordingUrl = ''
+    this._recorder = null
     this._resizeObserver = null
+    this._startRequest = 0
+    this._startedAt = 0
+    this._starting = false
+    this._status = null
+    this._stopButton = null
+    this._stream = null
+    this._themeDrawFrame = 0
+    this._themeDrawTimer = 0
     this._themeObserver = null
     this._themeStylesheetLinks = []
+    this._timeLabel = null
+    this._timer = 0
     this._wakeLock = null
     this._wakeLockPending = false
     this._handleThemeChange = () => this.scheduleThemeRedraw()
@@ -259,61 +348,278 @@ export class TotAudioRecorder extends HTMLElement {
         void this.acquireWakeLock()
       }
     }
-    this._isAbort = false
+  }
+
+  get mimeType() {
+    return this.getAttribute('mime-type') || ''
+  }
+
+  set mimeType(value) {
+    if (value) {
+      this.setAttribute('mime-type', value)
+    } else {
+      this.removeAttribute('mime-type')
+    }
+  }
+
+  get state() {
+    if (this._starting) {
+      return 'starting'
+    }
+    return this._recorder ? this._recorder.state : 'inactive'
+  }
+
+  get blob() {
+    return this._recordingBlob
+  }
+
+  get url() {
+    return this._recordingUrl
+  }
+
+  get duration() {
+    return this._duration
   }
 
   connectedCallback() {
+    this.initialize()
     this.observeThemeChanges()
+    this.observeSize()
     document.addEventListener('visibilitychange', this._handleVisibilityChange)
-    this.render()
+    this.ensurePlayback()
+    this.restoreUi()
   }
 
   disconnectedCallback() {
-    this.stopTracks()
-    clearInterval(this._timer)
-    cancelAnimationFrame(this._animation)
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect()
-      this._resizeObserver = null
-    }
-    if (this._themeObserver) {
-      this._themeObserver.disconnect()
-      this._themeObserver = null
-    }
-    this.clearThemeStylesheetListeners()
-    window.removeEventListener('tot-theme-change', this._handleThemeChange)
-    document.removeEventListener('tot-theme-change', this._handleThemeChange)
     document.removeEventListener('visibilitychange', this._handleVisibilityChange)
+    this.stopObservingSize()
+    this.stopObservingThemeChanges()
+    this._startRequest++
+    this._starting = false
+    this._abortEventPending = false
+    this._isAbort = true
+    if (this._recorder && this._recorder.state !== 'inactive') {
+      try {
+        this._recorder.stop()
+      } catch {}
+    }
+    this.clearPermissionStatusTimer()
+    this.stopTimerAndAnimation()
+    this.stopTracks()
+    this.releaseRecordingUrl()
   }
 
-  render() {
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect()
-      this._resizeObserver = null
+  async startRecording() {
+    if (this._starting || this.isRecordingInProgress()) {
+      return
     }
 
-    const root = getRoot(this)
+    const request = ++this._startRequest
+    this._starting = true
+    this.showStartingUi()
+    this.schedulePermissionStatus(request)
+    let stream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (error) {
+      if (request !== this._startRequest) {
+        return
+      }
+      this._starting = false
+      this.clearPermissionStatusTimer()
+      const message = error && error.name === 'NotAllowedError'
+        ? 'Microphone permission was denied'
+        : 'Microphone is unavailable'
+      this.showIdleUi(message)
+      emitDetail(this, 'recording-error', { message })
+      return
+    }
+
+    if (request !== this._startRequest || !this.isConnected) {
+      stopMediaStream(stream)
+      return
+    }
+
+    this._stream = stream
+    this.clearPermissionStatusTimer()
+    try {
+      const options = this.mimeType && MediaRecorder.isTypeSupported(this.mimeType)
+        ? { mimeType: this.mimeType }
+        : undefined
+      this._recorder = new MediaRecorder(stream, options)
+    } catch {
+      this._starting = false
+      this.clearPermissionStatusTimer()
+      this.stopTracks()
+      const message = 'Recording is not supported in this browser'
+      this.showIdleUi(message)
+      emitDetail(this, 'recording-error', { message })
+      return
+    }
+
+    this._chunks = []
+    this._elapsedBeforePause = 0
+    this._startedAt = performance.now()
+    this._isAbort = false
+    this._recorder.addEventListener('dataavailable', event => {
+      if (event.data && event.data.size > 0) {
+        this._chunks.push(event.data)
+      }
+    })
+    this._recorder.addEventListener('stop', () => {
+      if (this._isAbort) {
+        this.cleanupAfterAbort()
+      } else {
+        this.finishRecording()
+      }
+    }, { once: true })
+
+    try {
+      this._recorder.start()
+    } catch {
+      this._starting = false
+      this.clearPermissionStatusTimer()
+      this._recorder = null
+      this.stopTracks()
+      const message = 'Recording could not be started'
+      this.showIdleUi(message)
+      emitDetail(this, 'recording-error', { message })
+      return
+    }
+
+    this._starting = false
+    this.showRecordingUi()
+    this._timer = window.setInterval(() => this.updateElapsed(), 250)
+    this.setupAnalyser()
+    this.drawLiveWave()
+    void this.acquireWakeLock()
+    emitEvent(this, 'recording-start')
+  }
+
+  togglePause() {
+    if (!this._recorder) {
+      return
+    }
+
+    if (this._recorder.state === 'recording') {
+      this.captureActiveElapsed()
+      this._recorder.pause()
+      this.updateElapsed()
+      this.showPausedUi()
+      cancelAnimationFrame(this._animation)
+      this._animation = 0
+      this.drawFlatWave()
+      emitEvent(this, 'recording-pause')
+    } else if (this._recorder.state === 'paused') {
+      this._startedAt = performance.now()
+      this._recorder.resume()
+      this.showRecordingUi()
+      this.drawLiveWave()
+      emitEvent(this, 'recording-resume')
+    }
+  }
+
+  stopRecording() {
+    if (!this._recorder || this._recorder.state === 'inactive') {
+      return
+    }
+    this.captureActiveElapsed()
+    this.updateElapsed()
+    this._pauseButton.disabled = true
+    this._stopButton.disabled = true
+    this._clearAbortButton.disabled = true
+    this._recorder.stop()
+  }
+
+  abortRecording() {
+    if (this._starting) {
+      this._abortEventPending = true
+      this._startRequest++
+      this._starting = false
+      this.clearPermissionStatusTimer()
+      this.cleanupAfterAbort()
+      return
+    }
+
+    if (!this._recorder || this._recorder.state === 'inactive') {
+      return
+    }
+
+    this._abortEventPending = true
+    this._isAbort = true
+    this._pauseButton.disabled = true
+    this._stopButton.disabled = true
+    this._clearAbortButton.disabled = true
+    this._recorder.stop()
+  }
+
+  clearRecording() {
+    if (this._starting || this.isRecordingInProgress() || !this._recordingBlob) {
+      return
+    }
+    this._recordingBlob = null
+    this._duration = 0
+    this.releaseRecordingUrl()
+    this._playback.replaceChildren()
+    this._startedAt = 0
+    this._elapsedBeforePause = 0
+    this.showIdleUi('Ready')
+    this.drawFlatWave()
+    emitEvent(this, 'recording-clear')
+  }
+
+  isRecordingInProgress() {
+    return Boolean(this._recorder && this._recorder.state !== 'inactive')
+  }
+
+  getElapsedSeconds() {
+    let elapsed = this._elapsedBeforePause
+    if (this._startedAt) {
+      elapsed += performance.now() - this._startedAt
+    }
+    return elapsed / 1000
+  }
+
+  getMediaRecorder() {
+    return this._recorder
+  }
+
+  getMediaStream() {
+    return this._stream
+  }
+
+  getPlayer() {
+    return this._playback ? this._playback.querySelector('tot-audio-player') : null
+  }
+
+  initialize() {
+    if (this._initialized) {
+      return
+    }
+
+    const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${audioRecorderStyle}</style>
-      <div class="recorder">
-        <div class="controls">
-          <button class="record" type="button" aria-label="Record"></button>
-          <button class="pause" type="button" aria-label="Pause" disabled hidden></button>
-          <button class="stop" type="button" aria-label="Stop" disabled></button>
+      <div class="base" part="base">
+        <div class="controls" part="controls">
+          <button class="record" part="record-button" type="button" aria-label="Record"></button>
+          <button class="pause" part="pause-button" type="button" aria-label="Pause" disabled hidden></button>
+          <button class="stop" part="stop-button" type="button" aria-label="Stop" disabled></button>
           <div class="spacer"></div>
-          <button class="clear-abort" type="button" disabled>Clear</button>
+          <button class="clear-abort" part="clear-button" type="button" disabled>Clear</button>
         </div>
-        <div class="display">
-          <div class="canvas-container">
-            <canvas></canvas>
-            <div class="overlay">
-              <span class="status">Ready</span>
-              <span class="time">0:00</span>
+        <div class="display" part="display">
+          <div class="canvas-container" part="waveform-container">
+            <canvas part="waveform"></canvas>
+            <div class="overlay" part="overlay">
+              <span class="status" part="status" role="status" aria-live="polite">Ready</span>
+              <span class="time" part="time">0:00</span>
             </div>
           </div>
-          <div class="playback"></div>
+          <div class="playback" part="playback"></div>
         </div>
       </div>
     `
+
     this._recordButton = root.querySelector('.record')
     this._stopButton = root.querySelector('.stop')
     this._pauseButton = root.querySelector('.pause')
@@ -324,20 +630,37 @@ export class TotAudioRecorder extends HTMLElement {
     this._canvas = root.querySelector('canvas')
     this._playback = root.querySelector('.playback')
     this._recordButton.addEventListener('click', () => void this.startRecording())
-
-    this._resizeObserver = new ResizeObserver(() => {
-      if ((!this._recorder || this._recorder.state === 'inactive') && !this._playback.innerHTML) {
-        this.drawFlatWave()
-      } else if (this._recorder && this._recorder.state === 'paused') {
-        this.drawFlatWave()
-      }
-    })
-    this._resizeObserver.observe(this._canvas)
-
     this._stopButton.addEventListener('click', () => this.stopRecording())
     this._pauseButton.addEventListener('click', () => this.togglePause())
-    this._clearAbortButton.addEventListener('click', () => this.handleClearAbort())
-    setTimeout(() => this.drawFlatWave(), 0)
+    this._clearAbortButton.addEventListener('click', () => {
+      if (this._starting || this.isRecordingInProgress()) {
+        this.abortRecording()
+      } else {
+        this.clearRecording()
+      }
+    })
+    this._initialized = true
+  }
+
+  observeSize() {
+    if (this._resizeObserver) {
+      return
+    }
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._recorder && this._recorder.state === 'recording' && this._analyser) {
+        return
+      }
+      this.drawFlatWave()
+    })
+    this._resizeObserver.observe(this._canvas)
+  }
+
+  stopObservingSize() {
+    if (!this._resizeObserver) {
+      return
+    }
+    this._resizeObserver.disconnect()
+    this._resizeObserver = null
   }
 
   observeThemeChanges() {
@@ -345,8 +668,17 @@ export class TotAudioRecorder extends HTMLElement {
       return
     }
 
-    this._themeObserver = new MutationObserver(() => {
-      this.syncThemeStylesheetListeners()
+    this._themeObserver = new MutationObserver(records => {
+      let headChanged = false
+      for (let i = 0; i < records.length; i++) {
+        if (document.head && (records[i].target === document.head || document.head.contains(records[i].target))) {
+          headChanged = true
+          break
+        }
+      }
+      if (headChanged) {
+        this.syncThemeStylesheetListeners()
+      }
       this.scheduleThemeRedraw()
     })
 
@@ -356,15 +688,13 @@ export class TotAudioRecorder extends HTMLElement {
         attributes: true,
       })
     }
-
     this._themeObserver.observe(document.documentElement, {
       attributeFilter: ['class', 'style'],
       attributes: true,
     })
-
     if (document.head) {
       this._themeObserver.observe(document.head, {
-        attributeFilter: ['href', 'media', 'disabled', 'class', 'style'],
+        attributeFilter: ['href', 'media', 'disabled'],
         attributes: true,
         childList: true,
         subtree: true,
@@ -376,22 +706,35 @@ export class TotAudioRecorder extends HTMLElement {
     this.syncThemeStylesheetListeners()
   }
 
+  stopObservingThemeChanges() {
+    if (this._themeObserver) {
+      this._themeObserver.disconnect()
+      this._themeObserver = null
+    }
+    this.clearThemeStylesheetListeners()
+    window.removeEventListener('tot-theme-change', this._handleThemeChange)
+    document.removeEventListener('tot-theme-change', this._handleThemeChange)
+    cancelAnimationFrame(this._themeDrawFrame)
+    window.clearTimeout(this._themeDrawTimer)
+    this._themeDrawFrame = 0
+    this._themeDrawTimer = 0
+  }
+
   scheduleThemeRedraw() {
-    const draw = () => {
-      if (!this.isConnected) {
-        return
-      }
-
-      if (this._recorder && this._recorder.state === 'recording' && this._analyser) {
-        return
-      }
-
-      this.drawFlatWave()
+    this._colors = null
+    if (this._recorder && this._recorder.state === 'recording' && this._analyser) {
+      return
     }
 
-    requestAnimationFrame(draw)
-    window.setTimeout(draw, 60)
-    window.setTimeout(draw, 180)
+    cancelAnimationFrame(this._themeDrawFrame)
+    window.clearTimeout(this._themeDrawTimer)
+    const draw = () => {
+      if (this.isConnected) {
+        this.drawFlatWave()
+      }
+    }
+    this._themeDrawFrame = requestAnimationFrame(draw)
+    this._themeDrawTimer = window.setTimeout(draw, 100)
   }
 
   syncThemeStylesheetListeners() {
@@ -408,69 +751,6 @@ export class TotAudioRecorder extends HTMLElement {
       this._themeStylesheetLinks[i].removeEventListener('load', this._handleThemeStylesheetLoad)
     }
     this._themeStylesheetLinks = []
-  }
-
-  async startRecording() {
-    try {
-      this._stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch (error) {
-      const message = error && error.name === 'NotAllowedError'
-        ? 'Microphone permission was denied'
-        : 'Microphone is unavailable'
-      this.setStatus(message)
-      emit(this, 'recording-error', { message })
-      return
-    }
-
-    try {
-      const mimeType = this.getAttribute('mime-type') || ''
-      const options = mimeType && MediaRecorder.isTypeSupported(mimeType) ? { mimeType } : undefined
-      this._recorder = new MediaRecorder(this._stream, options)
-    } catch (error) {
-      this.setStatus('Recording is not supported in this browser')
-      emit(this, 'recording-error', { message: 'Recording is not supported in this browser' })
-      this.stopTracks()
-      return
-    }
-
-    this._chunks = []
-    this._elapsedBeforePause = 0
-    this._startedAt = performance.now()
-    this._recorder.addEventListener('dataavailable', event => {
-      if (event.data && event.data.size > 0) {
-        this._chunks.push(event.data)
-      }
-    })
-    this._recorder.addEventListener('stop', () => {
-      if (this._isAbort) {
-        this._cleanupAfterAbort()
-      } else {
-        this.finishRecording()
-      }
-    })
-    this._isAbort = false
-    this._recorder.start()
-    void this.acquireWakeLock()
-    this._playback.style.display = 'none'
-    this._recordButton.hidden = true
-    this._recordButton.disabled = false
-    this._pauseButton.hidden = false
-    this._pauseButton.disabled = false
-    this._stopButton.disabled = false
-    this._pauseButton.classList.remove('resume')
-    this._pauseButton.setAttribute('aria-label', 'Pause')
-    this._clearAbortButton.textContent = 'Abort'
-    this._clearAbortButton.disabled = false
-    this.setStatus('Recording')
-    this._canvasContainer.classList.remove('hidden')
-    this._timer = setInterval(() => this.updateElapsed(), 250)
-    this.setupAnalyser()
-    this.drawLiveWave()
-    emit(this, 'recording-start')
-  }
-
-  isRecordingInProgress() {
-    return Boolean(this._recorder && this._recorder.state !== 'inactive')
   }
 
   async acquireWakeLock() {
@@ -492,7 +772,6 @@ export class TotAudioRecorder extends HTMLElement {
         await wakeLock.release()
         return
       }
-
       this._wakeLock = wakeLock
       wakeLock.addEventListener('release', () => {
         if (this._wakeLock === wakeLock) {
@@ -512,7 +791,6 @@ export class TotAudioRecorder extends HTMLElement {
     if (!wakeLock || wakeLock.released) {
       return
     }
-
     try {
       await wakeLock.release()
     } catch {
@@ -523,265 +801,342 @@ export class TotAudioRecorder extends HTMLElement {
   setupAnalyser() {
     try {
       const AudioContextConstructor = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextConstructor) {
+        return
+      }
       this._audioContext = new AudioContextConstructor()
       const source = this._audioContext.createMediaStreamSource(this._stream)
       this._analyser = this._audioContext.createAnalyser()
       this._analyser.fftSize = 1024
       source.connect(this._analyser)
-    } catch (error) {
+    } catch {
       this._analyser = null
     }
   }
 
   drawLiveWave() {
+    cancelAnimationFrame(this._animation)
+    this._animation = 0
     if (!this._canvas || !this._analyser) {
       this.drawFlatWave()
       return
     }
-    const rect = this._canvas.getBoundingClientRect()
-    if (!rect.width || !rect.height) {
-      return
-    }
-    const ratio = window.devicePixelRatio || 1
-    this._canvas.width = Math.max(1, Math.floor(rect.width * ratio))
-    this._canvas.height = Math.max(1, Math.floor(rect.height * ratio))
-    const ctx = this._canvas.getContext('2d')
-    ctx.scale(ratio, ratio)
+
     const data = new Uint8Array(this._analyser.fftSize)
     const draw = () => {
-      if (!this._analyser) {
+      if (!this._analyser || !this._recorder || this._recorder.state !== 'recording') {
+        this._animation = 0
         return
       }
       this._analyser.getByteTimeDomainData(data)
-      ctx.clearRect(0, 0, rect.width, rect.height)
-      ctx.fillStyle = getResolvedColor(this, '--tot-color-neutral-50', '#f8fafc')
-      ctx.fillRect(0, 0, rect.width, rect.height)
-      ctx.strokeStyle = getResolvedColor(this, '--tot-color-primary-600', '#0284c7')
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      for (let i = 0; i < data.length; i++) {
-        const x = i / (data.length - 1) * rect.width
-        const y = data[i] / 255 * rect.height
-        if (i === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
-      }
-      ctx.stroke()
-      ctx.strokeStyle = getResolvedColor(this, '--tot-panel-border-color', '#e2e8f0')
-      ctx.strokeRect(.5, .5, rect.width - 1, rect.height - 1)
+      this.drawWaveData(data)
       this._animation = requestAnimationFrame(draw)
     }
     draw()
   }
 
-  togglePause() {
-    if (!this._recorder) {
+  drawWaveData(data) {
+    const canvas = this.prepareCanvas()
+    if (!canvas) {
       return
     }
-    if (this._recorder.state === 'recording') {
-      this.captureActiveElapsed()
-      this._recorder.pause()
-      this.updateElapsed()
-      this.setStatus('Paused')
-      this._pauseButton.setAttribute('aria-label', 'Resume')
-      this._pauseButton.classList.add('resume')
-      cancelAnimationFrame(this._animation)
-      this._animation = 0
-      this.drawFlatWave()
-      emit(this, 'recording-pause')
-    } else if (this._recorder.state === 'paused') {
-      this._startedAt = performance.now()
-      this._recorder.resume()
-      this.setStatus('Recording')
-      this._pauseButton.setAttribute('aria-label', 'Pause')
-      this._pauseButton.classList.remove('resume')
-      this.drawLiveWave()
-      emit(this, 'recording-resume')
+    const { context, height, width } = canvas
+    const colors = this.getColors()
+    context.strokeStyle = colors.primary
+    context.lineWidth = 2
+    context.beginPath()
+    for (let i = 0; i < data.length; i++) {
+      const x = i / (data.length - 1) * width
+      const y = data[i] / 255 * height
+      if (i === 0) {
+        context.moveTo(x, y)
+      } else {
+        context.lineTo(x, y)
+      }
     }
+    context.stroke()
   }
 
-  stopRecording() {
-    if (this._recorder && this._recorder.state !== 'inactive') {
-      this.captureActiveElapsed()
-      this.updateElapsed()
-      this._recorder.stop()
+  drawFlatWave() {
+    const canvas = this.prepareCanvas()
+    if (!canvas) {
+      return
     }
+    const { context, height, width } = canvas
+    const colors = this.getColors()
+    context.strokeStyle = colors.idle
+    context.lineWidth = 1.5
+    context.beginPath()
+    context.moveTo(0, height / 2)
+    context.lineTo(width, height / 2)
+    context.stroke()
+  }
+
+  prepareCanvas() {
+    if (!this._canvas) {
+      return null
+    }
+    const width = this._canvas.clientWidth
+    const height = this._canvas.clientHeight
+    if (!width || !height) {
+      return null
+    }
+    const ratio = window.devicePixelRatio || 1
+    const pixelWidth = Math.max(1, Math.floor(width * ratio))
+    const pixelHeight = Math.max(1, Math.floor(height * ratio))
+    if (this._canvas.width !== pixelWidth || this._canvas.height !== pixelHeight) {
+      this._canvas.width = pixelWidth
+      this._canvas.height = pixelHeight
+    }
+    const context = this._canvas.getContext('2d')
+    if (!context) {
+      return null
+    }
+    context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    context.clearRect(0, 0, width, height)
+    return { context, height, width }
+  }
+
+  getColors() {
+    if (!this._colors) {
+      this._colors = {
+        idle: getResolvedColor(this, '--tot-color-neutral-300', '#cbd5e1'),
+        primary: getResolvedColor(this, '--tot-color-primary-600', '#0284c7'),
+      }
+    }
+    return this._colors
   }
 
   finishRecording() {
-    clearInterval(this._timer)
-    cancelAnimationFrame(this._animation)
+    this.stopTimerAndAnimation()
     this.captureActiveElapsed(true)
     const duration = this.getElapsedSeconds()
-    const type = this._recorder && this._recorder.mimeType ? this._recorder.mimeType : 'audio/webm'
+    const recorder = this._recorder
+    const type = recorder && recorder.mimeType ? recorder.mimeType : 'audio/webm'
     const blob = new Blob(this._chunks, { type })
-    const url = URL.createObjectURL(blob)
-    const player = document.createElement('tot-audio-player')
-    player.src = url
-    this._playback.style.display = ''
-    this._playback.innerHTML = ''
-    this._playback.append(player)
-    this._recordButton.hidden = false
-    this._recordButton.disabled = false
-    this._pauseButton.hidden = true
-    this._pauseButton.disabled = true
-    this._stopButton.disabled = true
-    this._pauseButton.classList.remove('resume')
-    this._canvasContainer.classList.add('hidden')
-    this._clearAbortButton.textContent = 'Clear'
-    this._clearAbortButton.disabled = false
-    this.setStatus('')
+    this._chunks = []
+    this._recorder = null
     this.stopTracks()
-    emit(this, 'recording-stop', { blob, url, duration })
+    this._recordingBlob = blob
+    this._duration = duration
+    this.releaseRecordingUrl()
+    this.ensurePlayback()
+    this.showPlaybackUi()
+    emitDetail(this, 'recording-stop', {
+      blob,
+      duration,
+      url: this._recordingUrl,
+    })
   }
 
-  handleClearAbort() {
-    if (this._clearAbortButton.textContent === 'Abort') {
-      this.abortRecording()
-    } else {
-      this.clearRecording()
-    }
-  }
-
-  abortRecording() {
-    this._isAbort = true
-    if (this._recorder && this._recorder.state !== 'inactive') {
-      this._recorder.stop()
-    } else {
-      this._cleanupAfterAbort()
-    }
-  }
-
-  _cleanupAfterAbort() {
-    clearInterval(this._timer)
-    cancelAnimationFrame(this._animation)
+  cleanupAfterAbort() {
+    const emitAbort = this._abortEventPending
+    this._abortEventPending = false
+    this.stopTimerAndAnimation()
     this.stopTracks()
+    this._chunks = []
+    this._recorder = null
     this._startedAt = 0
     this._elapsedBeforePause = 0
     this._isAbort = false
-    this._recordButton.hidden = false
-    this._recordButton.disabled = false
-    this._pauseButton.hidden = true
-    this._pauseButton.disabled = true
-    this._stopButton.disabled = true
-    this._pauseButton.classList.remove('resume')
-    this._clearAbortButton.textContent = 'Clear'
-
-    this.setStatus('Ready')
-    this._timeLabel.textContent = formatTime(0)
-
-    if (this._playback.innerHTML) {
-      this._playback.style.display = ''
-      this._canvasContainer.classList.add('hidden')
-      this._clearAbortButton.disabled = false
-    } else {
-      this._canvasContainer.classList.remove('hidden')
-      this._clearAbortButton.disabled = true
-      this.drawFlatWave()
+    if (this.isConnected) {
+      this.ensurePlayback()
+      this.restoreUi()
     }
+    if (emitAbort) {
+      emitEvent(this, 'recording-abort')
+    }
+  }
+
+  captureActiveElapsed(force = false) {
+    if (!this._startedAt) {
+      return
+    }
+    const recording = this._recorder && this._recorder.state === 'recording'
+    if (!force && !recording) {
+      return
+    }
+    this._elapsedBeforePause += performance.now() - this._startedAt
+    this._startedAt = 0
   }
 
   updateElapsed() {
     this._timeLabel.textContent = formatTime(this.getElapsedSeconds())
   }
 
-  captureActiveElapsed(force) {
-    if (!this._startedAt) {
-      return
-    }
-
-    const isRecording = this._recorder && this._recorder.state === 'recording'
-    if (!force && !isRecording) {
-      return
-    }
-
-    this._elapsedBeforePause += performance.now() - this._startedAt
-    this._startedAt = 0
-  }
-
-  getElapsedSeconds() {
-    let elapsed = this._elapsedBeforePause
-    if (this._startedAt) {
-      elapsed += performance.now() - this._startedAt
-    }
-    return elapsed / 1000
-  }
-
-  setStatus(message) {
-    this._status.textContent = message
-  }
-
-  drawFlatWave() {
-    if (!this._canvas) {
-      return
-    }
-    const rect = this._canvas.getBoundingClientRect()
-    if (!rect.width || !rect.height) {
-      return
-    }
-    const ratio = window.devicePixelRatio || 1
-    this._canvas.width = Math.max(1, Math.floor(rect.width * ratio))
-    this._canvas.height = Math.max(1, Math.floor(rect.height * ratio))
-    const ctx = this._canvas.getContext('2d')
-    ctx.scale(ratio, ratio)
-    ctx.fillStyle = getResolvedColor(this, '--tot-color-neutral-50', '#f8fafc')
-    ctx.fillRect(0, 0, rect.width, rect.height)
-    ctx.strokeStyle = getResolvedColor(this, '--tot-color-neutral-300', '#cbd5e1')
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.moveTo(0, rect.height / 2)
-    ctx.lineTo(rect.width, rect.height / 2)
-    ctx.stroke()
-  }
-
-  clearRecording() {
-    this._startedAt = 0
-    this._elapsedBeforePause = 0
-    const player = this._playback.querySelector('tot-audio-player')
-    if (player && player.src && player.src.startsWith('blob:')) {
-      URL.revokeObjectURL(player.src)
-    }
-    this._playback.innerHTML = ''
-    this._recordButton.hidden = false
-    this._recordButton.disabled = false
-    this._pauseButton.hidden = true
-    this._pauseButton.disabled = true
-    this._stopButton.disabled = true
-    this._canvasContainer.classList.remove('hidden')
-    this._clearAbortButton.disabled = true
-    this._timeLabel.textContent = formatTime(0)
-    this.setStatus('Ready')
-    this.drawFlatWave()
+  stopTimerAndAnimation() {
+    window.clearInterval(this._timer)
+    cancelAnimationFrame(this._animation)
+    this._timer = 0
+    this._animation = 0
   }
 
   stopTracks() {
     void this.releaseWakeLock()
     if (this._stream) {
-      const tracks = this._stream.getTracks()
-      for (let i = 0; i < tracks.length; i++) {
-        tracks[i].stop()
-      }
+      stopMediaStream(this._stream)
       this._stream = null
     }
     if (this._audioContext) {
-      void this._audioContext.close()
+      void this._audioContext.close().catch(() => {})
       this._audioContext = null
     }
     this._analyser = null
   }
+
+  ensurePlayback() {
+    if (!this._playback || !this._recordingBlob) {
+      return
+    }
+    if (!this._recordingUrl) {
+      this._recordingUrl = URL.createObjectURL(this._recordingBlob)
+    }
+    let player = this.getPlayer()
+    if (!player) {
+      player = document.createElement('tot-audio-player')
+      this._playback.replaceChildren(player)
+    }
+    player.src = this._recordingUrl
+  }
+
+  releaseRecordingUrl() {
+    if (!this._recordingUrl) {
+      return
+    }
+    const player = this.getPlayer()
+    if (player && player.src === this._recordingUrl) {
+      player.src = ''
+    }
+    URL.revokeObjectURL(this._recordingUrl)
+    this._recordingUrl = ''
+  }
+
+  restoreUi() {
+    if (this._starting) {
+      this.showStartingUi()
+    } else if (this._recorder && this._recorder.state === 'recording') {
+      this.showRecordingUi()
+    } else if (this._recorder && this._recorder.state === 'paused') {
+      this.showPausedUi()
+    } else if (this._recordingBlob) {
+      this.showPlaybackUi()
+    } else {
+      this.showIdleUi('Ready')
+      requestAnimationFrame(() => this.drawFlatWave())
+    }
+  }
+
+  showStartingUi() {
+    this._recordButton.hidden = false
+    this._recordButton.disabled = true
+    this._pauseButton.hidden = true
+    this._pauseButton.disabled = true
+    this._stopButton.disabled = true
+    this._clearAbortButton.textContent = 'Abort'
+    this._clearAbortButton.disabled = false
+    this._canvasContainer.classList.remove('hidden')
+    this._playback.style.display = 'none'
+    this._timeLabel.textContent = formatTime(0)
+    this.setStatus('Ready', 'ready')
+    this.drawFlatWave()
+  }
+
+  schedulePermissionStatus(request) {
+    this.clearPermissionStatusTimer()
+    this._permissionStatusTimer = window.setTimeout(() => {
+      this._permissionStatusTimer = 0
+      if (this._starting && request === this._startRequest) {
+        this.setStatus('Requesting microphone')
+      }
+    }, 300)
+  }
+
+  clearPermissionStatusTimer() {
+    window.clearTimeout(this._permissionStatusTimer)
+    this._permissionStatusTimer = 0
+  }
+
+  showRecordingUi() {
+    this._recordButton.hidden = true
+    this._recordButton.disabled = false
+    this._pauseButton.hidden = false
+    this._pauseButton.disabled = false
+    this._pauseButton.classList.remove('resume')
+    this._pauseButton.setAttribute('aria-label', 'Pause')
+    this._stopButton.disabled = false
+    this._clearAbortButton.textContent = 'Abort'
+    this._clearAbortButton.disabled = false
+    this._canvasContainer.classList.remove('hidden')
+    this._playback.style.display = 'none'
+    this.setStatus('Recording', 'recording')
+  }
+
+  showPausedUi() {
+    this._recordButton.hidden = true
+    this._pauseButton.hidden = false
+    this._pauseButton.disabled = false
+    this._pauseButton.classList.add('resume')
+    this._pauseButton.setAttribute('aria-label', 'Resume')
+    this._stopButton.disabled = false
+    this._clearAbortButton.textContent = 'Abort'
+    this._clearAbortButton.disabled = false
+    this._canvasContainer.classList.remove('hidden')
+    this._playback.style.display = 'none'
+    this.setStatus('Paused', 'paused')
+  }
+
+  showPlaybackUi() {
+    this._recordButton.hidden = false
+    this._recordButton.disabled = false
+    this._pauseButton.hidden = true
+    this._pauseButton.disabled = true
+    this._pauseButton.classList.remove('resume')
+    this._stopButton.disabled = true
+    this._clearAbortButton.textContent = 'Clear'
+    this._clearAbortButton.disabled = false
+    this._canvasContainer.classList.add('hidden')
+    this._playback.style.display = ''
+    this._timeLabel.textContent = formatTime(this._duration)
+    this.setStatus('')
+  }
+
+  showIdleUi(status) {
+    this._recordButton.hidden = false
+    this._recordButton.disabled = false
+    this._pauseButton.hidden = true
+    this._pauseButton.disabled = true
+    this._pauseButton.classList.remove('resume')
+    this._stopButton.disabled = true
+    this._clearAbortButton.textContent = 'Clear'
+    this._clearAbortButton.disabled = !this._recordingBlob
+    this._canvasContainer.classList.toggle('hidden', Boolean(this._recordingBlob))
+    this._playback.style.display = this._recordingBlob ? '' : 'none'
+    this._timeLabel.textContent = formatTime(0)
+    this.setStatus(status, status === 'Ready' ? 'ready' : '')
+  }
+
+  setStatus(message, state = '') {
+    this._status.textContent = message
+    if (state) {
+      this._status.dataset.state = state
+    } else {
+      delete this._status.dataset.state
+    }
+  }
 }
 
-function getRoot(element) {
-  return element.shadowRoot || element.attachShadow({ mode: 'open' })
+function emitEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
+    bubbles: true,
+    composed: true,
+  }))
 }
 
-function emit(element, name, detail) {
+function emitDetail(element, name, detail) {
   element.dispatchEvent(new CustomEvent(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
+    detail,
   }))
 }
 
@@ -789,22 +1144,18 @@ function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) {
     seconds = 0
   }
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${String(secs).padStart(2, '0')}`
+  const minutes = Math.floor(seconds / 60)
+  const remainder = Math.floor(seconds % 60)
+  return `${minutes}:${String(remainder).padStart(2, '0')}`
 }
 
 function getResolvedColor(element, propertyName, fallback) {
-  const root = element.shadowRoot
-  if (!root) {
-    return fallback
-  }
+  return getComputedStyle(element).getPropertyValue(propertyName).trim() || fallback
+}
 
-  const probe = document.createElement('span')
-  probe.style.color = `var(${propertyName}, ${fallback})`
-  probe.style.display = 'none'
-  root.append(probe)
-  const color = getComputedStyle(probe).color || fallback
-  probe.remove()
-  return color
+function stopMediaStream(stream) {
+  const tracks = stream.getTracks()
+  for (let i = 0; i < tracks.length; i++) {
+    tracks[i].stop()
+  }
 }

@@ -17,15 +17,17 @@ const notificationStyle = `
   }
 
   .notification {
-    --notification-accent-color: var(--tot-notification-primary-accent-color, var(--tot-color-primary-600, #0284c7));
-    --notification-background-color: var(--tot-notification-primary-background-color, var(--tot-color-primary-50, #f0f9ff));
-    --notification-border-color: var(--tot-notification-primary-border-color, var(--tot-color-primary-200, #bae6fd));
-    --notification-color: var(--tot-notification-primary-color, var(--tot-color-primary-900, #0c4a6e));
+    --tot-notification-current-accent-color: var(--tot-notification-info-accent-color, var(--tot-color-sky-600, #0284c7));
+    --tot-notification-current-background-color: var(--tot-notification-info-background-color, var(--tot-color-sky-50, #f0f9ff));
+    --tot-notification-current-border-color: var(--tot-notification-info-border-color, var(--tot-color-sky-200, #bae6fd));
+    --tot-notification-current-color: var(--tot-notification-info-color, var(--tot-color-sky-900, #0c4a6e));
+    --tot-notification-duration: 0ms;
 
-    background: var(--notification-background-color);
-    border: var(--tot-panel-border-width, 1px) solid var(--notification-border-color);
-    border-radius: var(--tot-border-radius-large, 8px);
-    color: var(--notification-color);
+    background: var(--tot-notification-current-background-color);
+    border: var(--tot-panel-border-width, 1px) solid var(--tot-notification-current-border-color);
+    border-inline-start: .25rem solid var(--tot-notification-current-accent-color);
+    border-radius: var(--tot-border-radius-medium, 4px);
+    color: var(--tot-notification-current-color);
     display: grid;
     font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
     font-size: var(--tot-input-font-size-medium, .875rem);
@@ -34,55 +36,65 @@ const notificationStyle = `
     line-height: var(--tot-line-height-dense, 1.45);
     min-width: 0;
     overflow: hidden;
-    padding: var(--tot-spacing-small, .75rem);
+    padding: var(--tot-spacing-2x-small, .625rem) var(--tot-spacing-small, .75rem);
     position: relative;
     width: 100%;
   }
 
   .notification--success {
-    --notification-accent-color: var(--tot-notification-success-accent-color, var(--tot-color-success-600, #16a34a));
-    --notification-background-color: var(--tot-notification-success-background-color, var(--tot-color-success-50, #f0fdf4));
-    --notification-border-color: var(--tot-notification-success-border-color, var(--tot-color-success-200, #bbf7d0));
-    --notification-color: var(--tot-notification-success-color, var(--tot-color-success-900, #14532d));
-  }
-
-  .notification--neutral {
-    --notification-accent-color: var(--tot-notification-neutral-accent-color, var(--tot-color-neutral-600, #475569));
-    --notification-background-color: var(--tot-notification-neutral-background-color, var(--tot-color-neutral-50, #f8fafc));
-    --notification-border-color: var(--tot-notification-neutral-border-color, var(--tot-color-neutral-200, #e2e8f0));
-    --notification-color: var(--tot-notification-neutral-color, var(--tot-color-neutral-900, #0f172a));
+    --tot-notification-current-accent-color: var(--tot-notification-success-accent-color, var(--tot-color-emerald-700, #047857));
+    --tot-notification-current-background-color: var(--tot-notification-success-background-color, var(--tot-color-emerald-50, #ecfdf5));
+    --tot-notification-current-border-color: var(--tot-notification-success-border-color, var(--tot-color-emerald-200, #a7f3d0));
+    --tot-notification-current-color: var(--tot-notification-success-color, var(--tot-color-emerald-900, #064e3b));
   }
 
   .notification--warning {
-    --notification-accent-color: var(--tot-notification-warning-accent-color, var(--tot-color-warning-600, #d97706));
-    --notification-background-color: var(--tot-notification-warning-background-color, var(--tot-color-warning-50, #fffbeb));
-    --notification-border-color: var(--tot-notification-warning-border-color, var(--tot-color-warning-200, #fde68a));
-    --notification-color: var(--tot-notification-warning-color, var(--tot-color-warning-950, #451a03));
+    --tot-notification-current-accent-color: var(--tot-notification-warning-accent-color, var(--tot-color-amber-600, #d97706));
+    --tot-notification-current-background-color: var(--tot-notification-warning-background-color, var(--tot-color-amber-50, #fffbeb));
+    --tot-notification-current-border-color: var(--tot-notification-warning-border-color, var(--tot-color-amber-200, #fde68a));
+    --tot-notification-current-color: var(--tot-notification-warning-color, var(--tot-color-amber-950, #451a03));
   }
 
-  .notification--danger {
-    --notification-accent-color: var(--tot-notification-danger-accent-color, var(--tot-color-danger-600, #dc2626));
-    --notification-background-color: var(--tot-notification-danger-background-color, var(--tot-color-danger-50, #fef2f2));
-    --notification-border-color: var(--tot-notification-danger-border-color, var(--tot-color-danger-200, #fecaca));
-    --notification-color: var(--tot-notification-danger-color, var(--tot-color-danger-900, #7f1d1d));
+  .notification--error {
+    --tot-notification-current-accent-color: var(--tot-notification-error-accent-color, var(--tot-color-red-600, #dc2626));
+    --tot-notification-current-background-color: var(--tot-notification-error-background-color, var(--tot-color-red-50, #fef2f2));
+    --tot-notification-current-border-color: var(--tot-notification-error-border-color, var(--tot-color-red-300, #fca5a5));
+    --tot-notification-current-color: var(--tot-notification-error-color, var(--tot-color-red-800, #991b1b));
   }
 
   .notification__icon {
     align-items: center;
-    color: var(--notification-accent-color);
+    align-self: start;
+    background: var(--tot-notification-current-accent-color);
+    border-radius: var(--tot-border-radius-circle, 50%);
+    color: var(--tot-color-neutral-0, #fff);
     display: inline-flex;
-    font-size: 1.125rem;
+    font-size: .8125rem;
+    font-weight: var(--tot-font-weight-bold, 700);
+    height: 1.3rem;
     justify-content: center;
     line-height: 1;
-    min-height: 1.25rem;
-    min-width: 1.25rem;
+    margin-top: .025rem;
+    width: 1.3rem;
   }
 
-  .notification:not(.notification--has-icon) .notification__icon {
-    display: none;
+  .notification__default-icon {
+    align-items: center;
+    display: inline-flex;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .notification__default-icon svg {
+    display: block;
+    height: .9rem;
+    overflow: visible;
+    width: .9rem;
   }
 
   .notification__message {
+    align-self: center;
     min-width: 0;
     overflow-wrap: anywhere;
   }
@@ -99,25 +111,26 @@ const notificationStyle = `
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
+    align-self: start;
     background: transparent;
     border: 0;
-    border-radius: var(--tot-border-radius-medium, 4px);
+    border-radius: var(--tot-border-radius-small, 3px);
     color: currentColor;
     cursor: pointer;
     display: inline-flex;
     font: inherit;
     font-size: 1.25rem;
-    height: 1.625rem;
+    height: 1.5rem;
     justify-content: center;
     line-height: 1;
-    margin: -.1875rem -.25rem -.1875rem 0;
+    margin: -.1rem -.2rem -.1rem auto;
     opacity: .72;
     padding: 0;
-    width: 1.625rem;
+    width: 1.5rem;
   }
 
   .notification__close:hover {
-    background: color-mix(in srgb, var(--notification-accent-color) 12%, transparent);
+    background: color-mix(in srgb, var(--tot-notification-current-accent-color) 12%, transparent);
     opacity: 1;
   }
 
@@ -126,30 +139,39 @@ const notificationStyle = `
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
-  .notification:not(.notification--closable) .notification__close {
+  .notification__close[hidden] {
     display: none;
   }
 
   .notification__countdown {
-    background: var(--notification-accent-color);
+    background: var(--tot-notification-current-accent-color);
     bottom: 0;
     display: none;
     height: .1875rem;
-    opacity: .55;
+    inset-inline: 0;
+    opacity: .6;
     position: absolute;
-    width: var(--notification-countdown-percent, 100%);
+    transform: scaleX(1);
+    transform-origin: left center;
   }
 
-  .notification--countdown-ltr .notification__countdown {
+  .notification[data-timed] .notification__countdown {
+    animation: tot-notification-countdown var(--tot-notification-duration) linear forwards;
     display: block;
-    left: 0;
-    right: auto;
   }
 
-  .notification--countdown-rtl .notification__countdown {
-    display: block;
-    left: auto;
-    right: 0;
+  .notification[data-paused] .notification__countdown {
+    animation-play-state: paused;
+  }
+
+  @keyframes tot-notification-countdown {
+    from {
+      transform: scaleX(1);
+    }
+
+    to {
+      transform: scaleX(0);
+    }
   }
 `
 
@@ -180,31 +202,74 @@ const toastStackStyle = `
   }
 `
 
-const variants = ['primary', 'success', 'neutral', 'warning', 'danger']
-const countdownDirections = ['ltr', 'rtl']
+const notificationTypes = ['success', 'info', 'warning', 'error']
+const notificationSymbols = {
+  success: '✓',
+  info: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+    <circle cx="8" cy="3.6" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M6.1 6.2h3.8M8 6.2v5.9M5.9 12.1h4.2" stroke-width="1.7" />
+  </svg>`,
+  warning: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+    <path d="M8 3.1v6.1" stroke-width="2.4" />
+    <circle cx="8" cy="12.4" r="1.15" fill="currentColor" stroke="none" />
+  </svg>`,
+  error: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.4">
+    <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+  </svg>`,
+}
+// All finite notifications share one timeout; CSS owns the visible countdown.
+const timedNotifications = new Set()
+let expiryTimer = 0
 
 export class TotNotification extends HTMLElement {
   static get observedAttributes() {
     return [
       'open',
       'closable',
-      'variant',
+      'type',
       'duration',
-      'countdown',
       'content',
-      'text',
       'close-label',
     ]
   }
 
   constructor() {
     super()
-    this._hasIcon = false
-    this._autoHideTimer = 0
-    this._afterTimer = 0
-    this._countdownFrame = 0
-    this._countdownStartedAt = 0
-    this._isInteracting = false
+    this._remainingDuration = Infinity
+    this._expiresAt = 0
+    this._pauseReasons = new Set()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${notificationStyle}</style>
+      <div class="notification notification--info" part="base" role="status" aria-live="polite" tabindex="-1">
+        <span class="notification__icon" part="icon" aria-hidden="true">
+          <slot name="icon"><span class="notification__default-icon"></span></slot>
+        </span>
+        <div class="notification__message" part="message"><slot></slot></div>
+        <button class="notification__close" part="close-button" type="button">
+          <slot name="close-icon">×</slot>
+        </button>
+        <div class="notification__countdown" part="countdown" aria-hidden="true"></div>
+      </div>
+    `
+
+    this._baseElement = root.querySelector('.notification')
+    this._iconElement = root.querySelector('.notification__icon')
+    this._defaultIconElement = root.querySelector('.notification__default-icon')
+    this._messageElement = root.querySelector('.notification__message')
+    this._closeButton = root.querySelector('.notification__close')
+    this._countdownElement = root.querySelector('.notification__countdown')
+    this._messageSlot = root.querySelector('.notification__message slot')
+
+    this._closeButton.addEventListener('click', () => this.hide())
+    this._baseElement.addEventListener('pointerenter', event => this._handlePointerEnter(event))
+    this._baseElement.addEventListener('pointerleave', event => this._handlePointerLeave(event))
+    this._baseElement.addEventListener('pointerdown', event => this._handlePointerDown(event))
+    this._baseElement.addEventListener('pointerup', event => this._handlePointerUp(event))
+    this._baseElement.addEventListener('pointercancel', event => this._handlePointerUp(event))
+    this._baseElement.addEventListener('lostpointercapture', event => this._handlePointerUp(event))
+    this._baseElement.addEventListener('focusin', () => this._pause('focus'))
+    this._baseElement.addEventListener('focusout', event => this._handleFocusOut(event))
   }
 
   get open() {
@@ -223,12 +288,12 @@ export class TotNotification extends HTMLElement {
     setBooleanAttribute(this, 'closable', value)
   }
 
-  get variant() {
-    return getSupportedValue(this.getAttribute('variant') || 'primary', variants, 'primary')
+  get type() {
+    return getSupportedValue(this.getAttribute('type'), notificationTypes, 'info')
   }
 
-  set variant(value) {
-    setNullableAttribute(this, 'variant', value)
+  set type(value) {
+    setNullableAttribute(this, 'type', value)
   }
 
   get duration() {
@@ -245,21 +310,8 @@ export class TotNotification extends HTMLElement {
     setNullableAttribute(this, 'duration', value)
   }
 
-  get countdown() {
-    if (!this.hasAttribute('countdown')) {
-      return ''
-    }
-
-    const value = this.getAttribute('countdown') || 'ltr'
-    return getSupportedValue(value, countdownDirections, 'ltr')
-  }
-
-  set countdown(value) {
-    setNullableAttribute(this, 'countdown', value)
-  }
-
   get content() {
-    return this.getAttribute('content') || this.getAttribute('text') || ''
+    return this.getAttribute('content') || ''
   }
 
   set content(value) {
@@ -275,13 +327,14 @@ export class TotNotification extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
-    this.syncTimer()
+    this._syncAll()
+    if (this.open) {
+      this._restartTimedState()
+    }
   }
 
   disconnectedCallback() {
-    this.clearAutoHideTimer()
-    this.clearAfterTimer()
+    this._stopTimedState()
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -289,15 +342,37 @@ export class TotNotification extends HTMLElement {
       return
     }
 
-    this.render()
-    this.syncTimer()
-
-    if (name === 'open' && this.isConnected) {
-      this.emitOpenEvents(newValue !== null)
+    if (name === 'open') {
+      if (this.isConnected) {
+        if (newValue === null) {
+          this._stopTimedState()
+          emitEvent(this, 'hide')
+        } else {
+          this._restartTimedState()
+          emitEvent(this, 'show')
+        }
+      }
+    } else if (name === 'closable') {
+      this._syncClosable()
+    } else if (name === 'type') {
+      this._syncType()
+    } else if (name === 'duration') {
+      if (this.isConnected && this.open) {
+        this._restartTimedState()
+      }
+    } else if (name === 'content') {
+      this._syncContent()
+    } else if (name === 'close-label') {
+      this._syncCloseLabel()
     }
   }
 
   show() {
+    if (this.open) {
+      this._restartTimedState()
+      return
+    }
+
     this.open = true
   }
 
@@ -309,206 +384,244 @@ export class TotNotification extends HTMLElement {
     const stack = getToastStack()
     this.setAttribute('toast', '')
     stack.append(this)
-    this.show()
-    this.syncTimer()
 
-    return new Promise((resolve) => {
-      this.addEventListener('after-hide', () => {
+    const hidden = new Promise(resolve => {
+      this.addEventListener('hide', () => {
         this.removeAttribute('toast')
         this.remove()
         cleanupToastStack()
         resolve()
       }, { once: true })
     })
+
+    this.show()
+    return hidden
   }
 
   focus(options) {
-    const base = this.getBase()
-    if (base) {
-      base.focus(options)
-    }
+    this._baseElement.focus(options)
   }
 
   blur() {
-    const base = this.getBase()
-    if (base) {
-      base.blur()
-    }
-  }
-
-  render() {
-    const root = this.getRoot()
-    const variant = this.variant
-    const countdown = this.countdown
-    const role = variant === 'danger' || variant === 'warning' ? 'alert' : 'status'
-    const classes = [
-      'notification',
-      `notification--${variant}`,
-    ]
-
-    if (this.closable) {
-      classes.push('notification--closable')
-    }
-
-    if (this._hasIcon) {
-      classes.push('notification--has-icon')
-    }
-
-    if (countdown) {
-      classes.push(`notification--countdown-${countdown}`)
-    }
-
-    root.innerHTML = `<style>${notificationStyle}</style>
-      <div
-        class="${escapeAttribute(classes.join(' '))}"
-        part="base"
-        role="${role}"
-        aria-live="${role === 'alert' ? 'assertive' : 'polite'}"
-        tabindex="-1"
-      >
-        <span class="notification__icon" part="icon" aria-hidden="true"><slot name="icon"></slot></span>
-        <div class="notification__message" part="message"><slot>${escapeHtml(this.content)}</slot></div>
-        <button class="notification__close" part="close-button" type="button" aria-label="${escapeAttribute(this.closeLabel)}">
-          <slot name="close-icon">×</slot>
-        </button>
-        <div class="notification__countdown" part="countdown" aria-hidden="true"></div>
-      </div>
-    `
-
-    const iconSlot = root.querySelector('slot[name="icon"]')
-    const closeButton = root.querySelector('.notification__close')
-    const base = this.getBase()
-
-    iconSlot.addEventListener('slotchange', () => this.syncIconSlot())
-    closeButton.addEventListener('click', () => this.hide())
-    base.addEventListener('mouseenter', () => this.handleInteractionStart())
-    base.addEventListener('mouseleave', () => this.handleInteractionEnd())
-    base.addEventListener('focusin', () => this.handleInteractionStart())
-    base.addEventListener('focusout', () => this.handleInteractionEnd())
-
-    this.syncIconSlot()
-    this.updateCountdown(1)
-  }
-
-  handleInteractionStart() {
-    if (!this.open || !Number.isFinite(this.duration)) {
-      return
-    }
-
-    this._isInteracting = true
-    this.clearAutoHideTimer()
-    this.updateCountdown(1)
-  }
-
-  handleInteractionEnd() {
-    if (!this.open || !this._isInteracting) {
-      return
-    }
-
-    this._isInteracting = false
-    this.syncTimer()
-  }
-
-  syncIconSlot() {
-    const iconSlot = this.shadowRoot?.querySelector('slot[name="icon"]')
-    if (!iconSlot) {
-      return
-    }
-
-    const assignedNodes = iconSlot.assignedNodes({ flatten: true })
-    let hasIcon = false
-    for (let i = 0; i < assignedNodes.length; i++) {
-      const node = assignedNodes[i]
-      if (node.nodeType === Node.ELEMENT_NODE || node.textContent.trim()) {
-        hasIcon = true
-        break
-      }
-    }
-
-    if (hasIcon !== this._hasIcon) {
-      this._hasIcon = hasIcon
-      this.render()
-    }
-  }
-
-  syncTimer() {
-    this.clearAutoHideTimer()
-
-    if (!this.open || !Number.isFinite(this.duration) || this._isInteracting) {
-      this.updateCountdown(1)
-      return
-    }
-
-    this._countdownStartedAt = performance.now()
-    this._autoHideTimer = window.setTimeout(() => {
-      this.hide()
-    }, this.duration)
-
-    this.scheduleCountdownUpdate()
-  }
-
-  scheduleCountdownUpdate() {
-    if (!this.countdown || !Number.isFinite(this.duration) || !this.open) {
-      return
-    }
-
-    this._countdownFrame = window.requestAnimationFrame(() => {
-      const elapsed = performance.now() - this._countdownStartedAt
-      const remainingRatio = clamp(1 - elapsed / this.duration, 0, 1)
-      this.updateCountdown(remainingRatio)
-
-      if (remainingRatio > 0 && this.open && !this._isInteracting) {
-        this.scheduleCountdownUpdate()
-      }
-    })
-  }
-
-  updateCountdown(ratio) {
-    const base = this.getBase()
-    if (base) {
-      base.style.setProperty('--notification-countdown-percent', `${Math.round(clamp(ratio, 0, 1) * 10000) / 100}%`)
-    }
-  }
-
-  clearAutoHideTimer() {
-    window.clearTimeout(this._autoHideTimer)
-    window.cancelAnimationFrame(this._countdownFrame)
-    this._autoHideTimer = 0
-    this._countdownFrame = 0
-  }
-
-  clearAfterTimer() {
-    window.clearTimeout(this._afterTimer)
-    this._afterTimer = 0
-  }
-
-  emitOpenEvents(open) {
-    const detail = this.getEventDetail()
-    this.clearAfterTimer()
-    emitLifecycle(this, open ? 'show' : 'hide', detail)
-    this._afterTimer = window.setTimeout(() => {
-      emitLifecycle(this, open ? 'after-show' : 'after-hide', this.getEventDetail())
-      this._afterTimer = 0
-    }, 150)
-  }
-
-  getEventDetail() {
-    return {
-      open: this.open,
-      variant: this.variant,
-      duration: this.duration,
-      countdown: this.countdown,
-      toast: this.hasAttribute('toast'),
-    }
+    this._baseElement.blur()
   }
 
   getBase() {
-    return this.shadowRoot?.querySelector('.notification')
+    return this._baseElement
   }
 
-  getRoot() {
-    return this.shadowRoot || this.attachShadow({ mode: 'open' })
+  getIcon() {
+    return this._iconElement
   }
+
+  getMessage() {
+    return this._messageElement
+  }
+
+  getCloseButton() {
+    return this._closeButton
+  }
+
+  getCountdown() {
+    return this._countdownElement
+  }
+
+  _syncAll() {
+    this._syncType()
+    this._syncClosable()
+    this._syncContent()
+    this._syncCloseLabel()
+  }
+
+  _syncType() {
+    const type = this.type
+    for (let i = 0; i < notificationTypes.length; i++) {
+      this._baseElement.classList.toggle(`notification--${notificationTypes[i]}`, type === notificationTypes[i])
+    }
+
+    const role = type === 'warning' || type === 'error' ? 'alert' : 'status'
+    this._baseElement.setAttribute('role', role)
+    this._baseElement.setAttribute('aria-live', role === 'alert' ? 'assertive' : 'polite')
+    if (type === 'success') {
+      this._defaultIconElement.textContent = notificationSymbols.success
+    } else {
+      this._defaultIconElement.innerHTML = notificationSymbols[type]
+    }
+  }
+
+  _syncClosable() {
+    this._closeButton.hidden = !this.closable
+  }
+
+  _syncContent() {
+    this._messageSlot.textContent = this.content
+  }
+
+  _syncCloseLabel() {
+    this._closeButton.setAttribute('aria-label', this.closeLabel)
+  }
+
+  _handlePointerEnter(event) {
+    if (event.pointerType !== 'touch') {
+      this._pause('hover')
+    }
+  }
+
+  _handlePointerLeave(event) {
+    if (event.pointerType !== 'touch') {
+      this._resume('hover')
+    }
+  }
+
+  _handlePointerDown(event) {
+    if (event.pointerType !== 'touch') {
+      return
+    }
+
+    this._pause('press')
+    try {
+      this._baseElement.setPointerCapture(event.pointerId)
+    } catch {
+      // Pointer capture is optional; pointerup/pointercancel still resume the timer.
+    }
+  }
+
+  _handlePointerUp(event) {
+    if (event.pointerType === 'touch') {
+      this._resume('press')
+    }
+  }
+
+  _handleFocusOut(event) {
+    if (event.relatedTarget && this._baseElement.contains(event.relatedTarget)) {
+      return
+    }
+
+    this._resume('focus')
+  }
+
+  _pause(reason) {
+    const wasPaused = this._pauseReasons.size > 0
+    this._pauseReasons.add(reason)
+    if (wasPaused || !this.open || !Number.isFinite(this.duration)) {
+      return
+    }
+
+    this._remainingDuration = Math.max(0, this._expiresAt - performance.now())
+    this._expiresAt = 0
+    this._baseElement.setAttribute('data-paused', '')
+    unregisterTimedNotification(this)
+  }
+
+  _resume(reason) {
+    this._pauseReasons.delete(reason)
+    if (this._pauseReasons.size > 0 || !this.open || !Number.isFinite(this.duration)) {
+      return
+    }
+
+    this._baseElement.removeAttribute('data-paused')
+    if (this._remainingDuration <= 0) {
+      this.hide()
+      return
+    }
+
+    this._expiresAt = performance.now() + this._remainingDuration
+    registerTimedNotification(this)
+  }
+
+  _restartTimedState() {
+    unregisterTimedNotification(this)
+    this._remainingDuration = this.duration
+    this._expiresAt = 0
+    this._baseElement.removeAttribute('data-timed')
+    this._baseElement.removeAttribute('data-paused')
+
+    if (!Number.isFinite(this._remainingDuration)) {
+      return
+    }
+
+    this._baseElement.style.setProperty('--tot-notification-duration', `${this._remainingDuration}ms`)
+    this._baseElement.setAttribute('data-timed', '')
+    this._restartCountdownAnimation()
+
+    if (this._pauseReasons.size > 0) {
+      this._baseElement.setAttribute('data-paused', '')
+      return
+    }
+
+    this._expiresAt = performance.now() + this._remainingDuration
+    registerTimedNotification(this)
+  }
+
+  _restartCountdownAnimation() {
+    this._countdownElement.style.animation = 'none'
+    void this._countdownElement.offsetWidth
+    this._countdownElement.style.removeProperty('animation')
+  }
+
+  _stopTimedState() {
+    unregisterTimedNotification(this)
+    this._remainingDuration = Infinity
+    this._expiresAt = 0
+    this._pauseReasons.clear()
+    this._baseElement.removeAttribute('data-timed')
+    this._baseElement.removeAttribute('data-paused')
+  }
+
+  _expire() {
+    if (this.open && this._pauseReasons.size === 0 && Number.isFinite(this.duration)) {
+      this.hide()
+    }
+  }
+}
+
+function registerTimedNotification(notification) {
+  timedNotifications.add(notification)
+  scheduleNextExpiry()
+}
+
+function unregisterTimedNotification(notification) {
+  if (timedNotifications.delete(notification)) {
+    scheduleNextExpiry()
+  }
+}
+
+function scheduleNextExpiry() {
+  window.clearTimeout(expiryTimer)
+  expiryTimer = 0
+
+  let nearestExpiry = Infinity
+  for (const notification of timedNotifications) {
+    if (notification._expiresAt > 0 && notification._expiresAt < nearestExpiry) {
+      nearestExpiry = notification._expiresAt
+    }
+  }
+
+  if (!Number.isFinite(nearestExpiry)) {
+    return
+  }
+
+  const delay = Math.max(0, Math.min(nearestExpiry - performance.now(), 2147483647))
+  expiryTimer = window.setTimeout(processExpiredNotifications, delay)
+}
+
+function processExpiredNotifications() {
+  expiryTimer = 0
+  const now = performance.now()
+  const expired = []
+
+  for (const notification of timedNotifications) {
+    if (notification._expiresAt > 0 && notification._expiresAt <= now + 1) {
+      expired.push(notification)
+    }
+  }
+
+  for (let i = 0; i < expired.length; i++) {
+    timedNotifications.delete(expired[i])
+    expired[i]._expire()
+  }
+
+  scheduleNextExpiry()
 }
 
 function getToastStack() {
@@ -542,16 +655,10 @@ function ensureToastStackStyle() {
   document.head.append(style)
 }
 
-function emitLifecycle(element, name, detail) {
-  emit(element, name, detail)
-  emit(element, `sl-${name}`, detail)
-}
-
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
+function emitEvent(element, name) {
+  element.dispatchEvent(new Event(name, {
     bubbles: true,
     composed: true,
-    detail: detail || {},
   }))
 }
 
@@ -563,10 +670,6 @@ function getSupportedValue(value, supportedValues, fallback) {
   }
 
   return fallback
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max)
 }
 
 function setBooleanAttribute(element, name, value) {
@@ -583,21 +686,4 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;')
 }

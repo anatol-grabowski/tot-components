@@ -4,28 +4,29 @@ const treeItems = [
   {
     value: 'documents',
     label: 'Documents',
-    icon: '📁',
+    prefix: '📁',
     expanded: true,
+    suffix: '6',
     items: [
       {
         value: 'photos',
         label: 'Photos',
-        icon: '📁',
+        prefix: '📁',
         expanded: true,
         items: [
-          { value: 'birds', label: 'birds.jpg', icon: '🖼️' },
-          { value: 'kitten', label: 'kitten.jpg', icon: '🖼️' },
-          { value: 'puppy', label: 'puppy.jpg', icon: '🖼️' },
+          { value: 'birds', label: 'birds.jpg', prefix: '🖼️' },
+          { value: 'kitten', label: 'kitten.jpg', prefix: '🖼️' },
+          { value: 'puppy', label: 'puppy.jpg', prefix: '🖼️' },
         ],
       },
       {
         value: 'writing',
         label: 'Writing',
-        icon: '📁',
+        prefix: '📁',
         items: [
-          { value: 'draft', label: 'draft.txt', icon: '📄' },
-          { value: 'final', label: 'final.pdf', icon: '📄' },
-          { value: 'sales', label: 'sales.xls', icon: '📊' },
+          { value: 'draft', label: 'draft.txt', prefix: '📄' },
+          { value: 'final', label: 'final.pdf', prefix: '📄' },
+          { value: 'sales', label: 'sales.xls', prefix: '📊' },
         ],
       },
     ],
@@ -33,36 +34,38 @@ const treeItems = [
   {
     value: 'downloads',
     label: 'Downloads',
-    icon: '📁',
+    prefix: '📁',
+    suffix: '2',
     items: [
-      { value: 'archive', label: 'archive.zip', icon: '📦' },
-      { value: 'installer', label: 'installer.pkg', icon: '📦', disabled: true },
+      { value: 'archive', label: 'archive.zip', prefix: '📦' },
+      { value: 'installer', label: 'installer.pkg', prefix: '📦', disabled: true },
     ],
   },
   {
     value: 'notes',
     label: 'Notes',
-    icon: '📄',
+    prefix: '📄',
   },
 ]
 
 
-const virtualTreeItems = []
+const largeTreeItems = []
 for (let i = 1; i <= 80; i++) {
   const children = []
   for (let j = 1; j <= 8; j++) {
     children.push({
-      value: `virtual-${i}-${j}`,
+      value: `large-${i}-${j}`,
       label: `Item ${i}.${j}`,
-      icon: '📄',
+      prefix: '📄',
     })
   }
 
-  virtualTreeItems.push({
-    value: `virtual-${i}`,
+  largeTreeItems.push({
+    value: `large-${i}`,
     label: `Folder ${i}`,
-    icon: '📁',
+    prefix: '📁',
     expanded: i <= 4,
+    suffix: String(children.length),
     items: children,
   })
 }
@@ -83,15 +86,15 @@ registerDemo({
         <tot-tree id="multipleTree" selection="multiple" style="max-width: 280px;"></tot-tree>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Virtual scroll from JSON</div>
-        <tot-tree id="virtualTree" virtual item-height="24" style="max-width: 280px; --tot-tree-virtual-max-height: 190px;"></tot-tree>
+        <div class="demo-label">Large JSON tree with automatic windowing</div>
+        <tot-tree id="largeTree" item-height="24" style="max-width: 280px; --tot-tree-max-height: 190px;"></tot-tree>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Slotted items</div>
         <tot-tree id="slottedTree" selection="leaf" style="max-width: 280px;">
-          <tot-tree-item value="plants" expanded>
+          <tot-tree-item value="plants" prefix="🌿" suffix="2" expanded>
             Plants
-            <tot-tree-item value="trees" expanded>
+            <tot-tree-item value="trees" prefix="🌳" suffix="3" expanded>
               Trees
               <tot-tree-item value="birch">Birch</tot-tree-item>
               <tot-tree-item value="maple">Maple</tot-tree-item>
@@ -99,7 +102,8 @@ registerDemo({
             </tot-tree-item>
             <tot-tree-item value="flowers">Flowers</tot-tree-item>
           </tot-tree-item>
-          <tot-tree-item value="animals">
+          <tot-tree-item value="animals" suffix="2">
+            <span slot="prefix">🐾</span>
             Animals
             <tot-tree-item value="cat">Cat</tot-tree-item>
             <tot-tree-item value="dog">Dog</tot-tree-item>
@@ -110,43 +114,24 @@ registerDemo({
 
     const jsonTree = row.querySelector('#jsonTree')
     const multipleTree = row.querySelector('#multipleTree')
-    const virtualTree = row.querySelector('#virtualTree')
+    const largeTree = row.querySelector('#largeTree')
     jsonTree.items = treeItems
     jsonTree.selectedValues = ['kitten']
     multipleTree.items = treeItems
     multipleTree.selectedValues = ['birds', 'notes']
-    virtualTree.items = virtualTreeItems
-    virtualTree.selectedValues = ['virtual-2-3']
+    largeTree.items = largeTreeItems
+    largeTree.selectedValues = ['large-2-3']
 
     const trees = row.querySelectorAll('tot-tree')
     for (let i = 0; i < trees.length; i++) {
-      trees[i].addEventListener('select', (event) => {
-        logEvent(trees[i], 'select', {
-          value: event.detail.value,
-          label: event.detail.label,
-          selected: event.detail.selected,
-          selectedValues: event.detail.selectedValues,
-        })
-      })
-
-      trees[i].addEventListener('change', (event) => {
+      trees[i].addEventListener('change', () => {
         logEvent(trees[i], 'change', {
-          selectedValues: event.detail.selectedValues,
+          selectedValues: trees[i].selectedValues,
         })
       })
 
-      trees[i].addEventListener('expand', (event) => {
-        logEvent(trees[i], 'expand', {
-          value: event.detail.value,
-          label: event.detail.label,
-        })
-      })
-
-      trees[i].addEventListener('collapse', (event) => {
-        logEvent(trees[i], 'collapse', {
-          value: event.detail.value,
-          label: event.detail.label,
-        })
+      trees[i].addEventListener('toggle', (event) => {
+        logEvent(trees[i], 'toggle', event.detail)
       })
     }
 

@@ -53,7 +53,7 @@ registerDemo({
           <tot-button id="listMiddle" label="Item 150" size="small"></tot-button>
           <tot-button id="listEnd" label="Item 480" size="small"></tot-button>
         </div>
-        <tot-list id="arrayList" style="--tot-list-height: 17rem;" buffer-size="700" estimated-item-height="58">
+        <tot-list id="arrayList" style="--tot-list-height: 17rem;" buffer-size="700" estimated-item-size="58">
           <template slot="item">
             <div class="list-demo-item">
               <div class="list-demo-title">#{{position}} {{title}}</div>
@@ -67,8 +67,8 @@ registerDemo({
       </div>
 
       <div class="stack demo-group">
-        <div class="demo-label">loadMore function</div>
-        <tot-list id="loaderList" style="--tot-list-height: 14rem;" page-size="24" estimated-item-height="50">
+        <div class="demo-label">Argument-free loadMore; the callback owns its offset</div>
+        <tot-list id="loaderList" style="--tot-list-height: 14rem;" estimated-item-size="50">
           <template slot="item">
             <div class="list-demo-item">
               <div class="list-demo-title">Loaded row {{position}}</div>
@@ -82,9 +82,29 @@ registerDemo({
       </div>
 
       <div class="stack demo-group">
+        <div class="demo-label">Slow loader for inspecting the loading part</div>
+        <tot-list
+          id="slowLoaderList"
+          buffer-size="40"
+          estimated-item-size="48"
+          style="--tot-list-height: 11rem; --tot-list-min-height: 11rem;"
+        >
+          <template slot="item">
+            <div class="list-demo-item">
+              <div class="list-demo-title">Slow row {{position}}</div>
+              <div class="list-demo-summary">{{text}}</div>
+            </div>
+          </template>
+          <div slot="loading" class="list-demo-status">Loading for 1.5 seconds...</div>
+          <div slot="end" class="list-demo-status">Slow loader exhausted.</div>
+          <div slot="error" class="list-demo-error">Slow loader failed.</div>
+        </tot-list>
+      </div>
+
+      <div class="stack demo-group">
         <div class="demo-label">Generator and empty state</div>
         <div class="demo-grid">
-          <tot-list id="generatorList" style="--tot-list-height: 10rem;" page-size="12">
+          <tot-list id="generatorList" style="--tot-list-height: 10rem;">
             <template slot="item">
               <div class="list-demo-item">
                 <div class="list-demo-title">{{label}}</div>
@@ -97,6 +117,51 @@ registerDemo({
             <div slot="empty" class="list-demo-status">This list is intentionally empty.</div>
           </tot-list>
         </div>
+      </div>
+
+      <div class="stack demo-group">
+        <div class="demo-label">Horizontally virtualized list with inline-axis edge shadows</div>
+        <div class="row">
+          <tot-button id="horizontalListStart" label="Start" size="small"></tot-button>
+          <tot-button id="horizontalListMiddle" label="Item 40" size="small"></tot-button>
+          <tot-button id="horizontalListEnd" label="End" size="small"></tot-button>
+        </div>
+        <tot-list
+          id="horizontalList"
+          horizontal
+          edge-shadows
+          buffer-size="500"
+          estimated-item-size="190"
+          style="--tot-list-height: 8rem; --tot-list-min-height: 8rem; --tot-list-edge-size: 2rem;"
+        >
+          <template slot="item">
+            <div style="display: grid; gap: var(--tot-spacing-2x-small, .25rem); padding: var(--tot-spacing-small, .75rem); width: 12rem;">
+              <div style="font-weight: var(--tot-font-weight-semibold, 600);">#{{position}} {{title}}</div>
+              <div style="color: var(--tot-color-neutral-600, #64748b);">{{summary}}</div>
+            </div>
+          </template>
+        </tot-list>
+      </div>
+
+      <div class="stack demo-group">
+        <div class="demo-label">Optional overflow edge shadows</div>
+        <div class="row">
+          <tot-button id="edgeListTop" label="Top" size="small"></tot-button>
+          <tot-button id="edgeListEnd" label="End" size="small"></tot-button>
+        </div>
+        <tot-list
+          id="edgeList"
+          edge-shadows
+          estimated-item-size="46"
+          style="--tot-list-height: 9rem; --tot-list-min-height: 9rem; --tot-list-edge-size: 2rem;"
+        >
+          <template slot="item">
+            <div class="list-demo-item">
+              <div class="list-demo-title">{{title}}</div>
+              <div class="list-demo-summary">{{summary}}</div>
+            </div>
+          </template>
+        </tot-list>
       </div>
     `
 
@@ -113,24 +178,56 @@ registerDemo({
     })
 
     const loaderList = wrapper.querySelector('#loaderList')
-    loaderList.loadMore = async ({ offset, pageSize }) => {
+    let loaderOffset = 0
+    loaderList.loadMore = async () => {
       await delay(220)
 
-      if (offset >= 96) {
-        return {
-          items: [],
-          hasMore: false,
-        }
+      if (loaderOffset >= 96) {
+        return []
       }
 
-      return {
-        items: createLoadedItems(offset, pageSize),
-        hasMore: offset + pageSize < 96,
+      const items = createLoadedItems(loaderOffset, 12)
+      loaderOffset += items.length
+      return items
+    }
+
+    const slowLoaderList = wrapper.querySelector('#slowLoaderList')
+    let slowLoaderOffset = 0
+    slowLoaderList.loadMore = async () => {
+      await delay(1500)
+
+      if (slowLoaderOffset >= 20) {
+        return []
       }
+
+      const items = createLoadedItems(slowLoaderOffset, 5)
+      slowLoaderOffset += items.length
+      return items
     }
 
     const generatorList = wrapper.querySelector('#generatorList')
-    generatorList.dataSource = createGeneratorItems(42)
+    generatorList.items = createGeneratorItems(42)
+
+    const horizontalList = wrapper.querySelector('#horizontalList')
+    horizontalList.items = createArrayItems(80)
+    wrapper.querySelector('#horizontalListStart').addEventListener('click', () => {
+      void horizontalList.scrollToIndex(0)
+    })
+    wrapper.querySelector('#horizontalListMiddle').addEventListener('click', () => {
+      void horizontalList.scrollToIndex(39, 'center')
+    })
+    wrapper.querySelector('#horizontalListEnd').addEventListener('click', () => {
+      void horizontalList.scrollToIndex(horizontalList.items.length - 1, 'end')
+    })
+
+    const edgeList = wrapper.querySelector('#edgeList')
+    edgeList.items = createArrayItems(24)
+    wrapper.querySelector('#edgeListTop').addEventListener('click', () => {
+      void edgeList.scrollToIndex(0)
+    })
+    wrapper.querySelector('#edgeListEnd').addEventListener('click', () => {
+      void edgeList.scrollToIndex(edgeList.items.length - 1, 'end')
+    })
 
     const lists = wrapper.querySelectorAll('tot-list')
     for (let i = 0; i < lists.length; i++) {
@@ -173,9 +270,9 @@ function createArrayItems(count) {
   return result
 }
 
-function createLoadedItems(offset, pageSize) {
+function createLoadedItems(offset, count) {
   const result = []
-  const limit = Math.min(96, offset + pageSize)
+  const limit = Math.min(96, offset + count)
 
   for (let i = offset; i < limit; i++) {
     result.push({

@@ -17,7 +17,6 @@ import { TotHint } from './Hint/Hint.js'
 import { TotTooltip } from './Tooltip/Tooltip.js'
 import { TotToast } from './Toast/Toast.js'
 import { TotNotification } from './Notification/Notification.js'
-import { TotMessage } from './Message/Message.js'
 import { TotInput } from './Input/Input.js'
 import { TotCalendar } from './Calendar/Calendar.js'
 import { TotChart } from './Chart/Chart.js'
@@ -35,10 +34,9 @@ import { TotCopyButton } from './CopyButton/CopyButton.js'
 import { TotRating } from './Rating/Rating.js'
 import { TotDetails } from './Details/Details.js'
 import { TotAvatar } from './Avatar/Avatar.js'
-import { TotGenerationPlaceholder } from './GenerationPlaceholder/GenerationPlaceholder.js'
+import { TotLoadingPlaceholder } from './LoadingPlaceholder/LoadingPlaceholder.js'
 import { TotLabels } from './Labels/Labels.js'
 import { TotFields } from './Fields/Fields.js'
-import { TotTickertape } from './Tickertape/Tickertape.js'
 import { TotSuggestions } from './Suggestions/Suggestions.js'
 import { TotTree, TotTreeItem } from './Tree/Tree.js'
 import { TotOdometer } from './Odometer/Odometer.js'
@@ -71,7 +69,6 @@ defineElement('tot-hint', TotHint)
 defineElement('tot-tooltip', TotTooltip)
 defineElement('tot-toast', TotToast)
 defineElement('tot-notification', TotNotification)
-defineElement('tot-message', TotMessage)
 defineElement('tot-input', TotInput)
 defineElement('tot-calendar', TotCalendar)
 defineElement('tot-chart', TotChart)
@@ -89,10 +86,9 @@ defineElement('tot-copy-button', TotCopyButton)
 defineElement('tot-rating', TotRating)
 defineElement('tot-details', TotDetails)
 defineElement('tot-avatar', TotAvatar)
-defineElement('tot-generation-placeholder', TotGenerationPlaceholder)
+defineElement('tot-loading-placeholder', TotLoadingPlaceholder)
 defineElement('tot-labels', TotLabels)
 defineElement('tot-fields', TotFields)
-defineElement('tot-tickertape', TotTickertape)
 defineElement('tot-suggestions', TotSuggestions)
 defineElement('tot-tree-item', TotTreeItem)
 defineElement('tot-tree', TotTree)
@@ -117,7 +113,6 @@ export {
   TotTooltip,
   TotToast,
   TotNotification,
-  TotMessage,
   TotInput,
   TotCalendar,
   TotChart,
@@ -135,10 +130,9 @@ export {
   TotRating,
   TotDetails,
   TotAvatar,
-  TotGenerationPlaceholder,
+  TotLoadingPlaceholder,
   TotLabels,
   TotFields,
-  TotTickertape,
   TotSuggestions,
   TotTree,
   TotTreeItem,

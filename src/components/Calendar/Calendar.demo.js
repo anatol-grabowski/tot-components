@@ -111,17 +111,17 @@ registerDemo({
 
     wrapper.querySelector('#calendarToday').addEventListener('click', () => {
       mainCalendar.date = today
-      void mainCalendar.scrollToDate(today, 'center')
+      mainCalendar.scrollToDate(today, 'center')
     })
 
     wrapper.querySelector('#calendarPast').addEventListener('click', () => {
       mainCalendar.date = '1980-01-01'
-      void mainCalendar.scrollToDate('1980-01-01', 'center')
+      mainCalendar.scrollToDate('1980-01-01', 'center')
     })
 
     wrapper.querySelector('#calendarFuture').addEventListener('click', () => {
       mainCalendar.date = '2050-12-25'
-      void mainCalendar.scrollToDate('2050-12-25', 'center')
+      mainCalendar.scrollToDate('2050-12-25', 'center')
     })
 
     const calendars = [mainCalendar, classCalendar, compactCalendar, smallRowsCalendar]

@@ -27,41 +27,28 @@ const dropdownStyle = `
 
   .panel {
     left: 0;
-    margin-top: 0;
     max-width: min(var(--tot-dropdown-max-width, 28rem), calc(100vw - 1rem));
     min-width: var(--tot-dropdown-min-width, 12rem);
-    position: fixed;
-    top: 0;
+    position: absolute;
+    top: calc(100% + var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem)));
     z-index: var(--tot-z-index-dropdown, 1000);
   }
 
-  .panel[hidden] {
+  .dropdown--hoist .panel {
+    position: fixed;
+    top: 0;
+  }
+
+  .panel[hidden],
+  .panel slot[hidden],
+  .panel tot-menu[hidden] {
     display: none;
   }
 
-  .panel__surface {
-    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
-    border-radius: var(--tot-border-radius-medium, 4px);
-    box-shadow: var(--tot-shadow-medium, var(--tot-shadow-small, 0 1px 2px rgb(15 23 42 / 8%)));
-    color: var(--tot-input-color, #1e293b);
-    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-input-font-size-medium, .875rem);
-    max-height: var(--tot-dropdown-panel-max-height, none);
-    max-width: 100%;
-    overflow: auto;
-    padding: var(--tot-dropdown-padding, 0);
-  }
-
-  .panel__content {
-    max-width: 100%;
-    min-width: 0;
-    --tot-menu-max-height: var(--tot-dropdown-menu-max-height, none);
+  .panel > tot-menu,
+  ::slotted(tot-menu) {
+    --tot-menu-max-height: var(--tot-dropdown-menu-max-height, min(20rem, 60vh));
     --tot-menu-overflow: auto;
-  }
-
-  ::slotted(tot-menu),
-  .panel__generated-menu {
     display: block;
     min-width: 0;
     width: 100%;
@@ -83,12 +70,40 @@ export class TotDropdown extends HTMLElement {
 
   constructor() {
     super()
-    this._menuItems = null
-    this._hasDefaultSlotContent = false
+    this._menuItems = undefined
     this._positionFrame = 0
     this._visualViewport = null
+    this._listeningWhileOpen = false
+    this._ariaTrigger = null
+    this._triggerAriaFrame = 0
     this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
     this._handleWindowChange = () => this.schedulePanelPosition()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${dropdownStyle}</style>
+      <div class="dropdown" part="base">
+        <span class="trigger" part="trigger">
+          <slot name="trigger">
+            <tot-button class="fallback-button" part="button" caret></tot-button>
+          </slot>
+        </span>
+        <div class="panel" part="panel" hidden>
+          <slot class="menu-slot"></slot>
+          <tot-menu class="generated-menu" part="menu"></tot-menu>
+        </div>
+      </div>
+    `
+
+    const trigger = root.querySelector('.trigger')
+    const triggerSlot = root.querySelector('slot[name="trigger"]')
+    const menuSlot = root.querySelector('.menu-slot')
+    const panel = root.querySelector('.panel')
+    trigger.addEventListener('click', (event) => this.handleTriggerClick(event))
+    trigger.addEventListener('keydown', (event) => this.handleTriggerKeyDown(event))
+    triggerSlot.addEventListener('slotchange', () => this.handleTriggerSlotChange())
+    menuSlot.addEventListener('slotchange', () => this.handleMenuSlotChange())
+    panel.addEventListener('select', () => this.handlePanelSelect())
+    panel.addEventListener('keydown', (event) => this.handlePanelKeyDown(event))
   }
 
   get label() {
@@ -96,24 +111,28 @@ export class TotDropdown extends HTMLElement {
   }
 
   set label(value) {
-    if (value === null || value === undefined) {
-      this.removeAttribute('label')
-    } else {
-      this.setAttribute('label', String(value))
-    }
+    setStringAttribute(this, 'label', value)
   }
 
   get menuItems() {
-    if (this._menuItems) {
-      return cloneItems(this._menuItems)
+    const menu = this.getGeneratedMenu()
+    if (menu && 'items' in menu) {
+      return menu.items
     }
 
-    return parseItems(this.getAttribute('menu-items') || this.getAttribute('menuitems'))
+    if (this._menuItems !== undefined) {
+      return cloneMenuItems(this._menuItems)
+    }
+
+    return cloneMenuItems(parseJson(
+      this.getAttribute('menu-items') || this.getAttribute('menuitems'),
+      [],
+    ))
   }
 
   set menuItems(value) {
-    this._menuItems = parseItems(value)
-    this.render()
+    this._menuItems = cloneMenuItems(value)
+    this.syncGeneratedMenu()
   }
 
   get open() {
@@ -141,7 +160,270 @@ export class TotDropdown extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render()
+    this.syncLabel()
+    this.syncGeneratedMenu()
+    this.syncMenuMode()
+    this.syncOpenState()
+  }
+
+  disconnectedCallback() {
+    this.stopOpenListeners()
+    cancelAnimationFrame(this._positionFrame)
+    cancelAnimationFrame(this._triggerAriaFrame)
+    this.clearTriggerAria()
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue === newValue) {
+      return
+    }
+
+    if (name === 'label') {
+      this.syncLabel()
+    } else if (name === 'menu-items' || name === 'menuitems') {
+      this._menuItems = undefined
+      this.syncGeneratedMenu()
+    } else if (name === 'open') {
+      this.syncOpenState()
+    } else if (name === 'hoist') {
+      this.syncHoist()
+      this.schedulePanelPosition()
+    }
+  }
+
+  show() {
+    this.open = true
+  }
+
+  hide() {
+    this.open = false
+  }
+
+  toggle() {
+    this.open = !this.open
+  }
+
+  focus(options) {
+    const trigger = this.getTrigger()
+    if (trigger && typeof trigger.focus === 'function') {
+      trigger.focus(options)
+    }
+  }
+
+  getTrigger() {
+    const slot = this.shadowRoot?.querySelector('slot[name="trigger"]')
+    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
+    if (assigned.length > 0) {
+      return assigned[0]
+    }
+    return this.shadowRoot?.querySelector('.fallback-button') || null
+  }
+
+  getMenu() {
+    const slot = this.shadowRoot?.querySelector('.menu-slot')
+    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
+    for (let i = 0; i < assigned.length; i++) {
+      if (assigned[i].localName === 'tot-menu') {
+        return assigned[i]
+      }
+    }
+    return this.getGeneratedMenu()
+  }
+
+  getGeneratedMenu() {
+    return this.shadowRoot?.querySelector('.generated-menu') || null
+  }
+
+  handleTriggerClick(event) {
+    event.preventDefault()
+    this.toggle()
+  }
+
+  handleTriggerKeyDown(event) {
+    if (event.key === 'ArrowDown') {
+      this.show()
+      requestAnimationFrame(() => this.getMenu()?.focusFirstItem?.())
+      event.preventDefault()
+      return
+    }
+
+    if (event.key === 'Escape' && this.open) {
+      this.hide()
+      event.preventDefault()
+    }
+  }
+
+  handlePanelSelect() {
+    if (this.stayOpenOnSelect) {
+      return
+    }
+
+    this.hide()
+    requestAnimationFrame(() => this.focus())
+  }
+
+  handlePanelKeyDown(event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) {
+      return
+    }
+
+    this.hide()
+    this.focus()
+    event.preventDefault()
+  }
+
+  handleDocumentPointerDown(event) {
+    const path = event.composedPath()
+    for (let i = 0; i < path.length; i++) {
+      if (path[i] === this) {
+        return
+      }
+    }
+    this.hide()
+  }
+
+  handleTriggerSlotChange() {
+    this.syncTriggerAria()
+    this.schedulePanelPosition()
+  }
+
+  handleMenuSlotChange() {
+    this.syncMenuMode()
+    this.schedulePanelPosition()
+  }
+
+  syncLabel() {
+    const button = this.shadowRoot?.querySelector('.fallback-button')
+    if (button) {
+      button.setAttribute('label', this.label)
+    }
+
+    const menu = this.getGeneratedMenu()
+    if (menu) {
+      menu.setAttribute('aria-label', `${this.label} menu`)
+    }
+  }
+
+  syncGeneratedMenu() {
+    const menu = this.getGeneratedMenu()
+    if (!menu) {
+      return
+    }
+
+    const value = this._menuItems !== undefined
+      ? this._menuItems
+      : parseJson(this.getAttribute('menu-items') || this.getAttribute('menuitems'), [])
+
+    if ('items' in menu) {
+      menu.items = value
+      if (this._menuItems !== undefined) {
+        this._menuItems = menu.items
+      }
+    } else {
+      menu.setAttribute('items', JSON.stringify(Array.isArray(value) ? value : []))
+    }
+  }
+
+  syncMenuMode() {
+    const slot = this.shadowRoot?.querySelector('.menu-slot')
+    const generated = this.getGeneratedMenu()
+    if (!slot || !generated) {
+      return
+    }
+
+    const hasSlottedMenu = Boolean(this.getSlottedMenu())
+    slot.hidden = !hasSlottedMenu
+    generated.hidden = hasSlottedMenu
+  }
+
+  getSlottedMenu() {
+    const slot = this.shadowRoot?.querySelector('.menu-slot')
+    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
+    for (let i = 0; i < assigned.length; i++) {
+      if (assigned[i].localName === 'tot-menu') {
+        return assigned[i]
+      }
+    }
+    return null
+  }
+
+  syncOpenState() {
+    const panel = this.shadowRoot?.querySelector('.panel')
+    if (!panel) {
+      return
+    }
+
+    panel.hidden = !this.open
+    this.syncHoist()
+    this.syncTriggerAria()
+
+    if (this.open && this.isConnected) {
+      this.startOpenListeners()
+      this.schedulePanelPosition()
+    } else {
+      this.getMenu()?.closeSubmenus?.()
+      this.stopOpenListeners()
+      cancelAnimationFrame(this._positionFrame)
+    }
+  }
+
+  syncHoist() {
+    const base = this.shadowRoot?.querySelector('.dropdown')
+    if (base) {
+      base.classList.toggle('dropdown--hoist', this.hoist)
+    }
+  }
+
+  syncTriggerAria() {
+    cancelAnimationFrame(this._triggerAriaFrame)
+    this.clearTriggerAria()
+
+    const trigger = this.getTrigger()
+    if (!trigger) {
+      return
+    }
+
+    const hasNestedControl = typeof trigger.getControl === 'function'
+    const nestedControl = hasNestedControl ? trigger.getControl() : null
+    this.applyTriggerAria(nestedControl || trigger)
+
+    if (!nestedControl && hasNestedControl && this.isConnected) {
+      this._triggerAriaFrame = requestAnimationFrame(() => {
+        if (this.getTrigger() !== trigger) {
+          return
+        }
+
+        const nextControl = trigger.getControl()
+        if (nextControl) {
+          this.clearTriggerAria()
+          this.applyTriggerAria(nextControl)
+        }
+      })
+    }
+  }
+
+  applyTriggerAria(control) {
+    this._ariaTrigger = control
+    control.setAttribute('aria-haspopup', 'menu')
+    control.setAttribute('aria-expanded', this.open ? 'true' : 'false')
+  }
+
+  clearTriggerAria() {
+    if (!this._ariaTrigger) {
+      return
+    }
+
+    this._ariaTrigger.removeAttribute('aria-haspopup')
+    this._ariaTrigger.removeAttribute('aria-expanded')
+    this._ariaTrigger = null
+  }
+
+  startOpenListeners() {
+    if (this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = true
     document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.addEventListener('resize', this._handleWindowChange)
     document.addEventListener('scroll', this._handleWindowChange, true)
@@ -152,7 +434,12 @@ export class TotDropdown extends HTMLElement {
     }
   }
 
-  disconnectedCallback() {
+  stopOpenListeners() {
+    if (!this._listeningWhileOpen) {
+      return
+    }
+
+    this._listeningWhileOpen = false
     document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
     window.removeEventListener('resize', this._handleWindowChange)
     document.removeEventListener('scroll', this._handleWindowChange, true)
@@ -161,149 +448,13 @@ export class TotDropdown extends HTMLElement {
       this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
       this._visualViewport = null
     }
-    cancelAnimationFrame(this._positionFrame)
-  }
-
-  attributeChangedCallback(name) {
-    if (name === 'menu-items' || name === 'menuitems') {
-      this._menuItems = null
-    }
-
-    this.render()
-  }
-
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
-    const open = this.open
-    const hasDefaultSlotContent = this.hasDefaultSlotContent()
-    this._hasDefaultSlotContent = hasDefaultSlotContent
-
-    root.innerHTML = `<style>${dropdownStyle}</style>
-      <div class="dropdown${this.hoist ? ' dropdown--hoist' : ''}" part="base">
-        <span class="trigger" part="trigger">
-          <slot name="trigger">
-            <tot-button label="${escapeAttribute(this.label)}" caret></tot-button>
-          </slot>
-        </span>
-        <div class="panel" part="panel" ${open ? '' : 'hidden'}>
-          <div class="panel__surface">
-            <div class="panel__content"></div>
-          </div>
-        </div>
-      </div>
-    `
-
-    const content = root.querySelector('.panel__content')
-    if (hasDefaultSlotContent) {
-      const slot = document.createElement('slot')
-      slot.addEventListener('slotchange', () => this.handleDefaultSlotChange())
-      content.append(slot)
-      this.syncSlottedMenus()
-    } else {
-      content.append(this.createMenu())
-    }
-
-    const triggerSlot = root.querySelector('slot[name="trigger"]')
-    const trigger = root.querySelector('.trigger')
-    const panel = root.querySelector('.panel')
-
-    trigger.addEventListener('click', (event) => this.handleTriggerClick(event))
-    trigger.addEventListener('keydown', (event) => this.handleTriggerKeyDown(event))
-    triggerSlot.addEventListener('slotchange', () => this.schedulePanelPosition())
-    panel.addEventListener('select', (event) => this.handlePanelSelect(event))
-    panel.addEventListener('keydown', (event) => this.handlePanelKeyDown(event))
-
-    if (open) {
-      this.schedulePanelPosition()
-    }
-  }
-
-  createMenu() {
-    const menu = document.createElement('tot-menu')
-    const items = this.menuItems
-    menu.className = 'panel__generated-menu'
-    menu.setAttribute('embedded', '')
-    menu.setAttribute('items', JSON.stringify(items))
-    menu.items = items
-    return menu
-  }
-
-  handleTriggerClick(event) {
-    event.preventDefault()
-    this.open = !this.open
-  }
-
-  handleTriggerKeyDown(event) {
-    if (event.key === 'ArrowDown') {
-      if (!this.open) {
-        this.open = true
-      }
-      this.focusFirstMenuItem()
-      event.preventDefault()
-      return
-    }
-
-    if (event.key === 'Escape' && this.open) {
-      this.open = false
-      event.preventDefault()
-    }
-  }
-
-  handlePanelSelect() {
-    if (!this.stayOpenOnSelect) {
-      this.open = false
-    }
-  }
-
-  handlePanelKeyDown(event) {
-    if (event.key !== 'Escape') {
-      return
-    }
-
-    this.open = false
-    this.focusTrigger()
-    event.preventDefault()
-  }
-
-  handleDocumentPointerDown(event) {
-    if (!this.open) {
-      return
-    }
-
-    const path = event.composedPath()
-    for (let i = 0; i < path.length; i++) {
-      if (path[i] === this) {
-        return
-      }
-    }
-
-    this.open = false
-  }
-
-  handleDefaultSlotChange() {
-    const hasDefaultSlotContent = this.hasDefaultSlotContent()
-    if (hasDefaultSlotContent !== this._hasDefaultSlotContent) {
-      this.render()
-    } else {
-      this.syncSlottedMenus()
-      this.schedulePanelPosition()
-    }
-  }
-
-  syncSlottedMenus() {
-    requestAnimationFrame(() => {
-      const slot = this.shadowRoot?.querySelector('.panel slot:not([name])')
-      const assigned = slot ? slot.assignedElements({ flatten: true }) : []
-
-      for (let i = 0; i < assigned.length; i++) {
-        if (assigned[i].localName === 'tot-menu') {
-          assigned[i].setAttribute('embedded', '')
-        }
-      }
-    })
   }
 
   schedulePanelPosition() {
+    if (!this.open || !this.isConnected) {
+      return
+    }
+
     cancelAnimationFrame(this._positionFrame)
     this._positionFrame = requestAnimationFrame(() => this.updatePanelPosition())
   }
@@ -315,12 +466,22 @@ export class TotDropdown extends HTMLElement {
 
     const trigger = this.shadowRoot.querySelector('.trigger')
     const panel = this.shadowRoot.querySelector('.panel')
-    if (!trigger || !panel) {
+    const menu = this.getMenu()
+    if (!trigger || !panel || !menu) {
       return
     }
 
     const triggerRect = trigger.getBoundingClientRect()
     if (!triggerRect.width && !triggerRect.height) {
+      return
+    }
+
+    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-dropdown-min-width, 12rem))`
+
+    if (!this.hoist) {
+      panel.style.left = '0px'
+      panel.style.top = 'calc(100% + var(--tot-dropdown-panel-gap, var(--tot-spacing-2x-small, .25rem)))'
+      menu.style.removeProperty('--tot-menu-max-height')
       return
     }
 
@@ -330,9 +491,7 @@ export class TotDropdown extends HTMLElement {
     const viewportWidth = Math.max(0, viewport.width - margin * 2)
 
     panel.style.maxWidth = `min(var(--tot-dropdown-max-width, 28rem), ${Math.floor(viewportWidth)}px)`
-    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-dropdown-min-width, 12rem))`
-    panel.style.setProperty('--tot-dropdown-panel-max-height', 'none')
-    panel.style.setProperty('--tot-dropdown-menu-max-height', 'none')
+    menu.style.setProperty('--tot-menu-max-height', 'none')
 
     const panelRect = panel.getBoundingClientRect()
     const panelWidth = Math.min(panelRect.width, viewportWidth)
@@ -352,75 +511,9 @@ export class TotDropdown extends HTMLElement {
     top = clamp(top, viewport.top + margin, viewport.bottom - panelHeight - margin)
 
     panel.style.left = `${Math.round(left)}px`
-    panel.style.marginTop = '0'
     panel.style.top = `${Math.round(top)}px`
-    panel.style.setProperty('--tot-dropdown-panel-max-height', `${Math.floor(availableHeight)}px`)
-    panel.style.setProperty('--tot-dropdown-menu-max-height', `${Math.floor(availableHeight)}px`)
-  }
-
-  focusTrigger() {
-    const trigger = this.shadowRoot?.querySelector('.trigger')
-    const slot = this.shadowRoot?.querySelector('slot[name="trigger"]')
-    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
-
-    if (assigned.length > 0 && typeof assigned[0].focus === 'function') {
-      assigned[0].focus()
-      return
-    }
-
-    const fallback = trigger?.querySelector('tot-button')
-    if (fallback && typeof fallback.focus === 'function') {
-      fallback.focus()
-    }
-  }
-
-  focusFirstMenuItem() {
-    requestAnimationFrame(() => {
-      const menu = this.getPanelMenu()
-      if (!menu) {
-        return
-      }
-
-      const items = typeof menu.getEnabledMenuItems === 'function' ? menu.getEnabledMenuItems() : []
-      if (items.length > 0) {
-        items[0].focus()
-      }
-    })
-  }
-
-  getPanelMenu() {
-    if (!this.shadowRoot) {
-      return null
-    }
-
-    const generatedMenu = this.shadowRoot.querySelector('.panel__generated-menu')
-    if (generatedMenu) {
-      return generatedMenu
-    }
-
-    const slot = this.shadowRoot.querySelector('.panel slot:not([name])')
-    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
-    for (let i = 0; i < assigned.length; i++) {
-      if (assigned[i].localName === 'tot-menu') {
-        return assigned[i]
-      }
-    }
-
-    return null
-  }
-
-  hasDefaultSlotContent() {
-    for (let i = 0; i < this.childNodes.length; i++) {
-      const node = this.childNodes[i]
-      if (node.nodeType === Node.ELEMENT_NODE && !node.slot) {
-        return true
-      }
-
-      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-        return true
-      }
-    }
-    return false
+    menu.style.setProperty('--tot-menu-max-height', `${Math.floor(availableHeight)}px`)
+    menu.style.setProperty('--tot-menu-overflow', 'auto')
   }
 }
 
@@ -483,81 +576,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
 
-function parseItems(value) {
-  if (value === null || value === undefined || value === '') {
-    return []
-  }
-
-  let source = value
-  if (typeof value === 'string') {
-    source = parseJson(value, [])
-  }
-
-  if (!Array.isArray(source)) {
-    return []
-  }
-
-  const items = []
-  for (let i = 0; i < source.length; i++) {
-    const normalized = normalizeItem(source[i])
-    if (normalized) {
-      items.push(normalized)
-    }
-  }
-  return items
-}
-
-function normalizeItem(item) {
-  if (item === 'divider') {
-    return { type: 'divider' }
-  }
-
-  if (typeof item === 'string') {
-    return {
-      type: 'item',
-      value: item,
-      label: item,
-      disabled: false,
-      checked: false,
-      loading: false,
-      items: [],
-    }
-  }
-
-  if (!item || typeof item !== 'object') {
-    return null
-  }
-
-  if (item.type === 'divider' || item.kind === 'divider' || item.divider) {
-    return { type: 'divider' }
-  }
-
-  if (item.type === 'label' || item.kind === 'label') {
-    return {
-      type: 'label',
-      label: String(item.label ?? item.text ?? ''),
-    }
-  }
-
-  const label = String(item.label ?? item.text ?? item.value ?? item.id ?? '')
-  const value = String(item.value ?? item.id ?? label)
-  const children = item.items ?? item.children ?? item.submenu ?? []
-
-  return {
-    type: 'item',
-    value,
-    label,
-    disabled: Boolean(item.disabled),
-    checked: Boolean(item.checked),
-    loading: Boolean(item.loading),
-    items: parseItems(children),
-  }
-}
-
-function cloneItems(items) {
-  return parseItems(items)
-}
-
 function setBooleanAttribute(element, name, value) {
   if (value === true || value === '' || value === name) {
     element.setAttribute(name, '')
@@ -566,7 +584,19 @@ function setBooleanAttribute(element, name, value) {
   }
 }
 
+function setStringAttribute(element, name, value) {
+  if (value === null || value === undefined) {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
+}
+
 function parseJson(value, fallback) {
+  if (!value) {
+    return fallback
+  }
+
   try {
     return JSON.parse(value)
   } catch (error) {
@@ -574,16 +604,14 @@ function parseJson(value, fallback) {
   }
 }
 
-function escapeAttribute(value) {
-  return String(value).replace(/[&<>"'`]/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '`': '&#96;',
-    }
-    return replacements[match]
-  })
+function cloneMenuItems(value) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch (error) {
+    return []
+  }
 }

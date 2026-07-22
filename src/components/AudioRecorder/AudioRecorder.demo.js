@@ -15,7 +15,9 @@ registerDemo({
       'recording-start',
       'recording-pause',
       'recording-resume',
+      'recording-abort',
       'recording-stop',
+      'recording-clear',
       'recording-error',
     ]
 
