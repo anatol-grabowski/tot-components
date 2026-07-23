@@ -464,7 +464,7 @@ export type TotDivider = {
   parts: 'base'
 }
 
-/** A divider entry in `TotMenu.items` or `TotDropdown.menuItems`. */
+/** A divider entry in `TotMenu.items` or `TotDropdown.items`. */
 export type TotMenuDividerConfig = {
   type: 'divider'
 }
@@ -567,8 +567,11 @@ export type TotMenuItem = {
     /** Falls back to the visible label when omitted. */
     value: string
 
-    /** Text derived from the default slot, excluding suffix and submenu content. */
-    readonly label: string
+    /**
+     * Fallback label text. Assigned default-slot content takes visual precedence
+     * and is used as the emitted/typeahead label while present. @default ''
+     */
+    label: string
 
     /** @default false */
     disabled: boolean
@@ -581,9 +584,6 @@ export type TotMenuItem = {
 
     /** Keeps the submenu open independently of hover or focus. @default false */
     open: boolean
-
-    /** Whether the `submenu` slot currently contains a `<tot-menu>`. */
-    readonly hasSubmenu: boolean
   }
 
   /** Click, focus, and blur forward to the native button. */
@@ -591,8 +591,6 @@ export type TotMenuItem = {
     click(): void
     focus(options?: FocusOptions): void
     blur(): void
-    getControl(): HTMLButtonElement | null
-    /** Compatibility alias for `getControl()`. */
     getBase(): HTMLButtonElement | null
     getSubmenu(): HTMLElement | null
   }
@@ -672,7 +670,7 @@ export type TotDropdown = {
      * Proxied to the generated `<tot-menu>` using the same canonical menu-data
      * format. A slotted menu takes visual precedence. @default []
      */
-    menuItems: TotDropdownMenuConfig[]
+    items: TotDropdownMenuConfig[]
 
     /** Whether the panel is visible. @default false */
     open: boolean
@@ -696,14 +694,11 @@ export type TotDropdown = {
     getTrigger(): HTMLElement | null
     /** Returns the slotted menu when present, otherwise the generated menu. */
     getMenu(): HTMLElement | null
-    getGeneratedMenu(): HTMLElement | null
   }
 
-  /** The composed `select` event from the active `<tot-menu>` flows through the dropdown. */
+  /** The active menu selection re-emitted without exposing the menu-item element. */
   events: {
     select: CustomEvent<{
-      /** The selected `<tot-menu-item>` host. */
-      item: HTMLElement
       value: string
       label: string
     }>
@@ -2728,11 +2723,17 @@ export type TotDetails = {
     /** Fallback used when the `summary` slot is empty. @default '' */
     summary: string
 
+    /** Fallback used when the default content slot is empty. @default '' */
+    content: string
+
     /**
      * Prevents user interaction with the summary. The open state can still be
      * changed programmatically. @default false
      */
     disabled: boolean
+
+    /** Removes the outer border and radius. @default false */
+    flat: boolean
   }
 
   methods: {
@@ -2764,7 +2765,7 @@ export type TotDetails = {
 
   /** Slotted nodes receive no added attributes or slot props. */
   slots: {
-    /** Disclosure content. */
+    /** Disclosure content; takes precedence over the `content` fallback. */
     default: undefined
 
     /** Summary content; takes precedence over the `summary` fallback. */
@@ -3137,13 +3138,16 @@ export type TotTree = {
     indentGuides: boolean
 
     /**
-     * `single` and `multiple` select enabled items; `leaf` selects only items
-     * without children; `none` disables selection. @default 'single'
+     * Which item kinds can be selected: leaves, branches, either, or none.
+     * Branch expansion remains available when selection is disabled. @default 'any'
      */
-    selection: 'single' | 'multiple' | 'leaf' | 'none'
+    selection: 'leaf' | 'branch' | 'any' | 'none'
+
+    /** Allows more than one selected value. @default false */
+    multiple: boolean
 
     /** The complete selection state. */
-    selectedValues: string[]
+    values: string[]
   }
 
   methods: {
@@ -3153,10 +3157,11 @@ export type TotTree = {
 
   events: {
     /**
-     * Emitted when user interaction changes `selectedValues`. The event has no
-     * detail; read the current selection from the element.
+     * Emitted when user interaction changes the selection.
      */
-    change: Event
+    change: CustomEvent<{
+      values: string[]
+    }>
 
     /** Emitted when a branch is expanded or collapsed by the user. */
     toggle: CustomEvent<{
@@ -3206,7 +3211,7 @@ export type TotTree = {
 /**
  * `<tot-tree-item>` - one slotted tree item based on a native button. The
  * owning tree manages selection; set initial tree selection through
- * `<tot-tree>.selectedValues`.
+ * `<tot-tree>.values`.
  */
 export type TotTreeItem = {
   props: {

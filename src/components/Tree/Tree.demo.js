@@ -83,7 +83,7 @@ registerDemo({
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Multiple selection</div>
-        <tot-tree id="multipleTree" selection="multiple" style="max-width: 280px;"></tot-tree>
+        <tot-tree id="multipleTree" selection="any" multiple style="max-width: 280px;"></tot-tree>
       </div>
       <div class="stack demo-group">
         <div class="demo-label">Large JSON tree with automatic windowing</div>
@@ -116,18 +116,16 @@ registerDemo({
     const multipleTree = row.querySelector('#multipleTree')
     const largeTree = row.querySelector('#largeTree')
     jsonTree.items = treeItems
-    jsonTree.selectedValues = ['kitten']
+    jsonTree.values = ['kitten']
     multipleTree.items = treeItems
-    multipleTree.selectedValues = ['birds', 'notes']
+    multipleTree.values = ['birds', 'notes']
     largeTree.items = largeTreeItems
-    largeTree.selectedValues = ['large-2-3']
+    largeTree.values = ['large-2-3']
 
     const trees = row.querySelectorAll('tot-tree')
     for (let i = 0; i < trees.length; i++) {
-      trees[i].addEventListener('change', () => {
-        logEvent(trees[i], 'change', {
-          selectedValues: trees[i].selectedValues,
-        })
+      trees[i].addEventListener('change', (event) => {
+        logEvent(trees[i], 'change', event.detail)
       })
 
       trees[i].addEventListener('toggle', (event) => {

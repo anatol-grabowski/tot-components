@@ -34,7 +34,7 @@ registerDemo({
     row.className = 'stack'
     row.innerHTML = `
       <div class="stack demo-group">
-        <div class="demo-label">Configured by label and canonical menuItems</div>
+        <div class="demo-label">Configured by label and canonical items</div>
         <div class="row">
           <tot-dropdown id="configuredDropdown" label="Actions"></tot-dropdown>
           <tot-dropdown id="nestedDropdown" label="Account" hoist></tot-dropdown>
@@ -43,7 +43,7 @@ registerDemo({
       <div class="stack demo-group">
         <div class="demo-label">Slotted button and menu take precedence</div>
         <div class="row">
-          <tot-dropdown id="slottedDropdown" label="Ignored label" menu-items='[{"type":"item","value":"ignored","label":"Ignored JSON item"}]'>
+          <tot-dropdown id="slottedDropdown" label="Ignored label" items='[{"type":"item","value":"ignored","label":"Ignored JSON item"}]'>
             <tot-button slot="trigger" variant="primary" caret>Custom trigger</tot-button>
             <tot-menu>
               <tot-menu-label>Clipboard</tot-menu-label>
@@ -76,9 +76,9 @@ registerDemo({
     const nestedDropdown = row.querySelector('#nestedDropdown')
     const persistentDropdown = row.querySelector('#persistentDropdown')
 
-    configuredDropdown.menuItems = actionItems
-    nestedDropdown.menuItems = nestedItems
-    persistentDropdown.menuItems = [
+    configuredDropdown.items = actionItems
+    nestedDropdown.items = nestedItems
+    persistentDropdown.items = [
       { type: 'item', value: 'small', label: 'Small' },
       { type: 'item', value: 'medium', label: 'Medium', suffix: '✓' },
       { type: 'item', value: 'large', label: 'Large' },
@@ -108,12 +108,12 @@ registerDemo({
       }
 
       if (action === 'swap-items') {
-        persistentDropdown.menuItems = [
+        persistentDropdown.items = [
           { type: 'item', value: 'left', label: 'Left' },
           { type: 'item', value: 'center', label: 'Center', suffix: '✓' },
           { type: 'item', value: 'right', label: 'Right' },
         ]
-        logEvent(persistentDropdown, 'menu-items-update', { count: persistentDropdown.menuItems.length })
+        logEvent(persistentDropdown, 'items-update', { count: persistentDropdown.items.length })
       }
     })
 

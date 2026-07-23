@@ -24,7 +24,7 @@ export type TotDropdown = {
      * Proxied to the generated `<tot-menu>` using the same canonical menu-data
      * format. A slotted menu takes visual precedence. @default []
      */
-    menuItems: TotDropdownMenuConfig[]
+    items: TotDropdownMenuConfig[]
 
     /** Whether the panel is visible. @default false */
     open: boolean
@@ -48,14 +48,11 @@ export type TotDropdown = {
     getTrigger(): HTMLElement | null
     /** Returns the slotted menu when present, otherwise the generated menu. */
     getMenu(): HTMLElement | null
-    getGeneratedMenu(): HTMLElement | null
   }
 
-  /** The composed `select` event from the active `<tot-menu>` flows through the dropdown. */
+  /** The active menu selection re-emitted without exposing the menu-item element. */
   events: {
     select: CustomEvent<{
-      /** The selected `<tot-menu-item>` host. */
-      item: HTMLElement
       value: string
       label: string
     }>

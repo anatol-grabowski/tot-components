@@ -63,8 +63,8 @@ registerDemo({
               <circle cx="4" cy="12" r="2" fill="none" stroke="currentColor"></circle>
             </svg>
           </tot-menu-item>
-          <tot-menu-item value="copy" suffix="✓">Copy</tot-menu-item>
-          <tot-menu-item value="paste" disabled>Paste</tot-menu-item>
+          <tot-menu-item value="copy" label="Fallback copy" suffix="✓">Copy</tot-menu-item>
+          <tot-menu-item value="paste" label="Paste" disabled></tot-menu-item>
           <tot-divider></tot-divider>
           <tot-menu-item value="more">
             More actions

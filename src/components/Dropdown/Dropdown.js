@@ -59,8 +59,7 @@ export class TotDropdown extends HTMLElement {
   static get observedAttributes() {
     return [
       'label',
-      'menu-items',
-      'menuitems',
+      'items',
       'open',
       'hoist',
       'stay-open-on-select',
@@ -70,7 +69,7 @@ export class TotDropdown extends HTMLElement {
 
   constructor() {
     super()
-    this._menuItems = undefined
+    this._items = undefined
     this._positionFrame = 0
     this._visualViewport = null
     this._listeningWhileOpen = false
@@ -94,16 +93,19 @@ export class TotDropdown extends HTMLElement {
       </div>
     `
 
-    const trigger = root.querySelector('.trigger')
-    const triggerSlot = root.querySelector('slot[name="trigger"]')
-    const menuSlot = root.querySelector('.menu-slot')
-    const panel = root.querySelector('.panel')
-    trigger.addEventListener('click', (event) => this.handleTriggerClick(event))
-    trigger.addEventListener('keydown', (event) => this.handleTriggerKeyDown(event))
-    triggerSlot.addEventListener('slotchange', () => this.handleTriggerSlotChange())
-    menuSlot.addEventListener('slotchange', () => this.handleMenuSlotChange())
-    panel.addEventListener('select', () => this.handlePanelSelect())
-    panel.addEventListener('keydown', (event) => this.handlePanelKeyDown(event))
+    this._baseElement = root.querySelector('.dropdown')
+    this._triggerElement = root.querySelector('.trigger')
+    this._triggerSlot = root.querySelector('slot[name="trigger"]')
+    this._fallbackButton = root.querySelector('.fallback-button')
+    this._panelElement = root.querySelector('.panel')
+    this._menuSlot = root.querySelector('.menu-slot')
+    this._generatedMenu = root.querySelector('.generated-menu')
+    this._triggerElement.addEventListener('click', (event) => this.handleTriggerClick(event))
+    this._triggerElement.addEventListener('keydown', (event) => this.handleTriggerKeyDown(event))
+    this._triggerSlot.addEventListener('slotchange', () => this.handleTriggerSlotChange())
+    this._menuSlot.addEventListener('slotchange', () => this.handleMenuSlotChange())
+    this._panelElement.addEventListener('select', (event) => this.handlePanelSelect(event))
+    this._panelElement.addEventListener('keydown', (event) => this.handlePanelKeyDown(event))
   }
 
   get label() {
@@ -114,24 +116,20 @@ export class TotDropdown extends HTMLElement {
     setStringAttribute(this, 'label', value)
   }
 
-  get menuItems() {
-    const menu = this.getGeneratedMenu()
-    if (menu && 'items' in menu) {
-      return menu.items
+  get items() {
+    if ('items' in this._generatedMenu) {
+      return this._generatedMenu.items
     }
 
-    if (this._menuItems !== undefined) {
-      return cloneMenuItems(this._menuItems)
+    if (this._items !== undefined) {
+      return cloneMenuItems(this._items)
     }
 
-    return cloneMenuItems(parseJson(
-      this.getAttribute('menu-items') || this.getAttribute('menuitems'),
-      [],
-    ))
+    return cloneMenuItems(parseJson(this.getAttribute('items'), []))
   }
 
-  set menuItems(value) {
-    this._menuItems = cloneMenuItems(value)
+  set items(value) {
+    this._items = cloneMenuItems(value)
     this.syncGeneratedMenu()
   }
 
@@ -180,8 +178,8 @@ export class TotDropdown extends HTMLElement {
 
     if (name === 'label') {
       this.syncLabel()
-    } else if (name === 'menu-items' || name === 'menuitems') {
-      this._menuItems = undefined
+    } else if (name === 'items') {
+      this._items = undefined
       this.syncGeneratedMenu()
     } else if (name === 'open') {
       this.syncOpenState()
@@ -211,27 +209,12 @@ export class TotDropdown extends HTMLElement {
   }
 
   getTrigger() {
-    const slot = this.shadowRoot?.querySelector('slot[name="trigger"]')
-    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
-    if (assigned.length > 0) {
-      return assigned[0]
-    }
-    return this.shadowRoot?.querySelector('.fallback-button') || null
+    const assigned = this._triggerSlot.assignedElements({ flatten: true })
+    return assigned[0] || this._fallbackButton
   }
 
   getMenu() {
-    const slot = this.shadowRoot?.querySelector('.menu-slot')
-    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
-    for (let i = 0; i < assigned.length; i++) {
-      if (assigned[i].localName === 'tot-menu') {
-        return assigned[i]
-      }
-    }
-    return this.getGeneratedMenu()
-  }
-
-  getGeneratedMenu() {
-    return this.shadowRoot?.querySelector('.generated-menu') || null
+    return this.getSlottedMenu() || this._generatedMenu
   }
 
   handleTriggerClick(event) {
@@ -253,13 +236,17 @@ export class TotDropdown extends HTMLElement {
     }
   }
 
-  handlePanelSelect() {
-    if (this.stayOpenOnSelect) {
-      return
-    }
+  handlePanelSelect(event) {
+    event.stopPropagation()
+    emit(this, 'select', {
+      value: String(event.detail?.value ?? ''),
+      label: String(event.detail?.label ?? ''),
+    })
 
-    this.hide()
-    requestAnimationFrame(() => this.focus())
+    if (!this.stayOpenOnSelect) {
+      this.hide()
+      requestAnimationFrame(() => this.focus())
+    }
   }
 
   handlePanelKeyDown(event) {
@@ -293,52 +280,33 @@ export class TotDropdown extends HTMLElement {
   }
 
   syncLabel() {
-    const button = this.shadowRoot?.querySelector('.fallback-button')
-    if (button) {
-      button.setAttribute('label', this.label)
-    }
-
-    const menu = this.getGeneratedMenu()
-    if (menu) {
-      menu.setAttribute('aria-label', `${this.label} menu`)
-    }
+    this._fallbackButton.setAttribute('label', this.label)
+    this._generatedMenu.setAttribute('aria-label', `${this.label} menu`)
   }
 
   syncGeneratedMenu() {
-    const menu = this.getGeneratedMenu()
-    if (!menu) {
-      return
-    }
+    const value = this._items !== undefined
+      ? this._items
+      : parseJson(this.getAttribute('items'), [])
 
-    const value = this._menuItems !== undefined
-      ? this._menuItems
-      : parseJson(this.getAttribute('menu-items') || this.getAttribute('menuitems'), [])
-
-    if ('items' in menu) {
-      menu.items = value
-      if (this._menuItems !== undefined) {
-        this._menuItems = menu.items
+    if ('items' in this._generatedMenu) {
+      this._generatedMenu.items = value
+      if (this._items !== undefined) {
+        this._items = this._generatedMenu.items
       }
     } else {
-      menu.setAttribute('items', JSON.stringify(Array.isArray(value) ? value : []))
+      this._generatedMenu.setAttribute('items', JSON.stringify(Array.isArray(value) ? value : []))
     }
   }
 
   syncMenuMode() {
-    const slot = this.shadowRoot?.querySelector('.menu-slot')
-    const generated = this.getGeneratedMenu()
-    if (!slot || !generated) {
-      return
-    }
-
     const hasSlottedMenu = Boolean(this.getSlottedMenu())
-    slot.hidden = !hasSlottedMenu
-    generated.hidden = hasSlottedMenu
+    this._menuSlot.hidden = !hasSlottedMenu
+    this._generatedMenu.hidden = hasSlottedMenu
   }
 
   getSlottedMenu() {
-    const slot = this.shadowRoot?.querySelector('.menu-slot')
-    const assigned = slot ? slot.assignedElements({ flatten: true }) : []
+    const assigned = this._menuSlot.assignedElements({ flatten: true })
     for (let i = 0; i < assigned.length; i++) {
       if (assigned[i].localName === 'tot-menu') {
         return assigned[i]
@@ -348,12 +316,7 @@ export class TotDropdown extends HTMLElement {
   }
 
   syncOpenState() {
-    const panel = this.shadowRoot?.querySelector('.panel')
-    if (!panel) {
-      return
-    }
-
-    panel.hidden = !this.open
+    this._panelElement.hidden = !this.open
     this.syncHoist()
     this.syncTriggerAria()
 
@@ -368,10 +331,7 @@ export class TotDropdown extends HTMLElement {
   }
 
   syncHoist() {
-    const base = this.shadowRoot?.querySelector('.dropdown')
-    if (base) {
-      base.classList.toggle('dropdown--hoist', this.hoist)
-    }
+    this._baseElement.classList.toggle('dropdown--hoist', this.hoist)
   }
 
   syncTriggerAria() {
@@ -460,14 +420,14 @@ export class TotDropdown extends HTMLElement {
   }
 
   updatePanelPosition() {
-    if (!this.open || !this.shadowRoot) {
+    if (!this.open) {
       return
     }
 
-    const trigger = this.shadowRoot.querySelector('.trigger')
-    const panel = this.shadowRoot.querySelector('.panel')
+    const trigger = this._triggerElement
+    const panel = this._panelElement
     const menu = this.getMenu()
-    if (!trigger || !panel || !menu) {
+    if (!menu) {
       return
     }
 
@@ -515,6 +475,14 @@ export class TotDropdown extends HTMLElement {
     menu.style.setProperty('--tot-menu-max-height', `${Math.floor(availableHeight)}px`)
     menu.style.setProperty('--tot-menu-overflow', 'auto')
   }
+}
+
+function emit(element, name, detail) {
+  element.dispatchEvent(new CustomEvent(name, {
+    bubbles: true,
+    composed: true,
+    detail,
+  }))
 }
 
 function getViewportRect() {

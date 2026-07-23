@@ -1,4 +1,4 @@
-/** A divider entry in `TotMenu.items` or `TotDropdown.menuItems`. */
+/** A divider entry in `TotMenu.items` or `TotDropdown.items`. */
 export type TotMenuDividerConfig = {
   type: 'divider'
 }
@@ -101,8 +101,11 @@ export type TotMenuItem = {
     /** Falls back to the visible label when omitted. */
     value: string
 
-    /** Text derived from the default slot, excluding suffix and submenu content. */
-    readonly label: string
+    /**
+     * Fallback label text. Assigned default-slot content takes visual precedence
+     * and is used as the emitted/typeahead label while present. @default ''
+     */
+    label: string
 
     /** @default false */
     disabled: boolean
@@ -115,9 +118,6 @@ export type TotMenuItem = {
 
     /** Keeps the submenu open independently of hover or focus. @default false */
     open: boolean
-
-    /** Whether the `submenu` slot currently contains a `<tot-menu>`. */
-    readonly hasSubmenu: boolean
   }
 
   /** Click, focus, and blur forward to the native button. */
@@ -125,8 +125,6 @@ export type TotMenuItem = {
     click(): void
     focus(options?: FocusOptions): void
     blur(): void
-    getControl(): HTMLButtonElement | null
-    /** Compatibility alias for `getControl()`. */
     getBase(): HTMLButtonElement | null
     getSubmenu(): HTMLElement | null
   }

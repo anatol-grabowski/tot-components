@@ -12,9 +12,8 @@ registerDemo({
         <tot-details summary="Toggle me" open>
           A compact disclosure component based on native details and summary elements.
         </tot-details>
-        <tot-details summary="Disabled" disabled>
-          This content cannot be opened from the summary while disabled.
-        </tot-details>
+        <tot-details summary="Disabled" content="This fallback content cannot be opened from the summary while disabled." disabled></tot-details>
+        <tot-details summary="Flat disclosure" content="The flat variant has no outer border." flat></tot-details>
       </div>
       <div class="stack demo-group details-demo-group">
         <div class="demo-label">Accordion behavior in user code</div>

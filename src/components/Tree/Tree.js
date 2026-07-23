@@ -326,7 +326,7 @@ const treeItemStyle = `
   }
 `
 
-const selectionModes = ['single', 'multiple', 'leaf', 'none']
+const selectionModes = ['any', 'leaf', 'branch', 'none']
 
 export class TotTree extends HTMLElement {
   static get observedAttributes() {
@@ -336,7 +336,8 @@ export class TotTree extends HTMLElement {
       'indent-guides',
       'items',
       'item-height',
-      'selected-values',
+      'multiple',
+      'values',
       'selection',
     ]
   }
@@ -345,8 +346,8 @@ export class TotTree extends HTMLElement {
     super()
     this._items = null
     this._expandedValues = null
-    this._selectedValues = null
-    this._isUpdatingSelected = false
+    this._values = null
+    this._isUpdatingValues = false
     this._typeToSelect = ''
     this._typeToSelectTimer = 0
     this._activeValue = ''
@@ -410,35 +411,43 @@ export class TotTree extends HTMLElement {
   }
 
   get selection() {
-    return getSupportedValue(this.getAttribute('selection'), selectionModes, 'single')
+    return getSupportedValue(this.getAttribute('selection'), selectionModes, 'any')
   }
 
   set selection(value) {
-    this.setAttribute('selection', getSupportedValue(value, selectionModes, 'single'))
+    this.setAttribute('selection', getSupportedValue(value, selectionModes, 'any'))
   }
 
-  get selectedValues() {
-    if (this._selectedValues !== null) {
-      return this._selectedValues.slice()
-    }
-
-    if (this.hasAttribute('selected-values')) {
-      return parseSelected(this.getAttribute('selected-values'))
-    }
-
-    return getSelectedValuesFromItems(this._getTreeItems())
+  get multiple() {
+    return this.hasAttribute('multiple')
   }
 
-  set selectedValues(value) {
-    const values = parseSelected(value)
-    this._selectedValues = values
+  set multiple(value) {
+    setBooleanAttribute(this, 'multiple', value)
+  }
+
+  get values() {
+    if (this._values !== null) {
+      return this._values.slice()
+    }
+
+    if (this.hasAttribute('values')) {
+      return parseValues(this.getAttribute('values'))
+    }
+
+    return getValuesFromItems(this._getTreeItems())
+  }
+
+  set values(value) {
+    const values = parseValues(value)
+    this._values = values
 
     if (!this.isConnected || !this.shadowRoot) {
-      this.updateSelectedAttribute(values)
+      this.updateValuesAttribute(values)
       return
     }
 
-    this.applySelectedValues(values, true)
+    this.applyValues(values, true)
   }
 
   connectedCallback() {
@@ -468,23 +477,22 @@ export class TotTree extends HTMLElement {
       return
     }
 
-    if (name === 'selected-values') {
-      if (this._isUpdatingSelected) {
+    if (name === 'values') {
+      if (this._isUpdatingValues) {
         return
       }
 
-      this._selectedValues = parseSelected(newValue)
+      this._values = parseValues(newValue)
       if (this.isConnected) {
-        this.applySelectedValues(this._selectedValues, false)
+        this.applyValues(this._values, false)
       }
       return
     }
 
-    if (name === 'selection') {
+    if (name === 'selection' || name === 'multiple') {
       if (this.isConnected) {
         this.syncTreeState()
         this.applySelectionRules(true)
-        this.updateTreeItems()
       }
       return
     }
@@ -561,7 +569,7 @@ export class TotTree extends HTMLElement {
     }
 
     holder.setAttribute('aria-label', this.getAttribute('aria-label') || 'Tree')
-    holder.setAttribute('aria-multiselectable', this.selection === 'multiple' ? 'true' : 'false')
+    holder.setAttribute('aria-multiselectable', this.multiple && this.selection !== 'none' ? 'true' : 'false')
   }
 
   getRenderMode() {
@@ -690,7 +698,7 @@ export class TotTree extends HTMLElement {
     }
 
     const expandClicked = isExpandClick(event)
-    if (expandClicked || (this.selection === 'leaf' && item.hasChildren)) {
+    if (expandClicked || ((this.selection === 'leaf' || this.selection === 'none') && item.hasChildren)) {
       if (item.hasChildren) {
         item._setExpanded(!item.expanded, true)
       }
@@ -724,7 +732,7 @@ export class TotTree extends HTMLElement {
     }
 
     const expandClicked = isVirtualExpandClick(event)
-    if (expandClicked || (this.selection === 'leaf' && row.hasChildren)) {
+    if (expandClicked || ((this.selection === 'leaf' || this.selection === 'none') && row.hasChildren)) {
       if (row.hasChildren) {
         this.setVirtualExpanded(row, !row.expanded, true)
       }
@@ -801,7 +809,7 @@ export class TotTree extends HTMLElement {
         next = getParentTreeItem(active)
       }
     } else if (event.key === 'Enter' || event.key === ' ') {
-      if (this.selection === 'leaf' && active.hasChildren) {
+      if ((this.selection === 'leaf' || this.selection === 'none') && active.hasChildren) {
         active._setExpanded(!active.expanded, true)
       } else if (this.isSelectable(active)) {
         this.selectItem(active, true)
@@ -859,7 +867,7 @@ export class TotTree extends HTMLElement {
         next = this.getVirtualRowByValue(active.parentValue)
       }
     } else if (event.key === 'Enter' || event.key === ' ') {
-      if (this.selection === 'leaf' && active.hasChildren) {
+      if ((this.selection === 'leaf' || this.selection === 'none') && active.hasChildren) {
         this.setVirtualExpanded(active, !active.expanded, true)
       } else if (this.isVirtualSelectable(active)) {
         this.selectVirtualRow(active, true)
@@ -881,14 +889,12 @@ export class TotTree extends HTMLElement {
   }
 
   selectItem(item, emitEvents) {
-    const previousValues = this.selectedValues
-    const selection = this.selection
-
-    if (selection === 'none') {
+    const previousValues = this.values
+    if (!this.isSelectable(item)) {
       return
     }
 
-    if (selection === 'multiple') {
+    if (this.multiple) {
       item._setSelected(!item.selected)
     } else {
       const items = this._getTreeItems()
@@ -897,29 +903,25 @@ export class TotTree extends HTMLElement {
       }
     }
 
-    const nextValues = getSelectedValuesFromItems(this._getTreeItems())
-    this._selectedValues = nextValues
-    this.updateSelectedAttribute(nextValues)
+    const items = this._getTreeItems()
+    const nextValues = normalizeValuesForMode(getValuesFromItems(items), items, this.selection, this.multiple)
+    this._values = nextValues
+    this.updateValuesAttribute(nextValues)
     this.updateTreeItems()
 
     if (emitEvents && !arraysEqual(previousValues, nextValues)) {
-      this.dispatchEvent(new Event('change', {
-        bubbles: true,
-        composed: true,
-      }))
+      emit(this, 'change', { values: nextValues.slice() })
     }
   }
 
   selectVirtualRow(row, emitEvents) {
-    const previousValues = this.selectedValues
-    const selection = this.selection
-
-    if (selection === 'none') {
+    const previousValues = this.values
+    if (!this.isVirtualSelectable(row)) {
       return
     }
 
     let nextValues = []
-    if (selection === 'multiple') {
+    if (this.multiple) {
       nextValues = previousValues.slice()
       const index = nextValues.indexOf(row.value)
       if (index === -1) {
@@ -931,55 +933,52 @@ export class TotTree extends HTMLElement {
       nextValues = [row.value]
     }
 
-    nextValues = normalizeSelectedForData(nextValues, this.getItemsData(), selection)
-    this._selectedValues = nextValues
+    nextValues = normalizeValuesForData(nextValues, this.getItemsData(), this.selection, this.multiple)
+    this._values = nextValues
     this._activeValue = row.value
-    this.updateSelectedAttribute(nextValues)
+    this.updateValuesAttribute(nextValues)
     this.updateVirtualRows()
 
     if (emitEvents && !arraysEqual(previousValues, nextValues)) {
-      this.dispatchEvent(new Event('change', {
-        bubbles: true,
-        composed: true,
-      }))
+      emit(this, 'change', { values: nextValues.slice() })
     }
   }
 
-  applySelectedValues(values, updateAttribute) {
+  applyValues(values, updateAttribute) {
     if (this._isVirtualRendered()) {
-      this.applyVirtualSelectedValues(values, updateAttribute)
+      this.applyVirtualValues(values, updateAttribute)
       return
     }
 
-    const selectedValues = normalizeSelectedForMode(values, this._getTreeItems(), this.selection)
-    const selectedSet = new Set(selectedValues)
     const items = this._getTreeItems()
+    const normalizedValues = normalizeValuesForMode(values, items, this.selection, this.multiple)
+    const selectedSet = new Set(normalizedValues)
 
     for (let i = 0; i < items.length; i++) {
       items[i]._setSelected(selectedSet.has(items[i].value))
     }
 
-    this._selectedValues = selectedValues
+    this._values = normalizedValues
     if (updateAttribute) {
-      this.updateSelectedAttribute(selectedValues)
+      this.updateValuesAttribute(normalizedValues)
     }
     this.updateTreeItems()
   }
 
-  applyVirtualSelectedValues(values, updateAttribute) {
-    const selectedValues = normalizeSelectedForData(values, this.getItemsData(), this.selection)
-    this._selectedValues = selectedValues
+  applyVirtualValues(values, updateAttribute) {
+    const normalizedValues = normalizeValuesForData(values, this.getItemsData(), this.selection, this.multiple)
+    this._values = normalizedValues
     if (updateAttribute) {
-      this.updateSelectedAttribute(selectedValues)
+      this.updateValuesAttribute(normalizedValues)
     }
     this.updateVirtualRows()
   }
 
   applySelectionRules(updateAttribute) {
-    const selectedValues = this._isVirtualRendered()
-      ? this.selectedValues
-      : getSelectedValuesFromItems(this._getTreeItems())
-    this.applySelectedValues(selectedValues, updateAttribute)
+    const values = this._isVirtualRendered()
+      ? this.values
+      : getValuesFromItems(this._getTreeItems())
+    this.applyValues(values, updateAttribute)
   }
 
   updateTreeItems() {
@@ -990,11 +989,11 @@ export class TotTree extends HTMLElement {
 
     const items = this._getTreeItems()
 
-    if (this._selectedValues !== null) {
-      this.applySelectedValuesWithoutLoop(this._selectedValues)
+    if (this._values !== null) {
+      this.applyValuesWithoutLoop(this._values)
     } else if (items.length > 0) {
-      this._selectedValues = normalizeSelectedForMode(getSelectedValuesFromItems(items), items, this.selection)
-      this.updateSelectedAttribute(this._selectedValues)
+      this._values = normalizeValuesForMode(getValuesFromItems(items), items, this.selection, this.multiple)
+      this.updateValuesAttribute(this._values)
     }
 
     const active = this.getActiveItem(items)
@@ -1011,11 +1010,11 @@ export class TotTree extends HTMLElement {
   }
 
   updateVirtualTree() {
-    if (this._selectedValues !== null) {
-      this._selectedValues = normalizeSelectedForData(this._selectedValues, this.getItemsData(), this.selection)
+    if (this._values !== null) {
+      this._values = normalizeValuesForData(this._values, this.getItemsData(), this.selection, this.multiple)
     } else {
-      this._selectedValues = []
-      this.updateSelectedAttribute(this._selectedValues)
+      this._values = []
+      this.updateValuesAttribute(this._values)
     }
 
     if (this._expandedValues === null) {
@@ -1024,7 +1023,7 @@ export class TotTree extends HTMLElement {
 
     const rows = this.getEnabledVirtualRows()
     if (rows.length > 0 && !this.getActiveVirtualRow(rows)) {
-      const selected = this._selectedValues.length > 0 ? this._selectedValues[0] : ''
+      const selected = this._values.length > 0 ? this._values[0] : ''
       const selectedRow = selected ? this.getVirtualRowByValue(selected, rows) : null
       this._activeValue = selectedRow ? selectedRow.value : rows[0].value
     }
@@ -1032,16 +1031,16 @@ export class TotTree extends HTMLElement {
     this.updateVirtualRows()
   }
 
-  applySelectedValuesWithoutLoop(values) {
+  applyValuesWithoutLoop(values) {
     const items = this._getTreeItems()
-    const selectedValues = normalizeSelectedForMode(values, items, this.selection)
-    const selectedSet = new Set(selectedValues)
+    const normalizedValues = normalizeValuesForMode(values, items, this.selection, this.multiple)
+    const selectedSet = new Set(normalizedValues)
 
     for (let i = 0; i < items.length; i++) {
       items[i]._setSelected(selectedSet.has(items[i].value))
     }
 
-    this._selectedValues = selectedValues
+    this._values = normalizedValues
   }
 
   updateFocusableItem(item) {
@@ -1279,7 +1278,7 @@ export class TotTree extends HTMLElement {
   }
 
   getVisibleVirtualRows() {
-    const selectedSet = new Set(this.selectedValues)
+    const selectedSet = new Set(this.values)
     const expandedSet = new Set(this.getExpandedValues())
     return flattenDataItems(this.getItemsData(), {
       expandedSet,
@@ -1397,6 +1396,10 @@ export class TotTree extends HTMLElement {
       return !item.hasChildren
     }
 
+    if (this.selection === 'branch') {
+      return item.hasChildren
+    }
+
     return true
   }
 
@@ -1407,6 +1410,10 @@ export class TotTree extends HTMLElement {
 
     if (this.selection === 'leaf') {
       return !row.hasChildren
+    }
+
+    if (this.selection === 'branch') {
+      return row.hasChildren
     }
 
     return true
@@ -1482,14 +1489,14 @@ export class TotTree extends HTMLElement {
     }
   }
 
-  updateSelectedAttribute(values) {
-    this._isUpdatingSelected = true
+  updateValuesAttribute(values) {
+    this._isUpdatingValues = true
     if (!values || values.length === 0) {
-      this.removeAttribute('selected-values')
+      this.removeAttribute('values')
     } else {
-      this.setAttribute('selected-values', JSON.stringify(values))
+      this.setAttribute('values', JSON.stringify(values))
     }
-    this._isUpdatingSelected = false
+    this._isUpdatingValues = false
   }
 
   hasDefaultSlotContent() {
@@ -1911,7 +1918,7 @@ function cloneItems(items) {
   return parseItems(items)
 }
 
-function parseSelected(value) {
+function parseValues(value) {
   if (value === null || value === undefined || value === '') {
     return []
   }
@@ -1935,7 +1942,7 @@ function parseSelected(value) {
   return selected
 }
 
-function normalizeSelectedForMode(values, items, selection) {
+function normalizeValuesForMode(values, items, selection, multiple) {
   if (selection === 'none') {
     return []
   }
@@ -1943,6 +1950,9 @@ function normalizeSelectedForMode(values, items, selection) {
   const allowed = new Set()
   for (let i = 0; i < items.length; i++) {
     if (selection === 'leaf' && items[i].hasChildren) {
+      continue
+    }
+    if (selection === 'branch' && !items[i].hasChildren) {
       continue
     }
     allowed.add(items[i].value)
@@ -1955,14 +1965,14 @@ function normalizeSelectedForMode(values, items, selection) {
     }
 
     result.push(values[i])
-    if (selection !== 'multiple') {
+    if (!multiple) {
       break
     }
   }
   return result
 }
 
-function normalizeSelectedForData(values, items, selection) {
+function normalizeValuesForData(values, items, selection, multiple) {
   if (selection === 'none') {
     return []
   }
@@ -1977,6 +1987,9 @@ function normalizeSelectedForData(values, items, selection) {
     if (selection === 'leaf' && rows[i].hasChildren) {
       continue
     }
+    if (selection === 'branch' && !rows[i].hasChildren) {
+      continue
+    }
     allowed.add(rows[i].value)
   }
 
@@ -1987,7 +2000,7 @@ function normalizeSelectedForData(values, items, selection) {
     }
 
     result.push(values[i])
-    if (selection !== 'multiple') {
+    if (!multiple) {
       break
     }
   }
@@ -2005,7 +2018,7 @@ function uniqueStrings(values) {
   return result
 }
 
-function getSelectedValuesFromItems(items) {
+function getValuesFromItems(items) {
   const selected = []
   for (let i = 0; i < items.length; i++) {
     if (items[i].selected) {

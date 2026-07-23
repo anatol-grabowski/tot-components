@@ -36,13 +36,16 @@ export type TotTree = {
     indentGuides: boolean
 
     /**
-     * `single` and `multiple` select enabled items; `leaf` selects only items
-     * without children; `none` disables selection. @default 'single'
+     * Which item kinds can be selected: leaves, branches, either, or none.
+     * Branch expansion remains available when selection is disabled. @default 'any'
      */
-    selection: 'single' | 'multiple' | 'leaf' | 'none'
+    selection: 'leaf' | 'branch' | 'any' | 'none'
+
+    /** Allows more than one selected value. @default false */
+    multiple: boolean
 
     /** The complete selection state. */
-    selectedValues: string[]
+    values: string[]
   }
 
   methods: {
@@ -52,10 +55,11 @@ export type TotTree = {
 
   events: {
     /**
-     * Emitted when user interaction changes `selectedValues`. The event has no
-     * detail; read the current selection from the element.
+     * Emitted when user interaction changes the selection.
      */
-    change: Event
+    change: CustomEvent<{
+      values: string[]
+    }>
 
     /** Emitted when a branch is expanded or collapsed by the user. */
     toggle: CustomEvent<{
@@ -105,7 +109,7 @@ export type TotTree = {
 /**
  * `<tot-tree-item>` - one slotted tree item based on a native button. The
  * owning tree manages selection; set initial tree selection through
- * `<tot-tree>.selectedValues`.
+ * `<tot-tree>.values`.
  */
 export type TotTreeItem = {
   props: {

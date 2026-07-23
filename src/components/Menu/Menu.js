@@ -84,7 +84,9 @@ const menuItemStyle = `
     line-height: var(--tot-line-height-normal, 1.4);
     min-height: var(--tot-menu-item-height, var(--tot-input-height-small, 1.75rem));
     outline: none;
-    padding: var(--tot-menu-item-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem);
+    padding-block: var(--tot-menu-item-padding-block, .25rem);
+    padding-inline-end: var(--tot-menu-item-padding-inline, .5rem);
+    padding-inline-start: calc(var(--tot-menu-item-padding-inline, .5rem) + var(--tot-menu-item-indent, .25rem));
     position: relative;
     text-align: left;
     user-select: none;
@@ -204,7 +206,6 @@ const menuLabelStyle = `
     font-weight: var(--tot-font-weight-semibold, 600);
     line-height: 1.35;
     max-width: 100%;
-    padding: var(--tot-menu-label-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem) var(--tot-spacing-3x-small, .125rem);
     text-transform: none;
   }
 
@@ -214,6 +215,7 @@ const menuLabelStyle = `
 
   .label {
     overflow: hidden;
+    padding: var(--tot-menu-label-padding-block, .25rem) var(--tot-menu-item-padding-inline, .5rem) var(--tot-spacing-3x-small, .125rem);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -360,7 +362,7 @@ export class TotMenu extends HTMLElement {
     }
 
     const element = document.createElement('tot-menu-item')
-    element.textContent = item.label
+    element.label = item.label
     element.setAttribute('value', item.value)
     if (item.disabled) {
       element.setAttribute('disabled', '')
@@ -412,7 +414,7 @@ export class TotMenu extends HTMLElement {
       return
     }
 
-    if (item.hasSubmenu) {
+    if (item.getSubmenu()) {
       this.closeSubmenus(item)
       item.open = !item.open
       return
@@ -447,7 +449,7 @@ export class TotMenu extends HTMLElement {
       next = items[0]
     } else if (event.key === 'End') {
       next = items[items.length - 1]
-    } else if (event.key === 'ArrowRight' && active?.hasSubmenu) {
+    } else if (event.key === 'ArrowRight' && active?.getSubmenu()) {
       this.closeSubmenus(active)
       active.open = true
       const submenu = active.getSubmenu()
@@ -550,7 +552,7 @@ export class TotMenu extends HTMLElement {
 
 export class TotMenuItem extends HTMLElement {
   static get observedAttributes() {
-    return ['disabled', 'suffix', 'value', 'open']
+    return ['disabled', 'label', 'suffix', 'value', 'open']
   }
 
   constructor() {
@@ -566,7 +568,7 @@ export class TotMenuItem extends HTMLElement {
     const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${menuItemStyle}</style>
       <button class="item" part="base" type="button" role="menuitem">
-        <span class="item__label" part="label"><slot></slot></span>
+        <span class="item__label" part="label"><slot><span class="item__label-fallback"></span></slot></span>
         <span class="item__suffix" part="suffix" hidden>
           <slot name="suffix"><span class="item__suffix-fallback"></span></slot>
         </span>
@@ -580,12 +582,15 @@ export class TotMenuItem extends HTMLElement {
     `
 
     this._control = root.querySelector('.item')
+    this._labelFallback = root.querySelector('.item__label-fallback')
+    this._labelSlot = root.querySelector('.item__label slot')
     this._suffixHolder = root.querySelector('.item__suffix')
     this._suffixFallback = root.querySelector('.item__suffix-fallback')
     this._suffixSlot = root.querySelector('slot[name="suffix"]')
     this._submenuHolder = root.querySelector('.submenu')
     this._submenuSlot = root.querySelector('slot[name="submenu"]')
     this._control.addEventListener('click', (event) => this.handleControlClick(event))
+    this._labelSlot.addEventListener('slotchange', () => this.syncLabel())
     this._suffixSlot.addEventListener('slotchange', () => this.syncSuffix())
     this._submenuSlot.addEventListener('slotchange', () => this.syncSubmenu())
   }
@@ -627,20 +632,12 @@ export class TotMenuItem extends HTMLElement {
   }
 
   get label() {
-    const parts = []
-    for (let i = 0; i < this.childNodes.length; i++) {
-      const node = this.childNodes[i]
-      if (node.nodeType === Node.TEXT_NODE) {
-        parts.push(node.textContent)
-      } else if (node.nodeType === Node.ELEMENT_NODE && !node.slot) {
-        parts.push(node.textContent)
-      }
-    }
-    return parts.join(' ').replace(/\s+/g, ' ').trim()
+    const slottedLabel = getAssignedText(this._labelSlot)
+    return slottedLabel || this.getAttribute('label') || ''
   }
 
-  get hasSubmenu() {
-    return this._hasSubmenu
+  set label(value) {
+    setStringAttribute(this, 'label', value)
   }
 
   connectedCallback() {
@@ -648,6 +645,7 @@ export class TotMenuItem extends HTMLElement {
     this.addEventListener('pointerleave', this._handleSubmenuLeave)
     this.addEventListener('focusin', this._handleSubmenuOpen)
     this.addEventListener('focusout', this._handleSubmenuLeave)
+    this.syncLabel()
     this.syncSuffix()
     this.syncSubmenu()
     this.syncState()
@@ -667,7 +665,9 @@ export class TotMenuItem extends HTMLElement {
       return
     }
 
-    if (name === 'suffix') {
+    if (name === 'label') {
+      this.syncLabel()
+    } else if (name === 'suffix') {
       this.syncSuffix()
     } else {
       this.syncState()
@@ -683,23 +683,19 @@ export class TotMenuItem extends HTMLElement {
   }
 
   click() {
-    this.getControl()?.click()
+    this._control.click()
   }
 
   focus(options) {
-    this.getControl()?.focus(options)
+    this._control.focus(options)
   }
 
   blur() {
-    this.getControl()?.blur()
-  }
-
-  getControl() {
-    return this._control
+    this._control.blur()
   }
 
   getBase() {
-    return this.getControl()
+    return this._control
   }
 
   getSubmenu() {
@@ -720,27 +716,27 @@ export class TotMenuItem extends HTMLElement {
     }
 
     if (event.detail > 0) {
-      requestAnimationFrame(() => this.getControl()?.blur())
+      requestAnimationFrame(() => this._control.blur())
     }
   }
 
   syncState() {
-    const control = this.getControl()
-    if (!control) {
-      return
-    }
-
+    const control = this._control
     control.disabled = this.disabled
-    control.classList.toggle('item--has-submenu', this.hasSubmenu)
+    control.classList.toggle('item--has-submenu', this._hasSubmenu)
     control.setAttribute('aria-disabled', this.disabled ? 'true' : 'false')
 
-    if (this.hasSubmenu) {
+    if (this._hasSubmenu) {
       control.setAttribute('aria-haspopup', 'menu')
       control.setAttribute('aria-expanded', this.open ? 'true' : 'false')
     } else {
       control.removeAttribute('aria-haspopup')
       control.removeAttribute('aria-expanded')
     }
+  }
+
+  syncLabel() {
+    this._labelFallback.textContent = this.getAttribute('label') || ''
   }
 
   syncSuffix() {
@@ -764,7 +760,7 @@ export class TotMenuItem extends HTMLElement {
   }
 
   handleSubmenuOpen() {
-    if (!this.hasSubmenu) {
+    if (!this._hasSubmenu) {
       return
     }
 
@@ -811,7 +807,7 @@ export class TotMenuItem extends HTMLElement {
   }
 
   scheduleSubmenuPosition() {
-    if (!this.hasSubmenu || !this.isConnected) {
+    if (!this._hasSubmenu || !this.isConnected) {
       return
     }
 
@@ -820,7 +816,7 @@ export class TotMenuItem extends HTMLElement {
   }
 
   updateSubmenuPosition() {
-    if (!this.hasSubmenu) {
+    if (!this._hasSubmenu) {
       return
     }
 
@@ -880,6 +876,18 @@ export class TotMenuLabel extends HTMLElement {
   getBase() {
     return this.shadowRoot?.querySelector('.label') || null
   }
+}
+
+function getAssignedText(slot) {
+  const nodes = slot.assignedNodes({ flatten: true })
+  const parts = []
+  for (let i = 0; i < nodes.length; i++) {
+    const text = nodes[i].textContent?.replace(/\s+/g, ' ').trim()
+    if (text) {
+      parts.push(text)
+    }
+  }
+  return parts.join(' ')
 }
 
 function hasMeaningfulAssignedContent(slot) {

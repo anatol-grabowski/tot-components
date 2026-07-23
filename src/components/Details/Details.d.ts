@@ -10,11 +10,17 @@ export type TotDetails = {
     /** Fallback used when the `summary` slot is empty. @default '' */
     summary: string
 
+    /** Fallback used when the default content slot is empty. @default '' */
+    content: string
+
     /**
      * Prevents user interaction with the summary. The open state can still be
      * changed programmatically. @default false
      */
     disabled: boolean
+
+    /** Removes the outer border and radius. @default false */
+    flat: boolean
   }
 
   methods: {
@@ -46,7 +52,7 @@ export type TotDetails = {
 
   /** Slotted nodes receive no added attributes or slot props. */
   slots: {
-    /** Disclosure content. */
+    /** Disclosure content; takes precedence over the `content` fallback. */
     default: undefined
 
     /** Summary content; takes precedence over the `summary` fallback. */
