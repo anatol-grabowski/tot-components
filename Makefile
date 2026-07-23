@@ -1,7 +1,10 @@
 dev:
 	npx vite
 
-test:
+types:
+	node scripts/build-types.mjs
+
+test: types
 	node scripts/check-source.mjs
 
 deploy:

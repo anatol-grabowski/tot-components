@@ -21,6 +21,12 @@
   - contains the implementation of a specific component
   - may import other components (by `./` relative paths), should not import from `demoCommon.js`
   - the component doesn't register itself, only exports the component class
+- `src/components/[ComponentName]/[ComponentName].d.ts`
+  - TypeScript API description for the corresponding component
+  - must be self-contained and must not import declarations from other components
+- `dist/components.d.ts`
+  - generated declaration bundle; run `make types` after changing component declarations
+  - committed to the repository and should not be edited directly
 - `src/components/[ComponentName]/[ComponentName].demo.js`
   - contains code to render the demo of the component
   - shows how the component looks and behaves with various props

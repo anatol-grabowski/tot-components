@@ -1,3 +1,7 @@
 .vercel
 .env*
 /node_modules
+
+# Keep the generated declaration bundle in version control.
+!/dist/
+!/dist/components.d.ts
