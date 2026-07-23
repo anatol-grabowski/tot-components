@@ -60,6 +60,10 @@ export type TotList<T = unknown> = {
 
     /** Shows fading start/end shadows while more content exists in that direction. @default false */
     edgeShadows: boolean
+
+
+    /** `plain` removes the persistent outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {
@@ -104,7 +108,7 @@ export type TotList<T = unknown> = {
 
   /**
    * ```text
-   * base — bordered list wrapper and edge-shadow layer
+   * base — list wrapper and edge-shadow layer; borderless for `plain`
    * ├─ viewport — native scrolling role="list" element
    * │  └─ content
    * │     ├─ start-spacer — virtual space before the rendered range

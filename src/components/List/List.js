@@ -36,6 +36,12 @@ const listStyle = `
     width: 100%;
   }
 
+
+  :host([variant="plain"]) .list {
+    border: 0;
+    border-radius: 0;
+  }
+
   .viewport {
     height: 100%;
     max-height: 100%;
@@ -215,6 +221,7 @@ export class TotList extends HTMLElement {
       'estimated-item-size',
       'edge-shadows',
       'horizontal',
+      'variant',
     ]
   }
 
@@ -328,6 +335,14 @@ export class TotList extends HTMLElement {
     setBooleanAttribute(this, 'horizontal', value)
   }
 
+  get variant() {
+    return normalizeVariant(this.getAttribute('variant'))
+  }
+
+  set variant(value) {
+    this.setAttribute('variant', normalizeVariant(value))
+  }
+
   connectedCallback() {
     this.render()
     this.attachListeners()
@@ -362,6 +377,10 @@ export class TotList extends HTMLElement {
 
     if (name === 'edge-shadows') {
       this.scheduleEdgeUpdate()
+      return
+    }
+
+    if (name === 'variant') {
       return
     }
 
@@ -1250,4 +1269,8 @@ function emit(element, name, detail) {
     composed: true,
     detail: detail || {},
   }))
+}
+
+function normalizeVariant(value) {
+  return value === 'plain' ? 'plain' : 'default'
 }

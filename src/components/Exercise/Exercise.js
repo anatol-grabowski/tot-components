@@ -396,6 +396,7 @@ export class TotExercise extends HTMLElement {
       'streaming',
       'label',
       'help-text',
+      'variant',
     ]
   }
 
@@ -545,6 +546,14 @@ export class TotExercise extends HTMLElement {
     setBooleanAttribute(this, 'streaming', value)
   }
 
+  get variant() {
+    return normalizeVariant(this.getAttribute('variant'))
+  }
+
+  set variant(value) {
+    this.setAttribute('variant', normalizeVariant(value))
+  }
+
   connectedCallback() {
     this.render()
   }
@@ -621,6 +630,7 @@ export class TotExercise extends HTMLElement {
     markdown.label = this.label
     markdown.helpText = this.helpText
     markdown.streaming = this.streaming
+    markdown.variant = this.variant
     markdown.value = result.markdown
     exercise.insertBefore(markdown, footer)
 
@@ -671,6 +681,7 @@ export class TotExercise extends HTMLElement {
     const label = this.label
     const helpText = this.helpText
     const streaming = this.streaming
+    const variant = this.variant
     if (markdown.label !== label) {
       markdown.label = label
     }
@@ -679,6 +690,9 @@ export class TotExercise extends HTMLElement {
     }
     if (markdown.streaming !== streaming) {
       markdown.streaming = streaming
+    }
+    if (markdown.variant !== variant) {
+      markdown.variant = variant
     }
     if (markdown.value !== result.markdown) {
       markdown.value = result.markdown
@@ -1473,4 +1487,8 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
+}
+
+function normalizeVariant(value) {
+  return value === 'plain' ? 'plain' : 'default'
 }

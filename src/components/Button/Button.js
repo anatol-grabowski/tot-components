@@ -100,17 +100,26 @@ const buttonStyle = `
     --button-color-hover: var(--tot-color-neutral-0, #fff);
   }
 
-  .button--outline:not(.button--default) {
+
+  .button--plain {
+    --button-background-color: transparent;
+    --button-background-color-hover: var(--tot-color-neutral-200, #e2e8f0);
+    --button-background-color-active: var(--tot-color-neutral-300, #cbd5e1);
+    --button-border-color: transparent;
+    --button-border-color-hover: transparent;
+  }
+
+  .button--outline:not(.button--default):not(.button--plain) {
     background: transparent;
     color: var(--button-border-color);
   }
 
-  .button--outline:not(.button--default):hover:not(.button--disabled) {
+  .button--outline:not(.button--default):not(.button--plain):hover:not(.button--disabled) {
     background: var(--button-outline-background-color-hover);
     color: var(--button-border-color-hover);
   }
 
-  .button--outline:not(.button--default):active:not(.button--disabled) {
+  .button--outline:not(.button--default):not(.button--plain):active:not(.button--disabled) {
     background: var(--button-outline-background-color-active);
   }
 
@@ -208,7 +217,7 @@ const buttonStyle = `
   }
 `
 
-const variants = ['default', 'primary', 'danger', 'create']
+const variants = ['default', 'plain', 'primary', 'danger', 'create']
 const sizes = ['small', 'medium', 'large']
 
 export class TotButton extends HTMLElement {

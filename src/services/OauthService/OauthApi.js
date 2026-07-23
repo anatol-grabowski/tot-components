@@ -1,4 +1,4 @@
-import { RequestService } from '../RequestService.js'
+import { RequestService } from '../RequestService/RequestService.js'
 
 /**
  * @typedef {Object.<string, unknown>} OauthExtraParams

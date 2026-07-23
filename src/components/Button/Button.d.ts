@@ -7,14 +7,15 @@ export type TotButton = {
     label: string
 
     /** @default 'default' */
-    variant: 'default' | 'primary' | 'danger' | 'create'
+    variant: 'default' | 'plain' | 'primary' | 'danger' | 'create'
 
     /** @default 'medium' */
     size: 'small' | 'medium' | 'large'
 
     /**
      * Uses outline styling for colored variants. The `default` variant is
-     * already outline-based, so this has no effect on it.
+     * already outline-based and `plain` is borderless, so this has no effect
+     * on either one.
      * @default false
      */
     outline: boolean

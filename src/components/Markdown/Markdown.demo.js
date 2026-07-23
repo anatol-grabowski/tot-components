@@ -192,8 +192,8 @@ registerDemo({
         <tot-markdown id="pandocPreview" pandoc label="Pandoc markdown" help-text="Pandoc mode adds attributes, colored spans, math, line blocks, definitions, fenced divs, footnotes, and raw HTML sanitization."></tot-markdown>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Pandoc slot placeholder</div>
-        <tot-markdown id="staticSlotPreview" pandoc label="Exercise 1" help-text="The placeholder renders as a normal span until matching light-DOM slot content is provided.">
+        <div class="demo-label">Plain Pandoc slot placeholder</div>
+        <tot-markdown id="staticSlotPreview" pandoc variant="plain" label="Exercise 1" help-text="The placeholder renders as a normal span until matching light-DOM slot content is provided.">
           <span slot="fill-the-blank" class="markdown-slot-demo">
             <input class="markdown-slot-input" aria-label="Fill the blank" placeholder="answer">
             <button class="markdown-slot-button" type="button" data-action="show-static-key">show key</button>

@@ -12,14 +12,15 @@ export type TotButton = {
     label: string
 
     /** @default 'default' */
-    variant: 'default' | 'primary' | 'danger' | 'create'
+    variant: 'default' | 'plain' | 'primary' | 'danger' | 'create'
 
     /** @default 'medium' */
     size: 'small' | 'medium' | 'large'
 
     /**
      * Uses outline styling for colored variants. The `default` variant is
-     * already outline-based, so this has no effect on it.
+     * already outline-based and `plain` is borderless, so this has no effect
+     * on either one.
      * @default false
      */
     outline: boolean
@@ -1000,6 +1001,10 @@ export type TotList<T = unknown> = {
 
     /** Shows fading start/end shadows while more content exists in that direction. @default false */
     edgeShadows: boolean
+
+
+    /** `plain` removes the persistent outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {
@@ -1044,7 +1049,7 @@ export type TotList<T = unknown> = {
 
   /**
    * ```text
-   * base — bordered list wrapper and edge-shadow layer
+   * base — list wrapper and edge-shadow layer; borderless for `plain`
    * ├─ viewport — native scrolling role="list" element
    * │  └─ content
    * │     ├─ start-spacer — virtual space before the rendered range
@@ -2293,6 +2298,10 @@ export type TotMarkdown = {
     /** Shows streaming indicators and a caret after the rendered output. @default false */
     streaming: boolean
 
+
+    /** `plain` removes the preview article's outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
+
     /** Whether the fullscreen preview is currently open. */
     readonly fullscreen: boolean
   }
@@ -2330,7 +2339,7 @@ export type TotMarkdown = {
    * ```text
    * base — main preview wrapper
    * ├─ label
-   * ├─ preview — native article preview
+   * ├─ preview — native article preview; borderless for `plain`
    * │  ├─ content — rendered markdown
    * │  ├─ streaming-indicator
    * │  └─ fullscreen-button
@@ -2441,6 +2450,10 @@ export type TotExercise = {
 
     /** Shows the nested markdown streaming state. @default false */
     streaming: boolean
+
+
+    /** `plain` removes the nested markdown preview's outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {
@@ -2732,8 +2745,8 @@ export type TotDetails = {
      */
     disabled: boolean
 
-    /** Removes the outer border and radius. @default false */
-    flat: boolean
+    /** `plain` removes the persistent outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {

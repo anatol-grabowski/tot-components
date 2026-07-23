@@ -102,7 +102,7 @@ registerDemo({
       </div>
 
       <div class="stack demo-group">
-        <div class="demo-label">Generator and empty state</div>
+        <div class="demo-label">Generator and plain empty state</div>
         <div class="demo-grid">
           <tot-list id="generatorList" style="--tot-list-height: 10rem;">
             <template slot="item">
@@ -113,7 +113,7 @@ registerDemo({
             </template>
             <div slot="end" class="list-demo-status">Generator exhausted.</div>
           </tot-list>
-          <tot-list id="emptyList" style="--tot-list-height: 10rem;">
+          <tot-list id="emptyList" variant="plain" style="--tot-list-height: 10rem;">
             <div slot="empty" class="list-demo-status">This list is intentionally empty.</div>
           </tot-list>
         </div>

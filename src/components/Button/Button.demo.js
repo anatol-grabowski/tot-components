@@ -9,6 +9,7 @@ registerDemo({
         label: 'Variants',
         html: `
           <tot-button variant="default">Default</tot-button>
+          <tot-button variant="plain">Plain</tot-button>
           <tot-button variant="primary">Primary</tot-button>
           <tot-button variant="create">Create</tot-button>
           <tot-button variant="danger">Danger</tot-button>

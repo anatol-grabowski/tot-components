@@ -48,6 +48,12 @@ const markdownStyle = `
     width: 100%;
   }
 
+
+  :host([variant="plain"]) .markdown {
+    border: 0;
+    border-radius: 0;
+  }
+
   .markdown__content {
     max-width: 100%;
     min-width: 0;
@@ -543,7 +549,7 @@ const pandocBlockedHtmlTags = new Set([
 
 export class TotMarkdown extends HTMLElement {
   static get observedAttributes() {
-    return ['value', 'streaming', 'label', 'help-text', 'pandoc']
+    return ['value', 'streaming', 'label', 'help-text', 'pandoc', 'variant']
   }
 
   constructor() {
@@ -617,6 +623,14 @@ export class TotMarkdown extends HTMLElement {
 
   set streaming(value) {
     setBooleanAttribute(this, 'streaming', value)
+  }
+
+  get variant() {
+    return normalizeVariant(this.getAttribute('variant'))
+  }
+
+  set variant(value) {
+    this.setAttribute('variant', normalizeVariant(value))
   }
 
   connectedCallback() {
@@ -2241,4 +2255,8 @@ function getExitFullscreenIcon() {
     <path d="M2.5 10h3.5v3.5"></path>
     <path d="M13.5 10h-3.5v3.5"></path>
   </svg>`
+}
+
+function normalizeVariant(value) {
+  return value === 'plain' ? 'plain' : 'default'
 }

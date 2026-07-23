@@ -20,6 +20,10 @@ export type TotMarkdown = {
     /** Shows streaming indicators and a caret after the rendered output. @default false */
     streaming: boolean
 
+
+    /** `plain` removes the preview article's outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
+
     /** Whether the fullscreen preview is currently open. */
     readonly fullscreen: boolean
   }
@@ -57,7 +61,7 @@ export type TotMarkdown = {
    * ```text
    * base — main preview wrapper
    * ├─ label
-   * ├─ preview — native article preview
+   * ├─ preview — native article preview; borderless for `plain`
    * │  ├─ content — rendered markdown
    * │  ├─ streaming-indicator
    * │  └─ fullscreen-button

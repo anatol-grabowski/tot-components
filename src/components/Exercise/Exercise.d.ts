@@ -79,6 +79,10 @@ export type TotExercise = {
 
     /** Shows the nested markdown streaming state. @default false */
     streaming: boolean
+
+
+    /** `plain` removes the nested markdown preview's outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {

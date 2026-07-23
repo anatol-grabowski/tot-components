@@ -58,12 +58,12 @@ registerDemo({
         <tot-exercise id="mixedExercise" label="Mixed grammar exercise" help-text="Use the eye buttons to show or hide each correct answer."></tot-exercise>
       </div>
       <div class="stack demo-group">
-        <div class="demo-label">Streaming exercise markdown</div>
+        <div class="demo-label">Streaming exercise markdown in the plain variant</div>
         <div class="row">
           <tot-button id="streamExercise" size="small" label="Stream exercise"></tot-button>
           <tot-button id="showExercise" size="small" label="Show complete"></tot-button>
         </div>
-        <tot-exercise id="streamingExercise" label="Streaming travel exercise" help-text="Controls appear when their complete placeholders arrive."></tot-exercise>
+        <tot-exercise id="streamingExercise" variant="plain" label="Streaming travel exercise" help-text="Controls appear when their complete placeholders arrive."></tot-exercise>
       </div>
     `
 

@@ -27,6 +27,17 @@
 - `dist/components.d.ts`
   - generated declaration bundle; run `make types` after changing component declarations
   - committed to the repository and should not be edited directly
+
+- `src/services/[ServiceType]/[ServiceVariant].js`
+  - concrete framework-independent or technology-specific service implementation
+  - related variants live in the same service-type directory (or a small technology subdirectory)
+  - variants should implement the generic `.d.ts` contract structurally; a runtime base-class file is unnecessary
+  - use relative `.js` imports and avoid external dependencies; an unavoidable runtime bundle must be committed under `src/vendor/`
+  - document assumptions, side effects, failure modes, persistence/permission behavior, and every public method with JSDoc
+- `src/services/[ServiceType]/[ServiceType].d.ts`
+  - one generic TypeScript API description shared by every implementation variant
+  - do not create per-variant declaration files or describe technology-specific constructors in the generic declaration
+  - stored beside the implementation variants and not merged into `dist/components.d.ts`
 - `src/components/[ComponentName]/[ComponentName].demo.js`
   - contains code to render the demo of the component
   - shows how the component looks and behaves with various props

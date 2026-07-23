@@ -19,7 +19,7 @@ const detailsStyle = `
     overflow: hidden;
   }
 
-  :host([flat]) .details {
+  :host([variant="plain"]) .details {
     border: 0;
     border-radius: 0;
   }
@@ -113,9 +113,11 @@ const detailsStyle = `
   }
 `
 
+const variants = ['default', 'plain']
+
 export class TotDetails extends HTMLElement {
   static get observedAttributes() {
-    return ['open', 'summary', 'content', 'disabled']
+    return ['open', 'summary', 'content', 'disabled', 'variant']
   }
 
   constructor() {
@@ -189,12 +191,12 @@ export class TotDetails extends HTMLElement {
     setBooleanAttribute(this, 'disabled', value)
   }
 
-  get flat() {
-    return this.hasAttribute('flat')
+  get variant() {
+    return getSupportedValue(this.getAttribute('variant'), variants, 'default')
   }
 
-  set flat(value) {
-    setBooleanAttribute(this, 'flat', value)
+  set variant(value) {
+    this.setAttribute('variant', getSupportedValue(value, variants, 'default'))
   }
 
   connectedCallback() {
@@ -314,4 +316,8 @@ function setNullableAttribute(element, name, value) {
   } else {
     element.setAttribute(name, String(value))
   }
+}
+
+function getSupportedValue(value, values, fallback) {
+  return values.includes(value) ? value : fallback
 }

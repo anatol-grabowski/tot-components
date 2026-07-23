@@ -19,8 +19,8 @@ export type TotDetails = {
      */
     disabled: boolean
 
-    /** Removes the outer border and radius. @default false */
-    flat: boolean
+    /** `plain` removes the persistent outer border and radius. @default 'default' */
+    variant: 'default' | 'plain'
   }
 
   methods: {
