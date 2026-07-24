@@ -63,7 +63,14 @@ for (let i = 0; i < declarationPaths.length; i++) {
     exportedTypes.add(match[1])
   }
 
-  declarations.push(source)
+  const componentName = basename(dirname(path))
+  const section = `/* ==========================================================================
+ * Component: ${componentName}
+ * Source: ${displayPath}
+ * ========================================================================== */`
+  declarations.push(`${section}
+
+${source}`)
 }
 
 const header = `/**

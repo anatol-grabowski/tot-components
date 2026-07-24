@@ -3,6 +3,8 @@ dev:
 
 types:
 	node scripts/build-types.mjs
+	node scripts/build-service-types.mjs
+	node scripts/build-utils-types.mjs
 
 test: types
 	node scripts/check-source.mjs

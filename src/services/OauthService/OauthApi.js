@@ -161,7 +161,7 @@ function _normalizeScope(scope) {
 /**
  * @param {OauthApi} api
  * @param {Object.<string, unknown>} body
- * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object, config: Object, request: Response, url: string }>}
+ * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object.<string, unknown>, config: Object.<string, unknown>, request: Response, url: string }>}
  */
 async function _requestToken(api, body) {
   const headers = {
@@ -264,7 +264,7 @@ export class OauthApi {
    * service method instead.
    *
    * @param {Partial<OauthTokenRequest> & Pick<OauthTokenRequest, 'code' | 'code_verifier'>} request
-   * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object, config: Object, request: Response, url: string }>}
+   * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object.<string, unknown>, config: Object.<string, unknown>, request: Response, url: string }>}
    */
   async exchangeCodeForToken(request) {
     const body = {
@@ -287,7 +287,7 @@ export class OauthApi {
    * Browser-only implicit/token flows usually do not provide refresh tokens.
    *
    * @param {Partial<OauthRefreshTokenRequest> & Pick<OauthRefreshTokenRequest, 'refresh_token'>} request
-   * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object, config: Object, request: Response, url: string }>}
+   * @returns {Promise<{ data: OauthTokenResponse, status: number, statusText: string, headers: Object.<string, unknown>, config: Object.<string, unknown>, request: Response, url: string }>}
    */
   async refreshAccessToken(request) {
     const body = {

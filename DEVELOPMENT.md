@@ -38,6 +38,19 @@
   - one generic TypeScript API description shared by every implementation variant
   - do not create per-variant declaration files or describe technology-specific constructors in the generic declaration
   - stored beside the implementation variants and not merged into `dist/components.d.ts`
+- `dist/services.d.ts`
+  - generated declaration bundle for all service contracts; run `make types` after changing service declarations
+  - committed to the repository and should not be edited directly
+- `src/utils/[utilityName].js`
+  - standalone general-purpose utility implementation written in plain JavaScript
+  - each utility must be self-contained and must not import another utility, component, or service
+  - utilities are public helpers for application code; components and services must not import or use them
+- `src/utils/[utilityName].d.ts`
+  - self-contained TypeScript API description for the corresponding utility
+  - must not import declarations from another utility
+- `dist/utils.d.ts`
+  - generated declaration bundle for all utilities; run `make types` after changing utility declarations
+  - committed to the repository and should not be edited directly
 - `src/components/[ComponentName]/[ComponentName].demo.js`
   - contains code to render the demo of the component
   - shows how the component looks and behaves with various props

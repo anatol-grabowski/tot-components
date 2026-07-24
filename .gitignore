@@ -5,3 +5,5 @@
 # Keep the generated declaration bundle in version control.
 !/dist/
 !/dist/components.d.ts
+!/dist/services.d.ts
+!/dist/utils.d.ts

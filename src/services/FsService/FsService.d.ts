@@ -13,52 +13,87 @@ export interface Stats {
   birthtime: Date
 }
 
+/** Options shared by text and binary file reads. */
+export interface FsReadOptions {
+  /** A string requests text; `null` or omission requests binary data. */
+  encoding?: string | null
+}
+
+/** Options shared by text and binary file writes. */
+export interface FsWriteOptions {
+  /** Text encoding where supported; binary data ignores this option. */
+  encoding?: string | null
+}
+
+/** Directory creation options. */
+export interface FsMkdirOptions {
+  recursive?: boolean
+}
+
+/** File or directory removal options. */
+export interface FsRmOptions {
+  recursive?: boolean
+  force?: boolean
+}
+
 /**
- * Generic read-only asynchronous file-system API implemented by all read-only
- * and writable backends.
+ * Generic read-only asynchronous file-system contract.
  *
- * Operations reject on failure. Implementations should expose Node-like error
- * codes such as `ENOENT`, `ENOTDIR`, and `EISDIR` when applicable.
+ * Current implementation:
+ * - `FsRoServiceFileInput.js` exposes browser-selected or dropped `File`
+ *   objects as an in-memory, read-only hierarchy. It normalizes paths, creates
+ *   synthetic directories, and additionally provides factories for `FileList`
+ *   and `DataTransferItem` input.
+ *
+ * Writable implementations also satisfy this contract. Operations reject on
+ * failure and should expose Node-like error codes such as `ENOENT`, `ENOTDIR`,
+ * and `EISDIR` when applicable. Constructors and implementation-specific
+ * factories or permission methods are intentionally not part of the contract.
  */
-export abstract class FsRoService {
+export interface FsRoService {
   /**
    * Reads text when `encoding` is a string, otherwise returns binary data.
    * Binary is the default when no encoding is supplied.
    */
-  abstract readFile(
-    path: string,
-    options?: { encoding?: string | null } | null,
-  ): Promise<string | ArrayBuffer>
+  readFile(path: string, options?: FsReadOptions | null): Promise<string | ArrayBuffer>
 
   /** Lists direct child names, not full paths. */
-  abstract readdir(path: string): Promise<string[]>
+  readdir(path: string): Promise<string[]>
 
   /** Returns metadata or rejects with `ENOENT` when the path is absent. */
-  abstract stat(path: string): Promise<Stats>
+  stat(path: string): Promise<Stats>
 }
 
-/** Generic writable asynchronous file-system API. */
-export abstract class FsService extends FsRoService {
+/**
+ * Generic writable asynchronous file-system contract.
+ *
+ * Current implementations:
+ * - `FsServiceNode.js` delegates to `node:fs/promises`; paths, permissions,
+ *   encodings, symbolic-link behavior, and errors follow Node and the host OS.
+ * - `FsServiceCapacitor.js` delegates to an injected or globally registered
+ *   Capacitor `FileStorage` plugin. Binary data crosses the bridge as base64 and
+ *   directory selection is available as an implementation-specific extension.
+ * - `FsServiceArchive.js` creates a dependency-free in-memory file system from
+ *   ZIP, TAR, or gzip-compressed TAR bytes. Archive parsing is lazy, writes do
+ *   not modify or serialize the original archive, and text writes support UTF-8.
+ *
+ * All writable implementations expose the methods below. Constructors,
+ * initialization helpers, plugin injection, directory pickers, and other
+ * implementation-specific extensions are intentionally outside the contract.
+ */
+export interface FsService extends FsRoService {
   /** Replaces or creates a text or binary file. */
-  abstract writeFile(
-    path: string,
-    data: string | ArrayBuffer,
-    options?: { encoding?: string | null },
-  ): Promise<void>
+  writeFile(path: string, data: string | ArrayBuffer, options?: FsWriteOptions): Promise<void>
 
   /** Appends text or binary data. */
-  abstract appendFile(
-    path: string,
-    data: string | ArrayBuffer,
-    options?: { encoding?: string | null },
-  ): Promise<void>
+  appendFile(path: string, data: string | ArrayBuffer, options?: FsWriteOptions): Promise<void>
 
   /** Creates one directory, optionally including missing parent directories. */
-  abstract mkdir(path: string, options?: { recursive?: boolean }): Promise<void>
+  mkdir(path: string, options?: FsMkdirOptions): Promise<void>
 
   /** Renames or moves a file or directory. */
-  abstract rename(oldPath: string, newPath: string): Promise<void>
+  rename(oldPath: string, newPath: string): Promise<void>
 
   /** Removes a file or directory. */
-  abstract rm(path: string, options?: { recursive?: boolean, force?: boolean }): Promise<void>
+  rm(path: string, options?: FsRmOptions): Promise<void>
 }

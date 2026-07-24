@@ -3,6 +3,11 @@
  * Edit `src/components/[Component]/[Component].d.ts`, not this file.
  */
 
+/* ==========================================================================
+ * Component: Button
+ * Source: src/components/Button/Button.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-button>` - an action control based on a native `<button type="button">`.
  */
@@ -73,6 +78,11 @@ export type TotButton = {
    */
   parts: 'base' | 'content' | 'label' | 'caret' | 'loader'
 }
+
+/* ==========================================================================
+ * Component: Checkbox
+ * Source: src/components/Checkbox/Checkbox.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-checkbox>` - a checkbox control based on a native
@@ -147,6 +157,11 @@ export type TotCheckbox = {
     | 'help-text'
 }
 
+/* ==========================================================================
+ * Component: Navbar
+ * Source: src/components/Navbar/Navbar.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-navbar>` - a navigation bar with native button tabs and optional content
  * on either side.
@@ -211,6 +226,11 @@ export type TotNavbar = {
    */
   parts: 'base' | 'prefix' | 'tabs' | 'tab' | 'suffix'
 }
+
+/* ==========================================================================
+ * Component: Tabs
+ * Source: src/components/Tabs/Tabs.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-tabs>` - a horizontally scrollable tablist based on native buttons.
@@ -280,6 +300,11 @@ export type TotTabs = {
     | 'tab-text'
 }
 
+/* ==========================================================================
+ * Component: AudioPlayer
+ * Source: src/components/AudioPlayer/AudioPlayer.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-audio-player>` - a compact waveform player backed by a native
  * `<audio>` element.
@@ -341,6 +366,11 @@ export type TotAudioPlayer = {
    */
   parts: 'base' | 'play-button' | 'waveform' | 'time' | 'audio'
 }
+
+/* ==========================================================================
+ * Component: AudioRecorder
+ * Source: src/components/AudioRecorder/AudioRecorder.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-audio-recorder>` - a microphone recorder based on `MediaRecorder`,
@@ -444,6 +474,11 @@ export type TotAudioRecorder = {
     | 'playback'
 }
 
+/* ==========================================================================
+ * Component: Divider
+ * Source: src/components/Divider/Divider.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-divider>` - a horizontal or vertical visual separator.
  */
@@ -464,6 +499,11 @@ export type TotDivider = {
   /** `base` is the complete line and native separator-role element. */
   parts: 'base'
 }
+
+/* ==========================================================================
+ * Component: Menu
+ * Source: src/components/Menu/Menu.d.ts
+ * ========================================================================== */
 
 /** A divider entry in `TotMenu.items` or `TotDropdown.items`. */
 export type TotMenuDividerConfig = {
@@ -645,6 +685,11 @@ export type TotMenuLabel = {
   parts: 'base'
 }
 
+/* ==========================================================================
+ * Component: Dropdown
+ * Source: src/components/Dropdown/Dropdown.d.ts
+ * ========================================================================== */
+
 type TotDropdownMenuConfig =
   | { type: 'divider' }
   | { type: 'label'; label: string }
@@ -723,6 +768,11 @@ export type TotDropdown = {
    */
   parts: 'base' | 'trigger' | 'button' | 'panel' | 'menu'
 }
+
+/* ==========================================================================
+ * Component: Dialog
+ * Source: src/components/Dialog/Dialog.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-dialog>` - a compact confirm/cancel dialog built on the same overlay
@@ -840,6 +890,11 @@ export type TotDialog = {
     | 'confirm-button'
 }
 
+/* ==========================================================================
+ * Component: Drawer
+ * Source: src/components/Drawer/Drawer.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-drawer>` - a viewport or container edge panel with optional resizing.
  */
@@ -938,6 +993,11 @@ export type TotDrawer = {
     | 'footer'
     | 'resize-handle'
 }
+
+/* ==========================================================================
+ * Component: List
+ * Source: src/components/List/List.d.ts
+ * ========================================================================== */
 
 /** Context attached to elements cloned from a `<tot-list>` item template. */
 export type TotListItemContext<T = unknown> = {
@@ -1080,6 +1140,11 @@ export type TotList<T = unknown> = {
     | 'end-shadow'
 }
 
+/* ==========================================================================
+ * Component: Hint
+ * Source: src/components/Hint/Hint.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-hint>` - a compact text-only panel that follows the pointer or appears
  * near an explicit viewport coordinate. Unlike `<tot-tooltip>`, its panel does
@@ -1137,6 +1202,11 @@ export type TotHint = {
    */
   parts: 'base' | 'anchor' | 'panel' | 'surface' | 'content'
 }
+
+/* ==========================================================================
+ * Component: Tooltip
+ * Source: src/components/Tooltip/Tooltip.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-tooltip>` - an interactive popup anchored to its default slot. The
@@ -1209,6 +1279,11 @@ export type TotTooltip = {
   parts: 'base' | 'anchor' | 'panel' | 'surface' | 'content'
 }
 
+/* ==========================================================================
+ * Component: Toast
+ * Source: src/components/Toast/Toast.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-toast>` - a manager for multiple temporary bottom notifications. Keep
  * one instance in the document and call `show()` for each message; every toast
@@ -1231,6 +1306,11 @@ export type TotToast = {
   /** `base` is the managed stack and `toast` is assigned to every temporary message. */
   parts: 'base' | 'toast'
 }
+
+/* ==========================================================================
+ * Component: Notification
+ * Source: src/components/Notification/Notification.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-notification>` - an inline or toast-positioned status surface that
@@ -1317,6 +1397,11 @@ export type TotNotification = {
   parts: 'base' | 'icon' | 'message' | 'close-button' | 'countdown'
 }
 
+/* ==========================================================================
+ * Component: Input
+ * Source: src/components/Input/Input.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-input>` - a single-line field based on a native `<input>`.
  */
@@ -1402,6 +1487,11 @@ export type TotInput = {
     | 'password-button'
     | 'help-text'
 }
+
+/* ==========================================================================
+ * Component: Calendar
+ * Source: src/components/Calendar/Calendar.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-calendar>` - an infinitely scrolling, windowed calendar with a linked
@@ -1626,6 +1716,11 @@ export type TotCalendar = {
 
 }
 
+/* ==========================================================================
+ * Component: Chart
+ * Source: src/components/Chart/Chart.d.ts
+ * ========================================================================== */
+
 /**
  * Minimal public surface of the bundled Chart.js instance. The complete
  * runtime object is the normal Chart.js 4.5.1 `Chart` instance.
@@ -1688,6 +1783,11 @@ export type TotChart = {
    */
   parts: 'base' | 'canvas' | 'status'
 }
+
+/* ==========================================================================
+ * Component: FileInput
+ * Source: src/components/FileInput/FileInput.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-file-input>` - a file picker and dropzone based on a native
@@ -1794,6 +1894,11 @@ export type TotFileInput = {
     | 'help-text'
 }
 
+/* ==========================================================================
+ * Component: HorizontalSelect
+ * Source: src/components/HorizontalSelect/HorizontalSelect.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-horizontal-select>` - a single- or multiple-selection row based on
  * native `<button type="button">` options in an ARIA listbox.
@@ -1861,6 +1966,11 @@ export type TotHorizontalSelect = {
    */
   parts: 'base' | 'label' | 'scroller' | 'options' | 'option' | 'help-text'
 }
+
+/* ==========================================================================
+ * Component: Select
+ * Source: src/components/Select/Select.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-select>` - a popup single- or multiple-selection control implemented as
@@ -1984,6 +2094,11 @@ export type TotSelect = {
     | 'help-text'
 }
 
+/* ==========================================================================
+ * Component: Modal
+ * Source: src/components/Modal/Modal.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-modal>` - a large responsive modal surface. It is centered on wider
  * viewports and fills the viewport on narrow screens. Open modals and dialogs
@@ -2056,6 +2171,11 @@ export type TotModal = {
     | 'body'
     | 'footer'
 }
+
+/* ==========================================================================
+ * Component: Textarea
+ * Source: src/components/Textarea/Textarea.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-textarea>` - a multiline field based on a native `<textarea>` with an
@@ -2150,6 +2270,11 @@ export type TotTextarea = {
     | 'close-fullscreen-button'
     | 'fullscreen-textarea'
 }
+
+/* ==========================================================================
+ * Component: Table
+ * Source: src/components/Table/Table.d.ts
+ * ========================================================================== */
 
 /** A cell accepted by `<tot-table>`. */
 export type TotTableCell = {
@@ -2261,6 +2386,11 @@ export type TotTable = {
   parts: 'base' | 'empty' | 'table' | 'cell' | `type-${string}`
 }
 
+/* ==========================================================================
+ * Component: Markdown
+ * Source: src/components/Markdown/Markdown.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-markdown>` - a sanitized markdown preview rendered inside a native
  * `<article>`, with Pandoc extensions, streaming state, named placeholders,
@@ -2353,6 +2483,11 @@ export type TotMarkdown = {
     | 'fullscreen-content'
     | 'fullscreen-footer'
 }
+
+/* ==========================================================================
+ * Component: Exercise
+ * Source: src/components/Exercise/Exercise.d.ts
+ * ========================================================================== */
 
 /** A response state accepted by the `responses` property. */
 export type TotExerciseResponseInput = {
@@ -2474,6 +2609,11 @@ export type TotExercise = {
   parts: 'base' | 'markdown' | 'footer' | 'fullscreen-footer'
 }
 
+/* ==========================================================================
+ * Component: ThemeSelector
+ * Source: src/components/ThemeSelector/ThemeSelector.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-theme-selector>` - a compact theme picker composed from
  * `<tot-dropdown>`, `<tot-button>`, `<tot-menu>`, and `<tot-menu-item>`.
@@ -2567,6 +2707,11 @@ export type TotThemeSelector = {
     | 'item-check'
 }
 
+/* ==========================================================================
+ * Component: CopyButton
+ * Source: src/components/CopyButton/CopyButton.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-copy-button>` - a compact native button that copies an explicit value
  * or text resolved from another element.
@@ -2640,6 +2785,11 @@ export type TotCopyButton = {
     | 'feedback'
 }
 
+/* ==========================================================================
+ * Component: Rating
+ * Source: src/components/Rating/Rating.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-rating>` - a keyboard and pointer-controlled slider rendered as
  * partially filled symbols.
@@ -2712,6 +2862,11 @@ export type TotRating = {
    */
   parts: 'base' | 'symbol' | 'inactive-symbol' | 'active-symbol'
 }
+
+/* ==========================================================================
+ * Component: Details
+ * Source: src/components/Details/Details.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-details>` - a compact disclosure widget based on native `<details>`
@@ -2801,6 +2956,11 @@ export type TotDetails = {
     | 'content'
 }
 
+/* ==========================================================================
+ * Component: Avatar
+ * Source: src/components/Avatar/Avatar.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-avatar>` - an avatar based on a native `<img>` with initials and icon fallbacks.
  */
@@ -2847,6 +3007,11 @@ export type TotAvatar = {
   parts: 'base' | 'image' | 'initials' | 'icon'
 }
 
+/* ==========================================================================
+ * Component: LoadingPlaceholder
+ * Source: src/components/LoadingPlaceholder/LoadingPlaceholder.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-loading-placeholder>` - a compact live-region placeholder used while
  * content or a result is being prepared.
@@ -2879,6 +3044,11 @@ export type TotLoadingPlaceholder = {
    */
   parts: 'base' | 'indicator' | 'message'
 }
+
+/* ==========================================================================
+ * Component: Labels
+ * Source: src/components/Labels/Labels.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-labels>` - an editable set of unique text labels with a compact
@@ -2953,6 +3123,11 @@ export type TotLabels = {
     | 'entry'
     | 'add-button'
 }
+
+/* ==========================================================================
+ * Component: Fields
+ * Source: src/components/Fields/Fields.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-fields>` - an editable ordered set of string key/value pairs. An
@@ -3037,6 +3212,11 @@ export type TotFields = {
     | 'field-key'
 }
 
+/* ==========================================================================
+ * Component: Suggestions
+ * Source: src/components/Suggestions/Suggestions.d.ts
+ * ========================================================================== */
+
 /**
  * `<tot-suggestions>` - selectable suggestion tiles with optional grouping,
  * item limiting, and line-based collapsing.
@@ -3101,6 +3281,11 @@ export type TotSuggestions = {
     | 'more'
     | 'collapse'
 }
+
+/* ==========================================================================
+ * Component: Tree
+ * Source: src/components/Tree/Tree.d.ts
+ * ========================================================================== */
 
 /**
  * `<tot-tree>` - a keyboard-navigable hierarchical selector. Assign one

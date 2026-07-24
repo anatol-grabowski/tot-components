@@ -21,7 +21,7 @@ export interface OauthLoginResult {
   tokenData: OauthTokenResponse | null
 }
 
-/** Persistent OAuth state normalized by OauthStorage. */
+/** Persistent OAuth state normalized by an OAuth storage implementation. */
 export interface OauthAuthData {
   loggedIn: boolean
   accessToken: string
@@ -51,7 +51,7 @@ export interface OauthTokenDetails extends Record<string, unknown> {
   picture?: string
 }
 
-/** Minimal request response shape consumed by the OAuth API service. */
+/** Minimal request response shape consumed by the OAuth API contract. */
 export interface OauthRequestResponse<T = unknown> {
   data: T
   status: number
@@ -63,29 +63,25 @@ export interface OauthRequestResponse<T = unknown> {
 }
 
 /**
- * Low-level OAuth endpoint helper.
+ * Generic contracts for the repository's browser OAuth workflow.
  *
- * It builds provider authorization URLs and performs token exchange/refresh
- * requests through a RequestService-compatible transport. Provider endpoint,
- * client, redirect, scope, and optional secret configuration are supplied by the
- * JavaScript implementation; constructor details are intentionally outside this
- * generic service contract.
+ * The current implementation is split into cooperating modules rather than
+ * alternative public APIs:
+ * - `OauthApi.js` builds provider authorization URLs and performs code exchange
+ *   and refresh requests through a compatible request service.
+ * - `OauthStorage.js` normalizes token state in browser `localStorage` when
+ *   available, with a Storage-compatible in-memory fallback. Its JWT parsing is
+ *   unverified and must not be used for authorization decisions.
+ * - `OauthService.js` coordinates PKCE or token login, redirect completion,
+ *   persistence, refresh, validity checks, and local logout in a browser.
+ *
+ * Provider endpoints, client configuration, storage keys, collaborator objects,
+ * and constructors are implementation details. The three interfaces below
+ * describe only the reusable structural roles applications may depend on.
  */
-export class OauthApi {
-  baseUrl: string
-  clientId: string
-  clientSecret: string
-  requestService: {
-    request<T = unknown>(config: Record<string, unknown>): Promise<OauthRequestResponse<T>>
-  }
-  tokenEndpoint: string
-  authorizeEndpoint: string
-  redirectUri: string
-  scope: string | string[]
-  authorizeParams: OauthExtraParams
-  tokenParams: OauthExtraParams
-  useBasicAuth: boolean
 
+/** Low-level OAuth provider endpoint contract. */
+export interface OauthApi {
   /** Returns the explicit redirect URI or the implementation's browser default. */
   getRedirectUri(): string
 
@@ -119,19 +115,8 @@ export class OauthApi {
   }): Promise<OauthRequestResponse<OauthTokenResponse>>
 }
 
-/**
- * Persistent OAuth state adapter.
- *
- * The default JavaScript implementation uses localStorage when available and an
- * in-memory Storage-compatible fallback otherwise. JWT claim parsing is for
- * display and convenience only; returned claims are not cryptographically
- * verified and must not be used for authorization decisions.
- */
-export class OauthStorage {
-  storage: Storage
-  authKey: string
-  lastLocationKey: string
-
+/** Persistent OAuth state contract. */
+export interface OauthStorage {
   getAuthData(): OauthAuthData
   setAuthData(data: Partial<OauthAuthData>): void
 
@@ -166,18 +151,8 @@ export class OauthStorage {
   getTokenDetailsFromToken(token: string): OauthTokenDetails | null
 }
 
-/**
- * High-level OAuth browser workflow service.
- *
- * It coordinates PKCE or browser-token login, redirect completion, token
- * persistence, refresh, validity checks, and local logout through compatible
- * OauthApi and OauthStorage instances. Login methods navigate `window.location`
- * and therefore normally do not return control before a page load.
- */
-export class OauthService {
-  oauthApi: OauthApi
-  authStorage: OauthStorage
-
+/** High-level OAuth browser workflow contract. */
+export interface OauthService {
   /** Starts PKCE authorization-code login and navigates to the provider. */
   initiateLogin(path?: string, authorizeParams?: OauthExtraParams): Promise<void>
 
@@ -196,7 +171,7 @@ export class OauthService {
   /** Stores a token redirect result represented as an object, hash, or search params. */
   completeTokenLogin(tokenData: OauthTokenResponse | URLSearchParams | string): void
 
-  /** Backward-compatible alias for completeCodeLogin(). */
+  /** Backward-compatible alias for `completeCodeLogin()`. */
   getAccessTokenByCode(code: string, tokenParams?: OauthExtraParams): Promise<OauthTokenResponse>
 
   /** Refreshes and stores tokens using the currently stored refresh token. */
@@ -211,3 +186,5 @@ export class OauthService {
   /** Clears local OAuth state; it does not end a provider-side session. */
   logOut(): void
 }
+
+

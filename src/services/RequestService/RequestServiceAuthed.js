@@ -147,10 +147,10 @@ export class RequestServiceAuthed {
    * initiate login once. Other eligible failures are retried up to three times.
    *
    * @template T
-   * @param {RequestConfig} config
+   * @param {RequestConfig} [config]
    * @returns {Promise<RequestResponse & { data: T }>}
    */
-  async request(config) {
+  async request(config = {}) {
     return await this._request(config, 0)
   }
 

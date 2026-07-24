@@ -1,4 +1,4 @@
-/** HTTP method names accepted by RequestService. */
+/** HTTP method names accepted by request-service implementations. */
 export type RequestMethod =
   | 'DELETE'
   | 'GET'
@@ -15,10 +15,10 @@ export type RequestMethod =
   | 'post'
   | 'put'
 
-/** Response body representation requested from fetch. */
+/** Response body representation requested from the transport. */
 export type RequestResponseType = 'arraybuffer' | 'blob' | 'json' | 'stream' | 'text'
 
-/** Query-string value supported by RequestService. */
+/** Query-string value supported by the generic request contract. */
 export type RequestParamValue =
   | string
   | number
@@ -29,7 +29,7 @@ export type RequestParamValue =
   | Record<string, unknown>
   | unknown[]
 
-/** Request body supported by RequestService. Plain objects are JSON encoded. */
+/** Request body supported by the generic request contract. */
 export type RequestData =
   | FormData
   | Blob
@@ -40,7 +40,7 @@ export type RequestData =
   | null
   | undefined
 
-/** Axios-like request configuration consumed by both request services. */
+/** Axios-like request configuration shared by request implementations. */
 export interface RequestConfig {
   url?: string
   baseURL?: string
@@ -56,7 +56,7 @@ export interface RequestConfig {
   validateStatus?(status: number): boolean
 }
 
-/** Axios-like response returned by RequestService. */
+/** Axios-like response returned by request implementations. */
 export interface RequestResponse<T = unknown> {
   data: T
   status: number
@@ -67,47 +67,42 @@ export interface RequestResponse<T = unknown> {
   url: string
 }
 
-/** Error thrown for transport, parsing, timeout, and rejected-status failures. */
+/**
+ * Transport error shape used by the fetch implementation and propagated by
+ * wrappers when they do not replace the failure with another error.
+ */
 export interface RequestError<T = unknown> extends Error {
   code: string | null
   config: RequestConfig
   request: Response | null
   response?: RequestResponse<T>
   status: number | null
-  /** Compatibility marker retained by the fetch-based implementation. */
   isAxiosError: true
   cause?: Error
   toJSON(): Record<string, unknown>
 }
 
 /**
- * Generic asynchronous HTTP request service.
+ * Generic asynchronous HTTP request contract.
  *
- * The concrete fetch implementation accepts Axios-like configuration, JSON
- * encodes plain-object bodies, rejects statuses outside its configured accepted
- * range, and returns Axios-like response/error objects. The generic declaration
- * intentionally does not prescribe constructor configuration.
+ * Current implementations:
+ * - `RequestService.js` is the direct Fetch API transport. It merges optional
+ *   defaults, serializes query values and plain-object bodies, parses the chosen
+ *   response type, rejects statuses rejected by `validateStatus`, and exposes
+ *   Axios-like response and `RequestError` objects.
+ * - `RequestServiceAuthed.js` is an OAuth-aware wrapper around any compatible
+ *   request service. It refreshes expiring tokens, coalesces concurrent refresh
+ *   operations, adds an Authorization header, starts login on authentication
+ *   failure, and retries eligible network/server failures. It may additionally
+ *   reject with an authentication-flow error and may return an authentication
+ *   error response after initiating login.
+ *
+ * Constructors, defaults, OAuth collaborators, retry state, and other public or
+ * private implementation extensions are intentionally outside this structural
+ * contract. Both implementations accept an omitted config object.
  */
-export class RequestService {
-  defaultConfig: RequestConfig
-
-  /** Sends one HTTP request and rejects with RequestError on failure. */
+export interface RequestService {
+  /** Sends one HTTP request. */
   request<T = unknown>(config?: RequestConfig): Promise<RequestResponse<T>>
 }
 
-/**
- * RequestService-compatible OAuth wrapper.
- *
- * It refreshes tokens nearing expiry, coalesces concurrent refreshes, adds the
- * current Authorization header, initiates login on authentication failure, and
- * retries eligible network/server failures. It is configured with compatible
- * OauthService, OauthStorage, and RequestService instances by the JavaScript
- * implementation; constructor details are intentionally outside this generic
- * service contract.
- */
-export class RequestServiceAuthed {
-  /** Sends one authenticated request using the same config/response shapes. */
-  request<T = unknown>(config: RequestConfig): Promise<RequestResponse<T>>
-}
-
-export default RequestServiceAuthed
