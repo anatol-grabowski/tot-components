@@ -10,7 +10,7 @@ test: types
 	node scripts/check-source.mjs
 
 deploy:
-	npx vercel --prod
+	NO_UPDATE_NOTIFIER=1 npx --yes vercel --prod
 
 watch:
 	python3 ./scripts/watch-tot-cmp-zip.py

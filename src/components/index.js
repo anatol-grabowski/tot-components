@@ -21,6 +21,8 @@ import { TotInput } from './Input/Input.js'
 import { TotCalendar } from './Calendar/Calendar.js'
 import { TotChart } from './Chart/Chart.js'
 import { TotFileInput } from './FileInput/FileInput.js'
+import { TotImagePreview } from './ImagePreview/ImagePreview.js'
+import { TotImageSearch } from './ImageSearch/ImageSearch.js'
 import { TotHorizontalSelect } from './HorizontalSelect/HorizontalSelect.js'
 import { TotSelect } from './Select/Select.js'
 import { TotModal } from './Modal/Modal.js'
@@ -73,6 +75,8 @@ defineElement('tot-input', TotInput)
 defineElement('tot-calendar', TotCalendar)
 defineElement('tot-chart', TotChart)
 defineElement('tot-file-input', TotFileInput)
+defineElement('tot-image-preview', TotImagePreview)
+defineElement('tot-image-search', TotImageSearch)
 defineElement('tot-horizontal-select', TotHorizontalSelect)
 defineElement('tot-select', TotSelect)
 defineElement('tot-modal', TotModal)
@@ -117,6 +121,8 @@ export {
   TotCalendar,
   TotChart,
   TotFileInput,
+  TotImagePreview,
+  TotImageSearch,
   TotHorizontalSelect,
   TotSelect,
   TotModal,
