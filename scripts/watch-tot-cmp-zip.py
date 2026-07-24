@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 DOWNLOADS_DIR = Path.home() / 'Downloads'
-TARGET_DIR = Path('/Users/anatol.hrabouski/_tot/proj/tot-components')
+TARGET_DIR = Path(__file__).resolve().parent.parent
 ZIP_PATTERN = 'tot-components-*.zip'
 POLL_SECONDS = 2
 STABLE_CHECK_SECONDS = 1
