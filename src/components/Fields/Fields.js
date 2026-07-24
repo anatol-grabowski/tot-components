@@ -66,7 +66,6 @@ const fieldsStyle = `
     background: var(--tot-fields-readonly-background-color, var(--tot-color-sky-50, #f0f9ff));
     border: var(--tot-panel-border-width, 1px) solid var(--tot-fields-readonly-border-color, var(--tot-color-sky-200, #bae6fd));
     border-radius: var(--tot-border-radius-medium, 4px);
-    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 70%);
     color: var(--tot-fields-readonly-color, var(--tot-color-sky-950, #082f49));
     display: inline-flex;
     font-weight: var(--tot-font-weight-normal, 400);

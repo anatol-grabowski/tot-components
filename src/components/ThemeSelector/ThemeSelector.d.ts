@@ -1,6 +1,6 @@
 /**
- * `<tot-theme-selector>` - a theme picker based on native `<button>` controls
- * in an ARIA listbox.
+ * `<tot-theme-selector>` - a compact theme picker composed from
+ * `<tot-dropdown>`, `<tot-button>`, `<tot-menu>`, and `<tot-menu-item>`.
  */
 export type TotThemeSelector = {
   props: {
@@ -23,7 +23,7 @@ export type TotThemeSelector = {
     /** @default 'medium' */
     size: 'small' | 'medium' | 'large'
 
-    /** `plain` removes the persistent trigger surface so it blends into its surroundings. @default 'default' */
+    /** `plain` uses Button's borderless trigger variant. @default 'default' */
     variant: 'default' | 'plain'
 
     /** Directory used for themes without an explicit `href`. Defaults to the active theme stylesheet directory. */
@@ -33,7 +33,7 @@ export type TotThemeSelector = {
     linkId: string
   }
 
-  /** Methods expose the native trigger and menu buttons. */
+  /** Methods expose the native trigger and menu-item buttons. */
   methods: {
     focus(options?: FocusOptions): void
     blur(): void
@@ -60,18 +60,22 @@ export type TotThemeSelector = {
 
   /**
    * ```text
-   * base — complete theme selector
-   * ├─ trigger — native button opening the theme list
-   * │  ├─ trigger-icon — selected mode; system includes its current light/dark mode
+   * base — nested `<tot-dropdown>`
+   * ├─ trigger — native button forwarded from `<tot-button>`
+   * │  ├─ trigger-icon — current theme icon
    * │  ├─ trigger-label
-   * │  └─ caret
-   * └─ panel
-   *    └─ menu — theme listbox
-   *       └─ item — repeated native option button
+   * │  └─ caret — forwarded Button caret
+   * └─ panel — forwarded Dropdown panel
+   *    └─ menu — forwarded Menu surface
+   *       └─ item — repeated native MenuItem button
    *          ├─ item-icon
    *          ├─ item-label
    *          └─ item-check — selected-state mark
    * ```
+   *
+   * The system icon uses a monitor containing a sun or moon that reflects the
+   * currently resolved operating-system preference. It updates when the system
+   * color scheme changes while `theme` remains `system`.
    */
   parts:
     | 'base'

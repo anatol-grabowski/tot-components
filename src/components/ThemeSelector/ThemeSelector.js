@@ -10,85 +10,25 @@ const themeSelectorStyle = `
   }
 
   .selector {
+    --tot-dropdown-max-width: 16rem;
+    --tot-dropdown-min-width: 9rem;
+    --tot-menu-min-width: 9rem;
+
     display: inline-block;
     max-width: 100%;
   }
 
-  .trigger {
-    -webkit-appearance: none;
+  .trigger-content,
+  .theme-option {
     align-items: center;
-    appearance: none;
-    background: var(--tot-input-background-color, #fff);
-    border: var(--tot-input-border-width, 1px) solid var(--tot-input-border-color, #cbd5e1);
-    border-radius: var(--tot-input-border-radius-medium, var(--tot-border-radius-medium, 4px));
-    color: var(--tot-input-color, #1e293b);
-    cursor: pointer;
     display: inline-flex;
-    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-button-font-size-medium, var(--tot-input-font-size-medium, .875rem));
-    font-weight: var(--tot-font-weight-semibold, 500);
     gap: var(--tot-spacing-2x-small, .25rem);
-    justify-content: center;
-    line-height: 1;
-    max-width: 100%;
-    min-height: var(--tot-input-height-medium, 2.25rem);
-    min-width: var(--tot-input-height-medium, 2.25rem);
-    padding: 0 var(--tot-input-spacing-medium, .75rem);
-    transition:
-      var(--tot-transition-fast, 150ms) background-color,
-      var(--tot-transition-fast, 150ms) border-color,
-      var(--tot-transition-fast, 150ms) color;
-    white-space: nowrap;
+    min-width: 0;
   }
 
-  .trigger:hover {
-    background: var(--tot-input-background-color-hover, #f8fafc);
-    border-color: var(--tot-input-border-color-hover, #94a3b8);
-    color: var(--tot-input-color-hover, #0f172a);
-  }
-
-  .trigger:active {
-    background: var(--tot-color-neutral-100, #f1f5f9);
-  }
-
-  .trigger:focus-visible {
-    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
-    outline-offset: var(--tot-focus-ring-offset, 1px);
-  }
-
-  .trigger--small {
-    font-size: var(--tot-button-font-size-small, var(--tot-input-font-size-small, .75rem));
-    min-height: var(--tot-input-height-small, 1.75rem);
-    min-width: var(--tot-input-height-small, 1.75rem);
-    padding: 0 var(--tot-input-spacing-small, .5rem);
-  }
-
-  .trigger--large {
-    font-size: var(--tot-button-font-size-large, var(--tot-input-font-size-large, 1rem));
-    min-height: var(--tot-input-height-large, 2.75rem);
-    min-width: var(--tot-input-height-large, 2.75rem);
-    padding: 0 var(--tot-input-spacing-large, 1rem);
-  }
-
-
-  .trigger--plain {
-    background: transparent;
-    border-color: transparent;
-  }
-
-  .trigger--plain:hover {
-    background: var(--tot-color-neutral-200, #e2e8f0);
-    border-color: transparent;
-  }
-
-  .trigger--plain:active {
-    background: var(--tot-color-neutral-300, #cbd5e1);
-  }
-
-  .trigger__icon,
-  .trigger__caret,
-  .item__icon,
-  .item__check {
+  .trigger-icon,
+  .theme-option__icon,
+  .item-check {
     align-items: center;
     color: currentColor;
     display: inline-flex;
@@ -97,103 +37,40 @@ const themeSelectorStyle = `
     line-height: 1;
   }
 
-  .trigger__icon,
-  .item__icon {
+  .trigger-icon,
+  .theme-option__icon {
     height: 1.25em;
     width: 1.25em;
   }
 
-  .trigger__icon svg,
-  .item__icon svg,
-  .item__check svg,
-  .trigger__caret svg {
+  .trigger-icon svg,
+  .theme-option__icon svg,
+  .item-check svg {
     display: block;
-    fill: none;
     height: 100%;
-    stroke: currentColor;
     width: 100%;
   }
 
-  .trigger__label {
+  .trigger-label,
+  .theme-option__label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .trigger__label[hidden] {
-    display: none;
-  }
-
-  .trigger__caret {
-    height: .9em;
-    margin-inline-start: .05em;
-    opacity: .75;
-    width: .9em;
-  }
-
-  .panel {
-    left: 0;
-    max-width: min(var(--tot-theme-selector-panel-max-width, 16rem), calc(100vw - 1rem));
-    min-width: var(--tot-theme-selector-panel-min-width, 9rem);
-    position: fixed;
-    top: 0;
-    z-index: var(--tot-z-index-dropdown, 1000);
-  }
-
-  .panel[hidden] {
-    display: none;
-  }
-
-  .menu {
-    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, var(--tot-color-neutral-200, #e2e8f0));
-    border-radius: var(--tot-border-radius-medium, 4px);
-    box-shadow: var(--tot-shadow-medium, var(--tot-shadow-small, 0 1px 2px rgb(15 23 42 / 8%)));
-    color: var(--tot-input-color, #1e293b);
-    display: grid;
-    font-family: var(--tot-input-font-family, var(--tot-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif));
-    font-size: var(--tot-input-font-size-medium, .875rem);
-    max-height: var(--tot-theme-selector-panel-max-height, none);
-    overflow: auto;
-    padding: var(--tot-spacing-2x-small, .25rem);
-  }
-
-  .item {
-    -webkit-appearance: none;
-    align-items: center;
-    appearance: none;
-    background: transparent;
-    border: 0;
-    border-radius: var(--tot-border-radius-small, 3px);
-    color: inherit;
-    cursor: pointer;
-    display: grid;
-    font: inherit;
-    gap: var(--tot-spacing-2x-small, .25rem);
-    grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
-    line-height: var(--tot-line-height-normal, 1.4);
-    min-height: var(--tot-input-height-small, 1.75rem);
-    padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-x-small, .5rem);
-    text-align: left;
-    width: 100%;
-  }
-
-  .item:hover,
-  .item:focus-visible {
-    background: var(--tot-color-neutral-100, #f1f5f9);
-    outline: 0;
-  }
-
-  .item__check {
-    color: var(--tot-color-primary-600, #0284c7);
-    height: 1em;
-    width: 1em;
-  }
-
-  .item__label {
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .trigger-label[hidden] {
+    display: none;
+  }
+
+  .item-check {
+    color: var(--tot-color-primary-600, #0284c7);
+    height: 1rem;
+    width: 1rem;
+  }
+
+  tot-menu-item[data-selected]::part(base) {
+    background: var(--tot-color-neutral-100, #f1f5f9);
   }
 `
 
@@ -210,14 +87,8 @@ const defaultThemes = [
   { name: systemThemeName, label: 'System', href: '' },
 ]
 
-const caretIcon = `
-  <svg viewBox="0 0 16 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-    <path d="m4 6 4 4 4-4"></path>
-  </svg>
-`
-
 const checkIcon = `
-  <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
     <path d="m3.5 8.2 2.8 2.8 6.2-6.2"></path>
   </svg>
 `
@@ -239,13 +110,28 @@ export class TotThemeSelector extends HTMLElement {
     super()
     this._themes = null
     this._systemMediaQuery = null
-    this._open = false
-    this._positionFrame = 0
-    this._visualViewport = null
     this._handleDocumentThemeChange = event => this.handleDocumentThemeChange(event)
     this._handleSystemThemeChange = () => this.handleSystemThemeChange()
-    this._handleDocumentPointerDown = event => this.handleDocumentPointerDown(event)
-    this._handleWindowChange = () => this.schedulePanelPosition()
+
+    const root = this.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${themeSelectorStyle}</style>
+      <tot-dropdown class="selector" part="base" hoist exportparts="panel">
+        <tot-button class="trigger" slot="trigger" caret exportparts="base:trigger, caret:caret">
+          <span class="trigger-content">
+            <span class="trigger-icon" part="trigger-icon" aria-hidden="true"></span>
+            <span class="trigger-label" part="trigger-label" hidden></span>
+          </span>
+        </tot-button>
+        <tot-menu class="menu" aria-label="Theme options" exportparts="base:menu"></tot-menu>
+      </tot-dropdown>
+    `
+
+    this._dropdown = root.querySelector('.selector')
+    this._trigger = root.querySelector('.trigger')
+    this._triggerIcon = root.querySelector('.trigger-icon')
+    this._triggerLabel = root.querySelector('.trigger-label')
+    this._menu = root.querySelector('.menu')
+    this._dropdown.addEventListener('select', event => this.handleSelect(event))
   }
 
   get themes() {
@@ -259,7 +145,7 @@ export class TotThemeSelector extends HTMLElement {
   set themes(value) {
     this._themes = parseThemes(value)
     if (this.isConnected) {
-      this.render()
+      this.sync()
     }
   }
 
@@ -313,31 +199,12 @@ export class TotThemeSelector extends HTMLElement {
 
   connectedCallback() {
     document.addEventListener('tot-theme-change', this._handleDocumentThemeChange)
-    document.addEventListener('pointerdown', this._handleDocumentPointerDown, true)
-    window.addEventListener('resize', this._handleWindowChange)
-    document.addEventListener('scroll', this._handleWindowChange, true)
-    this._visualViewport = window.visualViewport || null
-    if (this._visualViewport) {
-      this._visualViewport.addEventListener('resize', this._handleWindowChange)
-      this._visualViewport.addEventListener('scroll', this._handleWindowChange)
-    }
     this.addSystemThemeListener()
-    this.render()
+    this.sync()
   }
 
   disconnectedCallback() {
     document.removeEventListener('tot-theme-change', this._handleDocumentThemeChange)
-    document.removeEventListener('pointerdown', this._handleDocumentPointerDown, true)
-    window.removeEventListener('resize', this._handleWindowChange)
-    document.removeEventListener('scroll', this._handleWindowChange, true)
-    if (this._visualViewport) {
-      this._visualViewport.removeEventListener('resize', this._handleWindowChange)
-      this._visualViewport.removeEventListener('scroll', this._handleWindowChange)
-      this._visualViewport = null
-    }
-    cancelAnimationFrame(this._positionFrame)
-    this._positionFrame = 0
-    this._open = false
     this.removeSystemThemeListener()
   }
 
@@ -351,106 +218,123 @@ export class TotThemeSelector extends HTMLElement {
     }
 
     if (this.isConnected) {
-      this.render()
+      this.sync()
     }
   }
 
   focus(options) {
-    this.getTrigger()?.focus(options)
+    this._trigger.focus(options)
   }
 
   blur() {
-    this.getTrigger()?.blur()
+    this._trigger.blur()
   }
 
   getTrigger() {
-    return this.shadowRoot?.querySelector('.trigger') || null
+    return this._trigger.getControl?.() || null
   }
 
   getItems() {
-    return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll('.item')) : []
+    const items = Array.from(this._menu.querySelectorAll('tot-menu-item'))
+    const controls = []
+    for (let i = 0; i < items.length; i++) {
+      const control = items[i].getBase?.()
+      if (control) {
+        controls.push(control)
+      }
+    }
+    return controls
   }
 
-  render() {
-    const root = this.shadowRoot || this.attachShadow({ mode: 'open' })
+  sync() {
     const currentThemeName = this.value
     const currentTheme = this.getThemeByName(currentThemeName) || this.themes[0] || null
     const effectiveTheme = this.getEffectiveTheme(currentTheme)
-    const size = this.size
-    const variant = this.variant
-    const triggerLabel = this.label
     const accessibleLabel = this.getAccessibleLabel(currentTheme, effectiveTheme)
-    const itemsHtml = this.renderItems(this.getMenuItems(currentThemeName))
 
-    root.innerHTML = `<style>${themeSelectorStyle}</style>
-      <span class="selector" part="base">
-        <button
-          class="trigger trigger--${escapeAttribute(size)} trigger--${escapeAttribute(variant)}"
-          part="trigger"
-          type="button"
-          aria-haspopup="listbox"
-          aria-expanded="${this._open ? 'true' : 'false'}"
-          aria-controls="theme-selector-menu"
-          aria-label="${escapeAttribute(accessibleLabel)}"
-          title="${escapeAttribute(accessibleLabel)}"
-        >
-          <span class="trigger__icon" part="trigger-icon" aria-hidden="true">${renderThemeIcon(currentThemeName, effectiveTheme ? effectiveTheme.name : '')}</span>
-          <span class="trigger__label" part="trigger-label" ${triggerLabel ? '' : 'hidden'}>${escapeHtml(triggerLabel)}</span>
-          <span class="trigger__caret" part="caret" aria-hidden="true">${caretIcon}</span>
-        </button>
-        <div class="panel" part="panel" ${this._open ? '' : 'hidden'}>
-          <div id="theme-selector-menu" class="menu" part="menu" role="listbox" aria-label="Theme options">
-            ${itemsHtml}
-          </div>
-        </div>
-      </span>
-    `
+    this._trigger.setAttribute('size', this.size)
+    this._trigger.setAttribute('variant', this.variant)
+    this._triggerIcon.innerHTML = renderThemeIcon(currentThemeName, effectiveTheme?.name)
+    this._triggerLabel.textContent = this.label
+    this._triggerLabel.hidden = !this.label
+    this.syncTriggerAccessibleLabel(accessibleLabel)
+    this.syncMenu(currentThemeName)
+  }
 
-    const trigger = root.querySelector('.trigger')
-    const panel = root.querySelector('.panel')
-    const menu = root.querySelector('.menu')
-
-    trigger.addEventListener('click', event => this.handleTriggerClick(event))
-    trigger.addEventListener('keydown', event => this.handleTriggerKeyDown(event))
-    panel.addEventListener('keydown', event => this.handlePanelKeyDown(event))
-    menu.addEventListener('click', event => this.handleMenuClick(event))
-
-    if (this._open) {
-      this.schedulePanelPosition()
+  syncTriggerAccessibleLabel(label) {
+    this._trigger.setAttribute('title', label)
+    const control = this._trigger.getControl?.()
+    if (control) {
+      control.setAttribute('aria-label', label)
+      control.setAttribute('title', label)
+      return
     }
+
+    requestAnimationFrame(() => {
+      if (!this.isConnected) {
+        return
+      }
+      const nextControl = this._trigger.getControl?.()
+      if (nextControl) {
+        nextControl.setAttribute('aria-label', label)
+        nextControl.setAttribute('title', label)
+      }
+    })
   }
 
-  renderItems(items) {
-    let html = ''
-    for (let i = 0; i < items.length; i++) {
-      html += this.renderItem(items[i])
-    }
-    return html
-  }
-
-  renderItem(item) {
-    return `<button class="item" part="item" type="button" role="option" aria-selected="${item.checked ? 'true' : 'false'}" data-value="${escapeAttribute(item.value)}">
-      <span class="item__icon" part="item-icon" aria-hidden="true">${renderThemeIcon(item.value, item.effectiveTheme)}</span>
-      <span class="item__label" part="item-label">${escapeHtml(item.label)}</span>
-      <span class="item__check" part="item-check" aria-hidden="true">${item.checked ? checkIcon : ''}</span>
-    </button>`
-  }
-
-  getMenuItems(currentThemeName) {
+  syncMenu(currentThemeName) {
     const themes = this.themes
-    const systemTheme = this.getSystemThemeName()
-    const items = []
+    const fragment = document.createDocumentFragment()
 
     for (let i = 0; i < themes.length; i++) {
-      items.push({
-        value: themes[i].name,
-        label: themes[i].label,
-        checked: themes[i].name === currentThemeName,
-        effectiveTheme: themes[i].name === systemThemeName ? systemTheme : themes[i].name,
-      })
+      const theme = themes[i]
+      const selected = theme.name === currentThemeName
+      const item = document.createElement('tot-menu-item')
+      item.value = theme.name
+      item.label = theme.label
+      item.toggleAttribute('data-selected', selected)
+      item.setAttribute('exportparts', 'base:item')
+      const itemControl = item.getBase?.()
+      if (itemControl) {
+        itemControl.setAttribute('role', 'menuitemradio')
+        itemControl.setAttribute('aria-checked', selected ? 'true' : 'false')
+      }
+
+      const option = document.createElement('span')
+      option.className = 'theme-option'
+      const icon = document.createElement('span')
+      icon.className = 'theme-option__icon'
+      icon.setAttribute('part', 'item-icon')
+      icon.setAttribute('aria-hidden', 'true')
+      icon.innerHTML = renderThemeIcon(theme.name, theme.name === systemThemeName ? this.getSystemThemeName() : theme.name)
+      const label = document.createElement('span')
+      label.className = 'theme-option__label'
+      label.setAttribute('part', 'item-label')
+      label.textContent = theme.label
+      option.append(icon, label)
+      item.append(option)
+
+      if (selected) {
+        const check = document.createElement('span')
+        check.className = 'item-check'
+        check.slot = 'suffix'
+        check.setAttribute('part', 'item-check')
+        check.setAttribute('aria-hidden', 'true')
+        check.innerHTML = checkIcon
+        item.append(check)
+      }
+
+      fragment.append(item)
     }
 
-    return items
+    this._menu.replaceChildren(fragment)
+  }
+
+  handleSelect(event) {
+    const theme = this.getThemeByName(String(event.detail?.value || ''))
+    if (theme) {
+      this.applyTheme(theme)
+    }
   }
 
   getAccessibleLabel(theme, effectiveTheme) {
@@ -470,194 +354,6 @@ export class TotThemeSelector extends HTMLElement {
     return selectedLabel
   }
 
-  handleTriggerClick(event) {
-    event.preventDefault()
-    this.setOpen(!this._open)
-  }
-
-  handleTriggerKeyDown(event) {
-    if (event.key === 'ArrowDown') {
-      this.setOpen(true)
-      this.focusFirstItem()
-      event.preventDefault()
-      return
-    }
-
-    if (event.key === 'Escape' && this._open) {
-      this.setOpen(false)
-      event.preventDefault()
-    }
-  }
-
-  handlePanelKeyDown(event) {
-    if (event.key === 'Escape') {
-      this.setOpen(false)
-      this.focusTrigger()
-      event.preventDefault()
-      return
-    }
-
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Home' && event.key !== 'End') {
-      return
-    }
-
-    const items = this.getItems()
-    if (items.length === 0) {
-      return
-    }
-
-    const currentIndex = items.indexOf(this.shadowRoot.activeElement)
-    let nextIndex = currentIndex
-    if (event.key === 'Home') {
-      nextIndex = 0
-    } else if (event.key === 'End') {
-      nextIndex = items.length - 1
-    } else if (event.key === 'ArrowDown') {
-      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
-    } else {
-      nextIndex = currentIndex < 0 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length
-    }
-
-    items[nextIndex].focus()
-    event.preventDefault()
-  }
-
-  handleMenuClick(event) {
-    const target = event.target instanceof Element ? event.target : null
-    const item = target ? target.closest('.item') : null
-    if (!item) {
-      return
-    }
-
-    const theme = this.getThemeByName(item.dataset.value)
-    if (!theme) {
-      return
-    }
-
-    this._open = false
-    this.applyTheme(theme)
-    this.focusTrigger()
-  }
-
-  handleDocumentPointerDown(event) {
-    if (!this._open) {
-      return
-    }
-
-    const path = event.composedPath()
-    for (let i = 0; i < path.length; i++) {
-      if (path[i] === this) {
-        return
-      }
-    }
-
-    this.setOpen(false)
-  }
-
-  setOpen(open) {
-    const nextOpen = Boolean(open)
-    if (this._open === nextOpen) {
-      if (nextOpen) {
-        this.schedulePanelPosition()
-      }
-      return
-    }
-
-    this._open = nextOpen
-    const trigger = this.getTrigger()
-    const panel = this.shadowRoot?.querySelector('.panel')
-    if (!trigger || !panel) {
-      if (this.isConnected) {
-        this.render()
-      }
-      return
-    }
-
-    trigger.setAttribute('aria-expanded', nextOpen ? 'true' : 'false')
-    panel.hidden = !nextOpen
-    if (nextOpen) {
-      this.schedulePanelPosition()
-    } else {
-      cancelAnimationFrame(this._positionFrame)
-      this._positionFrame = 0
-    }
-  }
-
-  schedulePanelPosition() {
-    cancelAnimationFrame(this._positionFrame)
-    this._positionFrame = requestAnimationFrame(() => this.updatePanelPosition())
-  }
-
-  updatePanelPosition() {
-    this._positionFrame = 0
-    if (!this._open || !this.shadowRoot) {
-      return
-    }
-
-    const trigger = this.getTrigger()
-    const panel = this.shadowRoot.querySelector('.panel')
-    if (!trigger || !panel) {
-      return
-    }
-
-    const triggerRect = trigger.getBoundingClientRect()
-    if (!triggerRect.width && !triggerRect.height) {
-      return
-    }
-
-    const viewport = getViewportRect()
-    const margin = 8
-    const gap = getCssLength(this, '--tot-dropdown-panel-gap', 4)
-    const viewportWidth = Math.max(0, viewport.width - margin * 2)
-
-    panel.style.maxWidth = `min(var(--tot-theme-selector-panel-max-width, 16rem), ${Math.floor(viewportWidth)}px)`
-    panel.style.minWidth = `max(${Math.ceil(triggerRect.width)}px, var(--tot-theme-selector-panel-min-width, 9rem))`
-    panel.style.setProperty('--tot-theme-selector-panel-max-height', 'none')
-
-    const panelRect = panel.getBoundingClientRect()
-    const panelWidth = Math.min(panelRect.width, viewportWidth)
-    const belowSpace = Math.max(0, viewport.bottom - triggerRect.bottom - gap - margin)
-    const aboveSpace = Math.max(0, triggerRect.top - viewport.top - gap - margin)
-    const placeAbove = panelRect.height > belowSpace && aboveSpace > belowSpace
-    const availableHeight = Math.max(0, placeAbove ? aboveSpace : belowSpace)
-    const panelHeight = Math.min(panelRect.height, availableHeight)
-    let left = triggerRect.left
-    let top = placeAbove ? triggerRect.top - panelHeight - gap : triggerRect.bottom + gap
-
-    if (left + panelWidth > viewport.right - margin) {
-      left = triggerRect.right - panelWidth
-    }
-
-    left = clamp(left, viewport.left + margin, viewport.right - panelWidth - margin)
-    top = clamp(top, viewport.top + margin, viewport.bottom - panelHeight - margin)
-
-    panel.style.left = `${Math.round(left)}px`
-    panel.style.top = `${Math.round(top)}px`
-    panel.style.setProperty('--tot-theme-selector-panel-max-height', `${Math.floor(availableHeight)}px`)
-  }
-
-  focusTrigger() {
-    this.getTrigger()?.focus()
-  }
-
-  focusFirstItem() {
-    requestAnimationFrame(() => {
-      const items = this.getItems()
-      if (items.length === 0) {
-        return
-      }
-
-      let selectedItem = null
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].getAttribute('aria-selected') === 'true') {
-          selectedItem = items[i]
-          break
-        }
-      }
-      ;(selectedItem || items[0]).focus()
-    })
-  }
-
   handleDocumentThemeChange(event) {
     if (event.detail && event.detail.source === this) {
       return
@@ -669,7 +365,7 @@ export class TotThemeSelector extends HTMLElement {
       return
     }
 
-    this.render()
+    this.sync()
   }
 
   handleSystemThemeChange() {
@@ -700,7 +396,7 @@ export class TotThemeSelector extends HTMLElement {
     if (valueChanged) {
       this.setAttribute('value', theme.name)
     } else if (this.isConnected) {
-      this.render()
+      this.sync()
     }
 
     const detail = {
@@ -881,9 +577,9 @@ export class TotThemeSelector extends HTMLElement {
   }
 }
 
-function renderThemeIcon(themeName, effectiveThemeName) {
+function renderThemeIcon(themeName, effectiveThemeName = themeName) {
   if (themeName === systemThemeName) {
-    return renderSystemIcon(effectiveThemeName === darkThemeName)
+    return renderSystemIcon(effectiveThemeName)
   }
 
   if (themeName === darkThemeName) {
@@ -899,7 +595,7 @@ function renderThemeIcon(themeName, effectiveThemeName) {
 
 function renderLightIcon() {
   return `
-    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
       <circle cx="12" cy="12" r="3.5"></circle>
       <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"></path>
     </svg>
@@ -908,29 +604,39 @@ function renderLightIcon() {
 
 function renderDarkIcon() {
   return `
-    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
       <path d="M20.2 15.2A8.6 8.6 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path>
     </svg>
   `
 }
 
-function renderSystemIcon(dark) {
-  const indicator = dark
-    ? '<path d="M15.9 7.2a2.7 2.7 0 0 1-3.1-3.1 2.9 2.9 0 1 0 3.1 3.1Z"></path>'
-    : '<circle cx="14.3" cy="5.7" r="1.5"></circle><path d="M14.3 2.8v.8M14.3 7.8v.8M11.4 5.7h.8M16.4 5.7h.8"></path>'
+function renderSystemIcon(effectiveThemeName) {
+  const badgeBackground = `
+    <circle cx="18" cy="5.5" r="4.25" fill="var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff))" stroke="none"></circle>
+  `
+  const stateIcon = effectiveThemeName === darkThemeName
+    ? `
+      ${badgeBackground}
+      <path d="M20.8 7.2A3.8 3.8 0 0 1 16.3 2.7a3.8 3.8 0 1 0 4.5 4.5Z"></path>
+    `
+    : `
+      <circle cx="17.7" cy="6.2" r="5.9" fill="var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff))" stroke="none"></circle>
+      <circle cx="17.7" cy="6.2" r="2.45"></circle>
+      <path d="M17.7.2v1.65M17.7 10.55v1.65M11.55 6.2h1.65M22.2 6.2h1.65M13.35 1.85l1.18 1.18M20.87 9.37l1.18 1.18M22.05 1.85l-1.18 1.18M14.53 9.37l-1.18 1.18"></path>
+    `
 
   return `
-    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-      <rect x="3" y="4" width="18" height="13" rx="2"></rect>
-      <path d="M8.5 21h7M12 17v4"></path>
-      ${indicator}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <rect x="2.5" y="6" width="15.5" height="11" rx="2"></rect>
+      <path d="M6.5 21h7M10.25 17v4"></path>
+      ${stateIcon}
     </svg>
   `
 }
 
 function renderGenericThemeIcon() {
   return `
-    <svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
       <circle cx="12" cy="12" r="8.5"></circle>
       <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z"></path>
     </svg>
@@ -1056,102 +762,35 @@ function getNameFromHref(href) {
   return fileName.replace(/\.css$/i, '')
 }
 
-function getViewportRect() {
-  const viewport = window.visualViewport
-  if (!viewport) {
-    return {
-      left: 0,
-      top: 0,
-      right: window.innerWidth,
-      bottom: window.innerHeight,
-      width: window.innerWidth,
-      height: window.innerHeight,
+function getSupportedValue(value, supportedValues, fallback) {
+  const normalized = value || fallback
+  for (let i = 0; i < supportedValues.length; i++) {
+    if (supportedValues[i] === normalized) {
+      return normalized
     }
   }
-
-  return {
-    left: viewport.offsetLeft,
-    top: viewport.offsetTop,
-    right: viewport.offsetLeft + viewport.width,
-    bottom: viewport.offsetTop + viewport.height,
-    width: viewport.width,
-    height: viewport.height,
-  }
-}
-
-function getCssLength(element, property, fallback) {
-  const rawValue = getComputedStyle(element).getPropertyValue(property).trim()
-  if (!rawValue) {
-    return fallback
-  }
-
-  const numericValue = Number.parseFloat(rawValue)
-  if (!Number.isFinite(numericValue)) {
-    return fallback
-  }
-
-  if (rawValue.endsWith('rem')) {
-    const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
-    return Number.isFinite(rootFontSize) ? numericValue * rootFontSize : fallback
-  }
-
-  if (rawValue.endsWith('em')) {
-    const fontSize = Number.parseFloat(getComputedStyle(element).fontSize)
-    return Number.isFinite(fontSize) ? numericValue * fontSize : fallback
-  }
-
-  if (rawValue.endsWith('px')) {
-    return numericValue
-  }
-
   return fallback
-}
-
-function clamp(value, min, max) {
-  if (max < min) {
-    return min
-  }
-
-  return Math.min(Math.max(value, min), max)
-}
-
-function toLabel(value) {
-  const words = String(value).replace(/[-_]+/g, ' ').trim()
-  if (!words) {
-    return ''
-  }
-
-  return words.replace(/\b\w/g, letter => letter.toLocaleUpperCase())
 }
 
 function toClassName(value) {
-  return String(value).trim().replace(/[^a-z0-9_-]/gi, '-')
+  return String(value)
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
-function parseJson(value, fallback) {
-  try {
-    return JSON.parse(value)
-  } catch (error) {
-    return fallback
-  }
+function toLabel(value) {
+  const text = String(value).replace(/[-_]+/g, ' ').trim()
+  return text ? text.charAt(0).toLocaleUpperCase() + text.slice(1) : ''
 }
 
-function getSupportedValue(value, supportedValues, fallback) {
-  const normalizedValue = value || fallback
-  for (let i = 0; i < supportedValues.length; i++) {
-    if (supportedValues[i] === normalizedValue) {
-      return normalizedValue
-    }
-  }
-  return fallback
-}
-
-function setNullableAttribute(element, name, value) {
-  if (value === null || value === undefined || value === '') {
-    element.removeAttribute(name)
-  } else {
-    element.setAttribute(name, String(value))
-  }
+function emit(element, name, detail) {
+  element.dispatchEvent(new CustomEvent(name, {
+    bubbles: true,
+    composed: true,
+    detail,
+  }))
 }
 
 function setStringAttribute(element, name, value) {
@@ -1162,37 +801,22 @@ function setStringAttribute(element, name, value) {
   }
 }
 
-function emit(element, name, detail) {
-  element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
-    detail: detail || {},
-  }))
+function setNullableAttribute(element, name, value) {
+  if (value === null || value === undefined || value === '') {
+    element.removeAttribute(name)
+  } else {
+    element.setAttribute(name, String(value))
+  }
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return replacements[match]
-  })
-}
+function parseJson(value, fallback) {
+  if (!value) {
+    return fallback
+  }
 
-function escapeAttribute(value) {
-  return String(value).replace(/[&<>"'`]/g, (match) => {
-    const replacements = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '`': '&#96;',
-    }
-    return replacements[match]
-  })
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
 }

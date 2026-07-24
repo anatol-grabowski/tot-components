@@ -17,6 +17,13 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="row inline-control-row">
+          <tot-copy-button value="Copied from the inline example"></tot-copy-button>
+          <tot-button variant="primary">Continue</tot-button>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Copy from another element</div>
         <div class="row">
           <span id="copy-demo-phone">+48 123 456 789</span>

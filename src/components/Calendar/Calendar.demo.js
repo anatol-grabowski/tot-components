@@ -27,20 +27,6 @@ registerDemo({
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         }
 
-        tot-calendar::part(demo-holiday) {
-          background: var(--tot-color-rose-100, #ffe4e6);
-          color: var(--tot-color-rose-800, #9f1239);
-          font-weight: var(--tot-font-weight-semibold, 600);
-        }
-
-        tot-calendar::part(demo-payday) {
-          box-shadow: inset 0 -2px 0 var(--tot-color-green-500, #22c55e);
-        }
-
-        tot-calendar::part(demo-month-start) {
-          font-weight: var(--tot-font-weight-semibold, 600);
-        }
-
         @media (max-width: 760px) {
           .calendar-demo-grid {
             grid-template-columns: 1fr;
@@ -68,7 +54,7 @@ registerDemo({
             </button>
           </template>
           <template slot="cell-month">
-            <span class="month__label">{{month.monthName}} {{month.year}}</span>
+            <span class="month-cell__label">{{month.monthName}} {{month.year}}</span>
           </template>
         </tot-calendar>
       </div>
@@ -86,6 +72,25 @@ registerDemo({
     const classCalendar = wrapper.querySelector('#classCalendar')
     const compactCalendar = wrapper.querySelector('#compactCalendar')
     const smallRowsCalendar = wrapper.querySelector('#smallRowsCalendar')
+
+    const classStyles = document.createElement('style')
+    classStyles.textContent = `
+      .day.demo-holiday {
+        background: var(--tot-color-rose-100, #ffe4e6);
+        color: var(--tot-color-rose-800, #9f1239);
+        font-weight: var(--tot-font-weight-semibold, 600);
+      }
+
+      .day.demo-payday {
+        box-shadow: inset 0 -2px 0 var(--tot-color-green-500, #22c55e);
+      }
+
+      .day.demo-month-start,
+      .month-cell.demo-month-start {
+        font-weight: var(--tot-font-weight-semibold, 600);
+      }
+    `
+    classCalendar.shadowRoot.append(classStyles)
 
     classCalendar.getDayClasses = (day, features) => {
       const classes = []

@@ -16,7 +16,6 @@ const calendarStyle = `
 
   .calendar {
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
-    border: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     border-radius: 0;
     color: var(--tot-input-color, #1e293b);
     display: grid;
@@ -94,7 +93,7 @@ const calendarStyle = `
     white-space: nowrap;
   }
 
-  .year-cell--selected {
+  .year-cell.is-selected {
     color: var(--tot-input-color, #1e293b);
   }
 
@@ -159,7 +158,7 @@ const calendarStyle = `
   .calendar--pinching,
   .calendar--pinching .scroller,
   .calendar--pinching .year-scroller,
-  .calendar--pinching .date,
+  .calendar--pinching .day,
   .calendar--pinching .year-cell {
     touch-action: none;
   }
@@ -208,7 +207,7 @@ const calendarStyle = `
   }
 
   .month-head,
-  .month {
+  .month-cell {
     inline-size: var(--tot-calendar-current-month-label-width, var(--tot-calendar-month-label-width, 2rem));
     max-inline-size: var(--tot-calendar-current-month-label-width, var(--tot-calendar-month-label-width, 2rem));
     min-inline-size: var(--tot-calendar-current-month-label-width, var(--tot-calendar-month-label-width, 2rem));
@@ -225,7 +224,7 @@ const calendarStyle = `
     height: var(--tot-calendar-current-week-height, var(--tot-calendar-week-height, 2rem));
   }
 
-  .month {
+  .month-cell {
     background: var(--tot-calendar-month-background, var(--tot-color-neutral-50, #f8fafc));
     border: 0;
     border-block-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
@@ -241,7 +240,7 @@ const calendarStyle = `
     vertical-align: middle;
   }
 
-  .month__label {
+  .month-cell__label {
     left: 50%;
     max-width: 10rem;
     overflow: hidden;
@@ -254,8 +253,8 @@ const calendarStyle = `
     z-index: 2;
   }
 
-  .month::before,
-  .date-cell::before {
+  .month-cell::before,
+  .day-cell::before {
     border: 0 solid transparent;
     content: '';
     inset: 0;
@@ -264,7 +263,7 @@ const calendarStyle = `
     z-index: 1;
   }
 
-  .date-cell {
+  .day-cell {
     background: var(--tot-calendar-date-background, var(--tot-color-neutral-0, #fff));
     border: 0;
     border-block-end: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
@@ -277,41 +276,41 @@ const calendarStyle = `
     vertical-align: middle;
   }
 
-  .month--month-top::before,
-  .date-cell--month-top::before {
+  .month-cell.is-month-top::before,
+  .day-cell.is-month-top::before {
     border-block-start-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
     border-block-start-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
   }
 
 
-  .date-cell--month-start::before {
+  .day-cell.is-month-start::before {
     border-inline-start-color: var(--tot-calendar-month-border-color, var(--tot-color-neutral-300, #cbd5e1));
     border-inline-start-width: var(--tot-calendar-month-border-width, var(--tot-panel-border-width, 1px));
   }
 
 
-  .month--year-top::before,
-  .date-cell--year-top::before {
+  .month-cell.is-year-top::before,
+  .day-cell.is-year-top::before {
     border-block-start-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
     border-block-start-width: var(--tot-calendar-year-border-width, 2px);
   }
 
 
-  .date-cell--year-start::before {
+  .day-cell.is-year-start::before {
     border-inline-start-color: var(--tot-calendar-year-border-color, var(--tot-color-neutral-400, #94a3b8));
     border-inline-start-width: var(--tot-calendar-year-border-width, 2px);
   }
 
 
-  .date-cell--weekend {
+  .day-cell.is-weekend {
     background: var(--tot-calendar-weekend-background, var(--tot-color-sky-50, #f0f9ff));
   }
 
-  .date-cell--selected {
+  .day-cell.is-selected {
     background: var(--tot-calendar-selected-background, var(--tot-color-primary-600, #0284c7));
   }
 
-  .date {
+  .day {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -333,21 +332,21 @@ const calendarStyle = `
     z-index: 2;
   }
 
-  .date:hover {
+  .day:hover {
     background: var(--tot-calendar-date-background-hover, var(--tot-color-neutral-100, #f1f5f9));
     color: var(--tot-input-color-hover, #0f172a);
   }
 
-  .date:focus-visible {
+  .day:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: calc(-1 * var(--tot-focus-ring-offset, 1px));
   }
 
-  .date--weekend {
+  .day.is-weekend {
     color: var(--tot-calendar-weekend-color, var(--tot-color-sky-800, #075985));
   }
 
-  .date--today::after {
+  .day.is-today::after {
     background: currentColor;
     border-radius: var(--tot-border-radius-pill, 999px);
     bottom: .1875rem;
@@ -360,23 +359,23 @@ const calendarStyle = `
     width: .1875rem;
   }
 
-  .date--selected,
-  .date--selected:hover {
+  .day.is-selected,
+  .day.is-selected:hover {
     background: var(--tot-calendar-selected-background, var(--tot-color-primary-600, #0284c7));
     color: var(--tot-calendar-selected-color, var(--tot-color-neutral-0, #fff));
     font-weight: var(--tot-font-weight-semibold, 600);
   }
 
-  .date--month-start {
+  .day.is-month-start {
     font-weight: var(--tot-font-weight-semibold, 600);
   }
 
-  .calendar--compact .date {
+  .calendar--compact .day {
     padding: 0;
   }
 
   .calendar--compact .weekday,
-  .calendar--compact .month {
+  .calendar--compact .month-cell {
     font-size: var(--tot-calendar-current-month-font-size, var(--tot-font-size-x-small, .75rem));
   }
 
@@ -492,11 +491,11 @@ export class TotCalendar extends HTMLElement {
     root.innerHTML = `
       <style>${calendarStyle}</style>
       <div class="calendar" part="base">
-        <div class="input-row" part="input-row">
+        <div class="input-row" >
           <tot-input class="input" part="input" placeholder="YYYY-MM-DD" clearable size="small"></tot-input>
         </div>
         <div class="year-scroller" part="year-scroller" tabindex="0" aria-label="Years">
-          <div class="year-strip" part="year-strip"></div>
+          <div class="year-strip" ></div>
         </div>
         <div class="scroller" part="scroller" tabindex="0">
           <table class="table" part="table" aria-label="Calendar">
@@ -1302,7 +1301,7 @@ export class TotCalendar extends HTMLElement {
       const monthGroup = groups.get(rowIndex)
       const rowElement = document.createElement('tr')
 
-      rowElement.className = monthGroup ? 'week-row week-row--month-start' : 'week-row'
+      rowElement.className = monthGroup ? 'week-row is-month-start' : 'week-row'
       rowElement.style.height = `${this._rowHeight}px`
 
       if (monthGroup) {
@@ -1326,27 +1325,27 @@ export class TotCalendar extends HTMLElement {
     const dayData = getDayData(day, dateParts)
     const features = getDayFeatures(day, dateParts, selectedDay, todayDay, this.weekStart, column, columnCount)
     const customClasses = normalizeClassList(this._getDayClasses ? this._getDayClasses(dayData, features) : [])
-    const cellClasses = ['date-cell']
-    const cellParts = ['date-cell']
-    const contentClasses = ['date']
-    const contentParts = ['date']
+    const cellClasses = ['day-cell']
+    const cellParts = ['day-cell']
+    const contentClasses = ['day']
+    const contentParts = ['day']
     const template = templates.get('cell-day')
 
-    addClassPart(cellClasses, cellParts, features.bordersMonthTop, 'date-cell--month-top', 'month-top-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersMonthBottom, 'date-cell--month-bottom', 'month-bottom-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersMonthLeft, 'date-cell--month-start', 'month-start-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersMonthRight, 'date-cell--month-end', 'month-end-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersYearTop, 'date-cell--year-top', 'year-top-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersYearBottom, 'date-cell--year-bottom', 'year-bottom-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersYearLeft, 'date-cell--year-start', 'year-start-date-cell')
-    addClassPart(cellClasses, cellParts, features.bordersYearRight, 'date-cell--year-end', 'year-end-date-cell')
-    addClassPart(contentClasses, contentParts, features.isMonthStart, 'date--month-start', 'month-start-date')
-    addClassPart(cellClasses, cellParts, features.isWeekend, 'date-cell--weekend', 'weekend-date-cell')
-    addClassPart(contentClasses, contentParts, features.isWeekend, 'date--weekend', 'weekend-date')
-    addClassPart(contentClasses, contentParts, features.isToday, 'date--today', 'today-date')
-    addClassPart(cellClasses, cellParts, features.isSelected, 'date-cell--selected', 'selected-date-cell')
-    addClassPart(contentClasses, contentParts, features.isSelected, 'date--selected', 'selected-date')
-    appendClassParts(contentClasses, contentParts, customClasses)
+    addClass(cellClasses, features.bordersMonthTop, 'is-month-top')
+    addClass(cellClasses, features.bordersMonthBottom, 'is-month-bottom')
+    addClass(cellClasses, features.bordersMonthLeft, 'is-month-start')
+    addClass(cellClasses, features.bordersMonthRight, 'is-month-end')
+    addClass(cellClasses, features.bordersYearTop, 'is-year-top')
+    addClass(cellClasses, features.bordersYearBottom, 'is-year-bottom')
+    addClass(cellClasses, features.bordersYearLeft, 'is-year-start')
+    addClass(cellClasses, features.bordersYearRight, 'is-year-end')
+    addClass(contentClasses, features.isMonthStart, 'is-month-start')
+    addClass(cellClasses, features.isWeekend, 'is-weekend')
+    addClass(contentClasses, features.isWeekend, 'is-weekend')
+    addClass(contentClasses, features.isToday, 'is-today')
+    addClass(cellClasses, features.isSelected, 'is-selected')
+    addClass(contentClasses, features.isSelected, 'is-selected')
+    appendClasses(contentClasses, customClasses)
 
     if (template) {
       const cell = renderDayTemplate(template, {
@@ -1391,15 +1390,15 @@ export class TotCalendar extends HTMLElement {
     const monthData = monthGroup.month
     const features = getMonthFeatures(monthData, monthGroup)
     const customClasses = normalizeClassList(this._getMonthClasses ? this._getMonthClasses(monthData, features) : [])
-    const cellClasses = ['month']
-    const cellParts = ['month']
+    const cellClasses = ['month-cell']
+    const cellParts = ['month-cell']
     const template = templates.get('cell-month')
 
-    addClassPart(cellClasses, cellParts, features.bordersMonthTop, 'month--month-top', 'month-top')
-    addClassPart(cellClasses, cellParts, features.bordersMonthBottom, 'month--month-bottom', 'month-bottom')
-    addClassPart(cellClasses, cellParts, features.bordersYearTop, 'month--year-top', 'year-top')
-    addClassPart(cellClasses, cellParts, features.bordersYearBottom, 'month--year-bottom', 'year-bottom')
-    appendClassParts(cellClasses, cellParts, customClasses)
+    addClass(cellClasses, features.bordersMonthTop, 'is-month-top')
+    addClass(cellClasses, features.bordersMonthBottom, 'is-month-bottom')
+    addClass(cellClasses, features.bordersYearTop, 'is-year-top')
+    addClass(cellClasses, features.bordersYearBottom, 'is-year-bottom')
+    appendClasses(cellClasses, customClasses)
 
     if (template) {
       const cell = renderMonthTemplate(template, {
@@ -1421,7 +1420,7 @@ export class TotCalendar extends HTMLElement {
     cell.part = cellParts.join(' ')
     cell.scope = 'rowgroup'
     cell.rowSpan = monthGroup.rows
-    label.className = 'month__label'
+    label.className = 'month-cell__label'
     label.textContent = this._weeksPerRow > 1 ? monthData.shortLabel : monthData.label
     cell.append(label)
     this.applyMonthCellData(cell, monthData, features, customClasses)
@@ -1650,18 +1649,15 @@ export class TotCalendar extends HTMLElement {
       const today = document.createElement('span')
       const label = document.createElement('span')
 
-      cell.className = year === selectedYear ? 'year-cell year-cell--selected' : 'year-cell'
-      cell.part = year === selectedYear ? 'year-cell selected-year-cell' : 'year-cell'
+      cell.className = year === selectedYear ? 'year-cell is-selected' : 'year-cell'
+      cell.part = 'year-cell'
       cell.dataset.year = String(year)
       cell.style.left = `${index * this._yearCellWidth}px`
       cell.style.width = `${this._yearCellWidth}px`
       highlight.className = 'year-cell__highlight'
-      highlight.part = 'year-highlight'
       today.className = 'year-cell__today'
-      today.part = 'year-today'
       today.hidden = true
       label.className = 'year-cell__label'
-      label.part = 'year-label'
       label.textContent = formatYearLabel(year)
       cell._highlightElement = highlight
       cell._todayElement = today
@@ -1777,7 +1773,7 @@ export class TotCalendar extends HTMLElement {
       return
     }
 
-    let html = '<th class="month-head" part="month-header" aria-hidden="true"></th>'
+    let html = '<th class="month-head" aria-hidden="true"></th>'
     const weekStart = this.weekStart
 
     for (let repetition = 0; repetition < this._weeksPerRow; repetition++) {
@@ -1898,19 +1894,9 @@ export class TotCalendar extends HTMLElement {
   }
 }
 
-function addClassPart(classes, parts, enabled, className, partName) {
-  if (!enabled) {
-    return
-  }
-
-  classes.push(className)
-  parts.push(partName)
-}
-
-function appendClassParts(classes, parts, values) {
-  for (let i = 0; i < values.length; i++) {
-    classes.push(values[i])
-    parts.push(values[i])
+function addClass(classes, enabled, className) {
+  if (enabled) {
+    classes.push(className)
   }
 }
 

@@ -15,6 +15,13 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="row inline-control-row inline-control-center-row">
+          <tot-rating label="Inline rating" value="4"></tot-rating>
+          <tot-button size="small" variant="primary">Submit</tot-button>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Precision and max</div>
         <div class="row">
           <tot-rating label="Half step rating" value="2.5" precision="0.5"></tot-rating>

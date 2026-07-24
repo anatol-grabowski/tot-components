@@ -18,9 +18,9 @@ export type TotCalendar = {
     noInput: boolean
 
     /**
-     * Optional class callback for visible day cells. Returned class names are
-     * applied to the inner day button and are also exposed as CSS parts so they
-     * can be styled outside the shadow root. @default null
+     * Optional class callback for visible days. Returned names are applied
+     * verbatim to the native day button and exposed through the day-template
+     * class tokens. They are not converted into CSS parts. @default null
      */
     getDayClasses: ((
       day: {
@@ -60,8 +60,9 @@ export type TotCalendar = {
     ) => string | string[] | Record<string, boolean> | null | undefined) | null
 
     /**
-     * Optional class callback for visible month-label cells. Returned class
-     * names are applied to the month cell and exposed as CSS parts. @default null
+     * Optional class callback for visible month-label cells. Returned names are
+     * applied verbatim to the month cell and exposed through the month-template
+     * class tokens. They are not converted into CSS parts. @default null
      */
     getMonthClasses: ((
       month: {
@@ -156,14 +157,16 @@ export type TotCalendar = {
    *
    * `cell-day` supports `{{date}}`, `{{label}}`, `{{day.*}}`,
    * `{{features.*}}`, `{{classes}}`, `{{cellClasses}}`, `{{cellParts}}`,
-   * `{{contentClasses}}`, and `{{contentParts}}`. Each cloned element also
-   * receives `day`, `dayData`, `features`, `classes`, and `dayClasses`
-   * properties.
+   * `{{contentClasses}}`, and `{{contentParts}}`. `cellParts` is the stable
+   * `day-cell` part and `contentParts` is `day`; state and callback output are
+   * represented by classes instead. Each cloned element also receives `day`,
+   * `dayData`, `features`, `classes`, and `dayClasses` properties.
    *
    * `cell-month` supports `{{date}}`, `{{label}}`, `{{shortLabel}}`,
    * `{{yearLabel}}`, `{{month.*}}`, `{{features.*}}`, `{{classes}}`,
-   * `{{cellClasses}}`, and `{{cellParts}}`. Each cloned element also receives
-   * `month`, `monthData`, `features`, `classes`, and `monthClasses` properties.
+   * `{{cellClasses}}`, and `{{cellParts}}`. `cellParts` is the stable
+   * `month-cell` part. Each cloned element also receives `month`, `monthData`,
+   * `features`, `classes`, and `monthClasses` properties.
    */
   slots: {
     'cell-day': undefined
@@ -171,67 +174,49 @@ export type TotCalendar = {
   }
 
   /**
-   * Class names returned by `getDayClasses` and `getMonthClasses` are also
-   * exposed as dynamic parts with the exact same names.
+   * Parts expose only stable structural elements. Calendar state uses classes
+   * inside the shadow tree rather than a separate part for every combination.
+   *
+   * Built-in structural classes are `.calendar`, `.input-row`, `.input`,
+   * `.year-scroller`, `.year-strip`, `.year-cell`, `.scroller`, `.table`,
+   * `.head`, `.weekday`, `.body`, `.week-row`, `.month-cell`, `.month-cell__label`,
+   * `.day-cell`, and `.day`.
+   *
+   * State classes are `.is-selected`, `.is-today`, `.is-weekend`,
+   * `.is-month-start`, `.is-month-end`, `.is-month-top`, `.is-month-bottom`,
+   * `.is-year-start`, `.is-year-end`, `.is-year-top`, and `.is-year-bottom`.
+   * Their meaning depends on the structural element carrying them. Callback
+   * classes are appended unchanged to `.day` or `.month-cell`. Since these classes
+   * are inside the shadow root, use the template class tokens for custom cell
+   * markup; use the generic parts below for page-level structural styling.
    *
    * ```text
    * base
-   * ├─ input-row
-   * │  └─ input — `<tot-input>`
+   * ├─ input — `<tot-input>`
    * ├─ year-scroller
-   * │  └─ year-strip
-   * │     └─ year-cell — repeated visible year
-   * │        ├─ year-highlight
-   * │        ├─ year-today
-   * │        └─ year-label
+   * │  └─ year-cell — repeated visible year
    * └─ scroller
    *    └─ table
    *       ├─ header
-   *       │  ├─ month-header
    *       │  └─ weekday — repeated weekday heading
    *       └─ body
-   *          ├─ month — repeated row-group label
-   *          └─ date-cell
-   *             └─ date — native day button
+   *          ├─ month-cell — repeated row-group label
+   *          └─ day-cell
+   *             └─ day — native day button
    * ```
    */
   parts:
     | 'base'
-    | 'input-row'
     | 'input'
     | 'year-scroller'
-    | 'year-strip'
     | 'year-cell'
-    | 'selected-year-cell'
-    | 'year-highlight'
-    | 'year-today'
-    | 'year-label'
     | 'scroller'
     | 'table'
     | 'header'
-    | 'month-header'
     | 'weekday'
     | 'body'
-    | 'month'
-    | 'month-top'
-    | 'month-bottom'
-    | 'year-top'
-    | 'year-bottom'
-    | 'date-cell'
-    | 'month-top-date-cell'
-    | 'month-bottom-date-cell'
-    | 'month-start-date-cell'
-    | 'month-end-date-cell'
-    | 'year-top-date-cell'
-    | 'year-bottom-date-cell'
-    | 'year-start-date-cell'
-    | 'year-end-date-cell'
-    | 'weekend-date-cell'
-    | 'selected-date-cell'
-    | 'date'
-    | 'month-start-date'
-    | 'weekend-date'
-    | 'today-date'
-    | 'selected-date'
-    | (string & {})
+    | 'month-cell'
+    | 'day-cell'
+    | 'day'
+
 }

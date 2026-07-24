@@ -69,6 +69,15 @@ registerDemo({
         </div>
       </div>
       <div class="stack demo-group">
+        <div class="demo-label">Inline with button</div>
+        <div class="row inline-control-row">
+          <div class="demo-scroll-host inline-control-fill">
+            <tot-tabs items="Overview,Activity,Files" value="Activity"></tot-tabs>
+          </div>
+          <tot-button variant="primary">New</tot-button>
+        </div>
+      </div>
+      <div class="stack demo-group">
         <div class="demo-label">Sizes</div>
         <div class="stack">
           <div class="demo-scroll-host"><tot-tabs size="small" items="Overview,Activity,Files" value="Activity"></tot-tabs></div>
