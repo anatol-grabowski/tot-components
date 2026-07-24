@@ -76,6 +76,11 @@ export interface FsRoService {
  * - `FsServiceArchive.js` creates a dependency-free in-memory file system from
  *   ZIP, TAR, or gzip-compressed TAR bytes. Archive parsing is lazy, writes do
  *   not modify or serialize the original archive, and text writes support UTF-8.
+ * - `FsServiceDb.js` stores a virtual path hierarchy and `ArrayBuffer` file data
+ *   in a caller-provided `DbService` table. Initialization is lazy, the database
+ *   remains caller-owned, and multi-record mutations are serialized per service
+ *   instance but cannot be atomic because the generic database contract does not
+ *   expose public transactions.
  *
  * All writable implementations expose the methods below. Constructors,
  * initialization helpers, plugin injection, directory pickers, and other

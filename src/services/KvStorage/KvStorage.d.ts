@@ -4,9 +4,9 @@
  * Current implementations:
  * - `KvStorageLstor.js` uses browser `localStorage`. Values are JSON serialized;
  *   calls are asynchronous but the underlying browser access is synchronous.
- * - `KvStorageIdb.js` uses IndexedDB structured cloning and lazily opens its
- *   database. It additionally accepts any `IDBValidKey`, while string keys form
- *   the portable contract shared by every implementation.
+ * - `KvStorageDb.js` stores each value in a caller-provided generic `DbService`
+ *   table. It supports the portable database value types plus explicit
+ *   `undefined`; initialization is lazy and the database remains caller-owned.
  * - `KvStorageFile.js` stores the complete key-value object as JSON through a
  *   compatible writable file-system service. It is intended for small data sets,
  *   loads lazily, serializes writes within one instance, and treats a missing or

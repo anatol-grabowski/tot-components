@@ -299,6 +299,11 @@ export interface FsRoService {
  * - `FsServiceArchive.js` creates a dependency-free in-memory file system from
  *   ZIP, TAR, or gzip-compressed TAR bytes. Archive parsing is lazy, writes do
  *   not modify or serialize the original archive, and text writes support UTF-8.
+ * - `FsServiceDb.js` stores a virtual path hierarchy and `ArrayBuffer` file data
+ *   in a caller-provided `DbService` table. Initialization is lazy, the database
+ *   remains caller-owned, and multi-record mutations are serialized per service
+ *   instance but cannot be atomic because the generic database contract does not
+ *   expose public transactions.
  *
  * All writable implementations expose the methods below. Constructors,
  * initialization helpers, plugin injection, directory pickers, and other
@@ -332,9 +337,9 @@ export interface FsService extends FsRoService {
  * Current implementations:
  * - `KvStorageLstor.js` uses browser `localStorage`. Values are JSON serialized;
  *   calls are asynchronous but the underlying browser access is synchronous.
- * - `KvStorageIdb.js` uses IndexedDB structured cloning and lazily opens its
- *   database. It additionally accepts any `IDBValidKey`, while string keys form
- *   the portable contract shared by every implementation.
+ * - `KvStorageDb.js` stores each value in a caller-provided generic `DbService`
+ *   table. It supports the portable database value types plus explicit
+ *   `undefined`; initialization is lazy and the database remains caller-owned.
  * - `KvStorageFile.js` stores the complete key-value object as JSON through a
  *   compatible writable file-system service. It is intended for small data sets,
  *   loads lazily, serializes writes within one instance, and treats a missing or
