@@ -56,7 +56,7 @@ export type TotImageSearch = {
     /**
      * Minimum tile width in pixels. Grid columns expand evenly to use the
      * available width. Pinch or Ctrl+wheel over the grid updates this value.
-     * Values are clamped to at least 72. Pinch and Ctrl+wheel can enlarge
+     * Values are clamped to at least 32. Pinch and Ctrl+wheel can enlarge
      * tiles to a single column regardless of container width. @default 144
      */
     minTileSize: number

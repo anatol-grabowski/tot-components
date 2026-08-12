@@ -1,5 +1,5 @@
 const openverseImagesUrl = 'https://api.openverse.org/v1/images/'
-const minimumTileSize = 72
+const minimumTileSize = 32
 const wheelStep = 12
 const pinchStep = .04
 const wheelResetDelay = 180
@@ -955,7 +955,7 @@ export class TotImageSearch extends HTMLElement {
       return false
     }
 
-    const nextTileSize = Math.ceil((width - gap * (nextColumns - 1)) / nextColumns)
+    const nextTileSize = Math.floor((width - gap * (nextColumns - 1)) / nextColumns)
     const normalizedSize = normalizeTileSize(nextTileSize)
     if (normalizedSize === this.minTileSize) {
       return false
