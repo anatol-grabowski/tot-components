@@ -78,17 +78,33 @@ const imageSearchStyle = `
     touch-action: pan-y;
   }
 
-  .status[hidden],
   .grid[hidden],
   .empty[hidden],
   .load-more[hidden] {
     display: none;
   }
 
+  .results {
+    min-width: 0;
+    position: relative;
+  }
+
   .status {
-    color: var(--tot-color-neutral-600, #64748b);
+    background: var(--tot-panel-background-color, rgb(255 255 255 / 92%));
+    border-radius: var(--tot-border-radius-small, 3px);
+    color: var(--tot-color-neutral-700, #334155);
     font-size: var(--tot-font-size-small, .875rem);
+    left: var(--tot-spacing-x-small, .5rem);
     line-height: var(--tot-line-height-normal, 1.45);
+    padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-x-small, .5rem);
+    pointer-events: none;
+    position: absolute;
+    top: var(--tot-spacing-x-small, .5rem);
+    z-index: 2;
+  }
+
+  .status[hidden] {
+    display: none;
   }
 
   .tile {
@@ -342,9 +358,11 @@ export class TotImageSearch extends HTMLElement {
         <tot-input class="search-input" part="input" placeholder="Search openly licensed images" clearable>
           <button class="search-button" slot="suffix" type="button" aria-label="Search">${searchIcon}</button>
         </tot-input>
-        <div class="status" part="status" role="status" aria-live="polite" hidden></div>
-        <div class="grid" part="grid" hidden></div>
-        <div class="empty" part="empty">Enter a search term.</div>
+        <div class="results">
+          <div class="status" part="status" role="status" aria-live="polite" hidden></div>
+          <div class="grid" part="grid" hidden></div>
+          <div class="empty" part="empty">Enter a search term.</div>
+        </div>
         <button class="load-more" part="load-more-button" type="button" hidden>Load more</button>
       </div>
       <tot-image-preview class="preview"></tot-image-preview>
@@ -496,17 +514,18 @@ export class TotImageSearch extends HTMLElement {
   }
 
   async search(query = this.query) {
-    const nextQuery = String(query ?? '').trim()
+    const rawQuery = String(query ?? '')
+    const searchQuery = rawQuery.trim()
     clearTimeout(this._debounceTimer)
     this._debounceTimer = 0
 
-    if (nextQuery !== this.query) {
-      this.setAttribute('query', nextQuery)
+    if (rawQuery !== this.query) {
+      this.setAttribute('query', rawQuery)
       clearTimeout(this._debounceTimer)
       this._debounceTimer = 0
     }
 
-    if (!nextQuery) {
+    if (!searchQuery) {
       this._clearResults()
       return []
     }
@@ -572,20 +591,6 @@ export class TotImageSearch extends HTMLElement {
     }
 
     this._abortController?.abort()
-    if (!append) {
-      const hadSelection = this._selectedKeys.size > 0
-      this._page = 0
-      this._pageCount = 0
-      this._rawResults = []
-      this._images = []
-      this._resultCount = 0
-      this._selectedKeys.clear()
-      this._renderResults()
-      if (hadSelection) {
-        this._dispatchSelectionChange()
-      }
-    }
-
     const controller = new AbortController()
     this._abortController = controller
     this._loading = true
@@ -616,14 +621,21 @@ export class TotImageSearch extends HTMLElement {
       }
 
       const incoming = Array.isArray(data?.results) ? data.results : []
+      const hadSelection = !append && this._selectedKeys.size > 0
       this._rawResults = append
         ? mergeUniqueImages(this._rawResults, incoming)
         : mergeUniqueImages([], incoming)
       this._page = normalizePositiveInteger(data?.page, page)
       this._pageCount = normalizePositiveInteger(data?.page_count, this._page)
       this._resultCount = normalizePositiveInteger(data?.result_count, this._rawResults.length, true)
+      if (!append) {
+        this._selectedKeys.clear()
+      }
 
       this._applyFilter()
+      if (hadSelection) {
+        this._dispatchSelectionChange()
+      }
       dispatchCustomEvent(this, 'search-end', {
         count: this._images.length,
         page: this._page,
@@ -729,9 +741,14 @@ export class TotImageSearch extends HTMLElement {
     previewButton.setAttribute('aria-label', `Preview ${getImageTitle(image)}`)
 
     const imageElement = document.createElement('img')
-    const thumbnailUrl = getThumbnailUrl(image)
-    if (thumbnailUrl) {
-      imageElement.src = thumbnailUrl
+    const thumbnailUrl = String(image?.thumbnail || '')
+    const previewUrl = getPreviewUrl(image)
+    const tileImageUrl = thumbnailUrl || previewUrl
+    if (tileImageUrl) {
+      imageElement.src = tileImageUrl
+      if (thumbnailUrl && previewUrl && thumbnailUrl !== previewUrl) {
+        imageElement.dataset.fallbackSrc = previewUrl
+      }
     } else {
       tile.dataset.error = 'true'
     }
@@ -858,10 +875,19 @@ export class TotImageSearch extends HTMLElement {
   }
 
   _handleImageError(event) {
-    const tile = event.target.closest?.('.tile')
-    if (tile) {
-      tile.dataset.error = 'true'
+    const image = event.target
+    const tile = image.closest?.('.tile')
+    if (!tile) {
+      return
     }
+
+    const fallbackSrc = image.dataset?.fallbackSrc
+    if (fallbackSrc && image.dataset.fallbackAttempted !== 'true') {
+      image.dataset.fallbackAttempted = 'true'
+      image.src = fallbackSrc
+      return
+    }
+    tile.dataset.error = 'true'
   }
 
   _handleWheel(event) {
@@ -1070,10 +1096,6 @@ function getImageKey(image) {
 function getImageTitle(image) {
   const title = typeof image?.title === 'string' ? image.title.trim() : ''
   return title || 'Untitled image'
-}
-
-function getThumbnailUrl(image) {
-  return String(image?.thumbnail || image?.url || '')
 }
 
 function getPreviewUrl(image) {

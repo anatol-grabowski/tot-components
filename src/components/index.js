@@ -7,6 +7,7 @@ import { TotNavbar } from './Navbar/Navbar.js'
 import { TotTabs } from './Tabs/Tabs.js'
 import { TotAudioPlayer } from './AudioPlayer/AudioPlayer.js'
 import { TotAudioRecorder } from './AudioRecorder/AudioRecorder.js'
+import { TotVideo } from './Video/Video.js'
 import { TotDivider } from './Divider/Divider.js'
 import { TotMenu, TotMenuItem, TotMenuLabel } from './Menu/Menu.js'
 import { TotDropdown } from './Dropdown/Dropdown.js'
@@ -63,6 +64,7 @@ defineElement('tot-divider', TotDivider)
 defineElement('tot-menu', TotMenu)
 defineElement('tot-menu-item', TotMenuItem)
 defineElement('tot-menu-label', TotMenuLabel)
+defineElement('tot-video', TotVideo)
 defineElement('tot-dropdown', TotDropdown)
 defineElement('tot-dialog', TotDialog)
 defineElement('tot-drawer', TotDrawer)
@@ -105,6 +107,7 @@ export {
   TotTabs,
   TotAudioPlayer,
   TotAudioRecorder,
+  TotVideo,
   TotDivider,
   TotMenu,
   TotMenuItem,

@@ -6,7 +6,8 @@ export type TotImagePreviewChangeDetail = {
 /**
  * `<tot-image-preview>` - a black image gallery overlay with a large current
  * image, top index and close controls, bottom thumbnails, quarter-click and
- * pointer-swipe navigation, and keyboard navigation.
+ * pointer-swipe navigation, pinch and Ctrl+wheel image zooming, keyboard
+ * navigation, and mobile browser-back closing while fullscreen.
  */
 export type TotImagePreview = {
   props: {
@@ -22,7 +23,8 @@ export type TotImagePreview = {
     /**
      * Uses `position: absolute` instead of a viewport-fixed overlay. The nearest
      * ancestor that should contain the preview must establish a positioning
-     * context, usually with `position: relative`. @default false
+     * context, usually with `position: relative`. Contained previews do not
+     * add a browser-history entry. @default false
      */
     contained: boolean
   }
@@ -32,6 +34,9 @@ export type TotImagePreview = {
     hide(): void
     previous(): void
     next(): void
+    zoomIn(): void
+    zoomOut(): void
+    resetZoom(): void
     getBase(): HTMLElement | null
     getImage(): HTMLImageElement | null
     getThumbnails(): HTMLButtonElement[]

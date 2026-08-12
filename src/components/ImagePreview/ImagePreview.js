@@ -1,3 +1,7 @@
+const minimumZoom = 1
+const maximumZoom = 8
+const zoomStep = 1.25
+
 const imagePreviewStyle = `
   :host {
     display: contents;
@@ -33,6 +37,7 @@ const imagePreviewStyle = `
 
   .stage {
     align-items: center;
+    cursor: default;
     display: flex;
     justify-content: center;
     min-height: 0;
@@ -43,6 +48,14 @@ const imagePreviewStyle = `
     user-select: none;
   }
 
+  .stage[data-zoomed='true'] {
+    cursor: grab;
+  }
+
+  .stage[data-dragging='true'] {
+    cursor: grabbing;
+  }
+
   .image {
     display: block;
     height: 100%;
@@ -50,7 +63,10 @@ const imagePreviewStyle = `
     max-width: 100%;
     object-fit: contain;
     pointer-events: none;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
     width: 100%;
+    will-change: transform;
   }
 
   .image[hidden],
@@ -193,7 +209,12 @@ const closeIcon = `
 `
 
 const openFullscreenPreviews = new Set()
+const fullscreenPreviewStack = []
 let previousBodyOverflow = ''
+let fullscreenPreviewHistoryToken = ''
+let fullscreenPreviewHistoryActive = false
+let ignoreNextFullscreenPreviewPopState = false
+let fullscreenPreviewHistoryResetTimer = 0
 
 export class TotImagePreview extends HTMLElement {
   static get observedAttributes() {
@@ -204,10 +225,27 @@ export class TotImagePreview extends HTMLElement {
     super()
     this._images = undefined
     this._previouslyFocused = null
-    this._swipePointerId = null
-    this._swipeStartX = 0
-    this._swipeStartY = 0
+    /** @type {Map<number, { x: number, y: number }>} */
+    this._activePointers = new Map()
+    this._gestureMode = 'idle'
+    this._gestureMoved = false
+    this._gestureStartX = 0
+    this._gestureStartY = 0
+    this._panStartX = 0
+    this._panStartY = 0
+    this._pinchDistance = 0
+    this._pinchCenterX = 0
+    this._pinchCenterY = 0
+    this._panX = 0
+    this._panY = 0
+    this._zoom = minimumZoom
+    this._zoomSource = ''
+    this._requestedSource = ''
     this._wasOpen = false
+    this._skipHistoryOnDeactivate = false
+    this._resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(() => this._clampAndRenderTransform())
 
     const root = this.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${imagePreviewStyle}</style>
@@ -237,6 +275,7 @@ export class TotImagePreview extends HTMLElement {
     this._stageElement.addEventListener('pointermove', event => this._handlePointerMove(event))
     this._stageElement.addEventListener('pointerup', event => this._handlePointerUp(event))
     this._stageElement.addEventListener('pointercancel', event => this._handlePointerCancel(event))
+    this._stageElement.addEventListener('wheel', event => this._handleWheel(event), { passive: false })
     this._imageElement.addEventListener('load', () => this._handleImageLoad())
     this._imageElement.addEventListener('error', () => this._handleImageError())
     this._thumbnailsElement.addEventListener('click', event => this._handleThumbnailClick(event))
@@ -286,13 +325,15 @@ export class TotImagePreview extends HTMLElement {
   }
 
   connectedCallback() {
+    this._resizeObserver?.observe(this._stageElement)
     this._syncImages()
     this._syncOpenState()
   }
 
   disconnectedCallback() {
-    this._releasePointer()
-    this._deactivateOpenState()
+    this._resizeObserver?.disconnect()
+    this._releasePointers()
+    this._deactivateOpenState(true)
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -308,7 +349,7 @@ export class TotImagePreview extends HTMLElement {
     } else if (name === 'open') {
       this._syncOpenState()
     } else if (name === 'contained' && this.open) {
-      this._syncBodyLock()
+      this._syncFullscreenState()
     }
   }
 
@@ -335,6 +376,23 @@ export class TotImagePreview extends HTMLElement {
       return
     }
     this.index = (this.index + 1) % images.length
+  }
+
+  zoomIn() {
+    const anchor = this._getStageCenter()
+    this._applyZoom(this._zoom * zoomStep, anchor.x, anchor.y)
+  }
+
+  zoomOut() {
+    const anchor = this._getStageCenter()
+    this._applyZoom(this._zoom / zoomStep, anchor.x, anchor.y)
+  }
+
+  resetZoom() {
+    this._zoom = minimumZoom
+    this._panX = 0
+    this._panY = 0
+    this._renderTransform()
   }
 
   getBase() {
@@ -395,7 +453,7 @@ export class TotImagePreview extends HTMLElement {
 
     this._emptyElement.hidden = hasImages
     this._errorElement.hidden = true
-    this._imageElement.hidden = !hasImages
+    this._imageElement.hidden = true
     this._counterElement.hidden = !hasImages
     this._counterElement.textContent = hasImages ? `${index + 1} / ${images.length}` : ''
     this._stageElement.dataset.navigable = String(hasNavigation)
@@ -403,14 +461,22 @@ export class TotImagePreview extends HTMLElement {
 
     if (hasImages) {
       const source = images[index]
-      if (this._imageElement.getAttribute('src') !== source) {
-        this._imageElement.hidden = true
+      if (source !== this._zoomSource) {
+        this._zoomSource = source
+        this.resetZoom()
+      }
+      if (source !== this._requestedSource) {
+        this._requestedSource = source
+        this._imageElement.removeAttribute('src')
         this._imageElement.src = source
       } else if (this._imageElement.complete && this._imageElement.naturalWidth > 0) {
         this._imageElement.hidden = false
       }
       this._imageElement.alt = `Image ${index + 1} of ${images.length}`
     } else {
+      this._zoomSource = ''
+      this._requestedSource = ''
+      this.resetZoom()
       this._imageElement.removeAttribute('src')
       this._imageElement.alt = ''
     }
@@ -444,16 +510,17 @@ export class TotImagePreview extends HTMLElement {
     const open = this.open
     this._baseElement.hidden = !open
     if (open === this._wasOpen) {
-      this._syncBodyLock()
+      this._syncFullscreenState()
       return
     }
 
     this._wasOpen = open
     if (open) {
+      this.resetZoom()
       this._previouslyFocused = document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null
-      this._syncBodyLock()
+      this._syncFullscreenState()
       this._syncCurrentImage()
       requestAnimationFrame(() => {
         if (this.open) {
@@ -462,20 +529,27 @@ export class TotImagePreview extends HTMLElement {
       })
       dispatchEvent(this, 'show')
     } else {
-      this._deactivateOpenState()
+      this._releasePointers()
+      this.resetZoom()
+      this._deactivateOpenState(this._skipHistoryOnDeactivate)
+      this._skipHistoryOnDeactivate = false
       dispatchEvent(this, 'hide')
     }
   }
 
-  _syncBodyLock() {
+  _syncFullscreenState() {
     if (!this.open || this.contained) {
+      unregisterFullscreenPreview(this, false)
       unlockBody(this)
       return
     }
+
     lockBody(this)
+    registerFullscreenPreview(this)
   }
 
-  _deactivateOpenState() {
+  _deactivateOpenState(skipHistory = false) {
+    unregisterFullscreenPreview(this, skipHistory)
     unlockBody(this)
     if (this._previouslyFocused?.isConnected) {
       this._previouslyFocused.focus({ preventScroll: true })
@@ -532,38 +606,108 @@ export class TotImagePreview extends HTMLElement {
   }
 
   _handlePointerDown(event) {
-    if (event.button !== 0 || event.target.closest?.('button')) {
+    if ((event.pointerType === 'mouse' && event.button !== 0) || event.target.closest?.('button')) {
       return
     }
 
-    this._swipePointerId = event.pointerId
-    this._swipeStartX = event.clientX
-    this._swipeStartY = event.clientY
+    this._activePointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
     this._stageElement.setPointerCapture?.(event.pointerId)
+
+    if (this._activePointers.size === 1) {
+      this._startSinglePointerGesture(event.clientX, event.clientY)
+    } else if (this._activePointers.size === 2) {
+      this._startPinchGesture()
+    }
   }
 
   _handlePointerMove(event) {
-    if (event.pointerId !== this._swipePointerId) {
+    if (!this._activePointers.has(event.pointerId)) {
       return
     }
 
-    const horizontalDistance = Math.abs(event.clientX - this._swipeStartX)
-    const verticalDistance = Math.abs(event.clientY - this._swipeStartY)
-    if (horizontalDistance > verticalDistance && horizontalDistance > 8) {
+    this._activePointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    if (this._activePointers.size >= 2) {
       event.preventDefault()
+      const pinch = getPointerPinch(this._activePointers)
+      if (!pinch || this._pinchDistance <= 0) {
+        this._startPinchGesture()
+        return
+      }
+
+      const factor = pinch.distance / this._pinchDistance
+      this._applyZoom(this._zoom * factor, this._pinchCenterX, this._pinchCenterY)
+      this._panX += pinch.centerX - this._pinchCenterX
+      this._panY += pinch.centerY - this._pinchCenterY
+      this._pinchDistance = pinch.distance
+      this._pinchCenterX = pinch.centerX
+      this._pinchCenterY = pinch.centerY
+      this._gestureMoved = true
+      this._clampAndRenderTransform()
+      return
+    }
+
+    if (this._gestureMode === 'pan') {
+      const distanceX = event.clientX - this._gestureStartX
+      const distanceY = event.clientY - this._gestureStartY
+      if (Math.abs(distanceX) > 2 || Math.abs(distanceY) > 2) {
+        this._gestureMoved = true
+        this._stageElement.dataset.dragging = 'true'
+      }
+      this._panX = this._panStartX + distanceX
+      this._panY = this._panStartY + distanceY
+      this._clampAndRenderTransform()
+      event.preventDefault()
+      return
+    }
+
+    if (this._gestureMode === 'navigate') {
+      const horizontalDistance = Math.abs(event.clientX - this._gestureStartX)
+      const verticalDistance = Math.abs(event.clientY - this._gestureStartY)
+      if (horizontalDistance > verticalDistance && horizontalDistance > 8) {
+        this._gestureMoved = true
+        event.preventDefault()
+      }
     }
   }
 
   _handlePointerUp(event) {
-    if (event.pointerId !== this._swipePointerId) {
+    if (!this._activePointers.has(event.pointerId)) {
       return
     }
 
-    const distanceX = event.clientX - this._swipeStartX
-    const distanceY = event.clientY - this._swipeStartY
-    const threshold = Math.max(40, this._stageElement.clientWidth * .08)
-    this._releasePointer()
+    this._activePointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+    const mode = this._gestureMode
+    const distanceX = event.clientX - this._gestureStartX
+    const distanceY = event.clientY - this._gestureStartY
+    this._releasePointer(event.pointerId)
 
+    if (mode === 'pinch' || this._activePointers.size > 0) {
+      if (this._activePointers.size >= 2) {
+        this._startPinchGesture()
+      } else {
+        this._gestureMode = this._activePointers.size > 0 ? 'suppressed' : 'idle'
+        this._stageElement.dataset.dragging = 'false'
+      }
+      return
+    }
+
+    this._gestureMode = 'idle'
+    this._stageElement.dataset.dragging = 'false'
+    if (mode !== 'navigate') {
+      return
+    }
+
+    const threshold = Math.max(40, this._stageElement.clientWidth * .08)
     if (Math.abs(distanceX) >= threshold && Math.abs(distanceX) > Math.abs(distanceY)) {
       if (distanceX < 0) {
         this.next()
@@ -573,7 +717,7 @@ export class TotImagePreview extends HTMLElement {
       return
     }
 
-    if (Math.abs(distanceX) > 8 || Math.abs(distanceY) > 8 || this.images.length < 2) {
+    if (this._gestureMoved || Math.abs(distanceX) > 8 || Math.abs(distanceY) > 8 || this.images.length < 2) {
       return
     }
 
@@ -591,20 +735,132 @@ export class TotImagePreview extends HTMLElement {
   }
 
   _handlePointerCancel(event) {
-    if (event.pointerId === this._swipePointerId) {
-      this._releasePointer()
-    }
-  }
-
-  _releasePointer() {
-    if (this._swipePointerId === null) {
+    if (!this._activePointers.has(event.pointerId)) {
       return
     }
 
-    if (this._stageElement.hasPointerCapture?.(this._swipePointerId)) {
-      this._stageElement.releasePointerCapture(this._swipePointerId)
+    this._releasePointer(event.pointerId)
+    if (this._activePointers.size === 0) {
+      this._gestureMode = 'idle'
+      this._stageElement.dataset.dragging = 'false'
+    } else {
+      this._gestureMode = 'suppressed'
     }
-    this._swipePointerId = null
+  }
+
+  _handleWheel(event) {
+    if (!event.ctrlKey || this._imageElement.hidden) {
+      return
+    }
+
+    event.preventDefault()
+    const delta = normalizeZoomWheelDelta(event)
+    const factor = Math.exp(-delta * .0025)
+    this._applyZoom(this._zoom * factor, event.clientX, event.clientY)
+  }
+
+  _startSinglePointerGesture(x, y) {
+    this._gestureMode = this._zoom > minimumZoom ? 'pan' : 'navigate'
+    this._gestureMoved = false
+    this._gestureStartX = x
+    this._gestureStartY = y
+    this._panStartX = this._panX
+    this._panStartY = this._panY
+  }
+
+  _startPinchGesture() {
+    const pinch = getPointerPinch(this._activePointers)
+    if (!pinch) {
+      return
+    }
+
+    this._gestureMode = 'pinch'
+    this._gestureMoved = true
+    this._pinchDistance = pinch.distance
+    this._pinchCenterX = pinch.centerX
+    this._pinchCenterY = pinch.centerY
+    this._stageElement.dataset.dragging = 'true'
+  }
+
+  _applyZoom(value, anchorX, anchorY) {
+    if (this._imageElement.hidden) {
+      return
+    }
+
+    const nextZoom = Math.min(maximumZoom, Math.max(minimumZoom, value))
+    if (nextZoom <= minimumZoom + .001) {
+      this.resetZoom()
+      return
+    }
+
+    if (Math.abs(nextZoom - this._zoom) < .001) {
+      return
+    }
+
+    const center = this._getImageCenter()
+    const relativeX = anchorX - center.x
+    const relativeY = anchorY - center.y
+    const imageX = (relativeX - this._panX) / this._zoom
+    const imageY = (relativeY - this._panY) / this._zoom
+    this._panX = relativeX - imageX * nextZoom
+    this._panY = relativeY - imageY * nextZoom
+    this._zoom = nextZoom
+    this._clampAndRenderTransform()
+  }
+
+  _clampAndRenderTransform() {
+    if (this._zoom <= minimumZoom) {
+      this._zoom = minimumZoom
+      this._panX = 0
+      this._panY = 0
+      this._renderTransform()
+      return
+    }
+
+    const viewport = getStageViewportSize(this._stageElement)
+    const image = getContainedImageSize(this._imageElement)
+    const maximumPanX = Math.max(0, (image.width * this._zoom - viewport.width) / 2)
+    const maximumPanY = Math.max(0, (image.height * this._zoom - viewport.height) / 2)
+    this._panX = Math.min(maximumPanX, Math.max(-maximumPanX, this._panX))
+    this._panY = Math.min(maximumPanY, Math.max(-maximumPanY, this._panY))
+    this._renderTransform()
+  }
+
+  _renderTransform() {
+    this._imageElement.style.transform = `translate3d(${this._panX}px, ${this._panY}px, 0) scale(${this._zoom})`
+    this._stageElement.dataset.zoomed = String(this._zoom > minimumZoom)
+  }
+
+  _getStageCenter() {
+    const bounds = this._stageElement.getBoundingClientRect()
+    return {
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    }
+  }
+
+  _getImageCenter() {
+    const stageBounds = this._stageElement.getBoundingClientRect()
+    return {
+      x: stageBounds.left + this._imageElement.offsetLeft + this._imageElement.offsetWidth / 2,
+      y: stageBounds.top + this._imageElement.offsetTop + this._imageElement.offsetHeight / 2,
+    }
+  }
+
+  _releasePointer(pointerId) {
+    if (this._stageElement.hasPointerCapture?.(pointerId)) {
+      this._stageElement.releasePointerCapture(pointerId)
+    }
+    this._activePointers.delete(pointerId)
+  }
+
+  _releasePointers() {
+    const pointerIds = Array.from(this._activePointers.keys())
+    for (let i = 0; i < pointerIds.length; i++) {
+      this._releasePointer(pointerIds[i])
+    }
+    this._gestureMode = 'idle'
+    this._stageElement.dataset.dragging = 'false'
   }
 
   _handleThumbnailClick(event) {
@@ -617,17 +873,80 @@ export class TotImagePreview extends HTMLElement {
   }
 
   _handleImageLoad() {
-    if (!this.images.length) {
+    const images = this.images
+    const source = images[normalizeIndex(this.getAttribute('index'), images.length)]
+    if (!source || source !== this._requestedSource || this._imageElement.getAttribute('src') !== source) {
       return
     }
     this._errorElement.hidden = true
     this._imageElement.hidden = false
+    this._clampAndRenderTransform()
   }
 
   _handleImageError() {
+    const images = this.images
+    const source = images[normalizeIndex(this.getAttribute('index'), images.length)]
+    if (!source || source !== this._requestedSource || this._imageElement.getAttribute('src') !== source) {
+      return
+    }
     this._imageElement.hidden = true
     this._errorElement.hidden = false
   }
+}
+
+/** @param {Map<number, { x: number, y: number }>} pointers */
+function getPointerPinch(pointers) {
+  if (pointers.size < 2) {
+    return null
+  }
+
+  const values = Array.from(pointers.values())
+  const first = values[0]
+  const second = values[1]
+  return {
+    centerX: (first.x + second.x) / 2,
+    centerY: (first.y + second.y) / 2,
+    distance: Math.hypot(first.x - second.x, first.y - second.y),
+  }
+}
+
+/** @param {HTMLElement} stage */
+function getStageViewportSize(stage) {
+  const style = getComputedStyle(stage)
+  const horizontalPadding = (Number.parseFloat(style.paddingLeft) || 0)
+    + (Number.parseFloat(style.paddingRight) || 0)
+  const verticalPadding = (Number.parseFloat(style.paddingTop) || 0)
+    + (Number.parseFloat(style.paddingBottom) || 0)
+  return {
+    width: Math.max(0, stage.clientWidth - horizontalPadding),
+    height: Math.max(0, stage.clientHeight - verticalPadding),
+  }
+}
+
+/** @param {HTMLImageElement} image */
+function getContainedImageSize(image) {
+  const width = image.clientWidth
+  const height = image.clientHeight
+  if (width <= 0 || height <= 0 || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+    return { width, height }
+  }
+
+  const ratio = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+  return {
+    width: image.naturalWidth * ratio,
+    height: image.naturalHeight * ratio,
+  }
+}
+
+/** @param {WheelEvent} event */
+function normalizeZoomWheelDelta(event) {
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    return event.deltaY * 16
+  }
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    return event.deltaY * Math.max(1, window.innerHeight)
+  }
+  return event.deltaY
 }
 
 function normalizeImages(value) {
@@ -713,3 +1032,107 @@ function unlockBody(preview) {
     previousBodyOverflow = ''
   }
 }
+
+function registerFullscreenPreview(preview) {
+  if (fullscreenPreviewStack.indexOf(preview) !== -1) {
+    return
+  }
+
+  const wasEmpty = fullscreenPreviewStack.length === 0
+  fullscreenPreviewStack.push(preview)
+  if (wasEmpty) {
+    window.addEventListener('popstate', handleFullscreenPreviewPopState)
+    pushFullscreenPreviewHistoryState()
+  }
+}
+
+function unregisterFullscreenPreview(preview, skipHistory) {
+  const index = fullscreenPreviewStack.indexOf(preview)
+  if (index === -1) {
+    return
+  }
+
+  fullscreenPreviewStack.splice(index, 1)
+  if (fullscreenPreviewStack.length === 0) {
+    window.removeEventListener('popstate', handleFullscreenPreviewPopState)
+    removeFullscreenPreviewHistoryState(skipHistory)
+  }
+}
+
+function handleFullscreenPreviewPopState(event) {
+  if (ignoreNextFullscreenPreviewPopState) {
+    ignoreNextFullscreenPreviewPopState = false
+    clearTimeout(fullscreenPreviewHistoryResetTimer)
+    fullscreenPreviewHistoryResetTimer = 0
+    return
+  }
+
+  const top = fullscreenPreviewStack[fullscreenPreviewStack.length - 1]
+  if (!top || !fullscreenPreviewHistoryActive) {
+    return
+  }
+
+  if (event.state && event.state.totImagePreviewToken === fullscreenPreviewHistoryToken) {
+    return
+  }
+
+  fullscreenPreviewHistoryActive = false
+  fullscreenPreviewHistoryToken = ''
+  top._skipHistoryOnDeactivate = true
+  top.hide()
+
+  if (fullscreenPreviewStack.length > 0) {
+    pushFullscreenPreviewHistoryState()
+  }
+}
+
+function pushFullscreenPreviewHistoryState() {
+  if (fullscreenPreviewHistoryActive || typeof history === 'undefined') {
+    return
+  }
+
+  fullscreenPreviewHistoryToken = `tot-image-preview-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+  try {
+    const currentState = history.state && typeof history.state === 'object' ? history.state : {}
+    history.pushState({ ...currentState, totImagePreviewToken: fullscreenPreviewHistoryToken }, '')
+    fullscreenPreviewHistoryActive = true
+  } catch {
+    fullscreenPreviewHistoryActive = false
+    fullscreenPreviewHistoryToken = ''
+  }
+}
+
+function removeFullscreenPreviewHistoryState(skipHistory) {
+  if (!fullscreenPreviewHistoryActive || typeof history === 'undefined') {
+    fullscreenPreviewHistoryActive = false
+    fullscreenPreviewHistoryToken = ''
+    return
+  }
+
+  const token = fullscreenPreviewHistoryToken
+  const state = history.state
+  const isCurrentPreviewState = state && state.totImagePreviewToken === token
+  fullscreenPreviewHistoryActive = false
+  fullscreenPreviewHistoryToken = ''
+
+  if (!isCurrentPreviewState) {
+    return
+  }
+
+  if (skipHistory) {
+    const nextState = { ...state }
+    delete nextState.totImagePreviewToken
+    history.replaceState(nextState, '')
+    return
+  }
+
+  ignoreNextFullscreenPreviewPopState = true
+  clearTimeout(fullscreenPreviewHistoryResetTimer)
+  fullscreenPreviewHistoryResetTimer = window.setTimeout(() => {
+    ignoreNextFullscreenPreviewPopState = false
+    fullscreenPreviewHistoryResetTimer = 0
+  }, 1000)
+  history.back()
+}
+

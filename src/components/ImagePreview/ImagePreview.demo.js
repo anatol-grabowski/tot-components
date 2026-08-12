@@ -14,7 +14,7 @@ registerDemo({
     wrapper.className = 'stack'
     wrapper.innerHTML = `
       <div class="demo-group stack">
-        <div class="demo-label">Fullscreen preview with thumbnails, swipe, and keyboard navigation</div>
+        <div class="demo-label">Fullscreen preview with thumbnails, swipe, pinch/Ctrl+wheel zoom, and keyboard navigation</div>
         <div class="row">
           <tot-button id="openImagePreview" label="Open preview"></tot-button>
         </div>

@@ -47,7 +47,7 @@ export type TotImageSearchResultDetail = TotImageSearchProgressDetail & {
  */
 export type TotImageSearch = {
   props: {
-    /** Search text. Editing the property or attribute starts a debounced search. @default '' */
+    /** Search text. Whitespace is preserved while editing and trimmed only for requests. @default '' */
     query: string
 
     /** Allows more than one selected image. @default false */
