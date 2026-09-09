@@ -21,6 +21,7 @@ import { TotNotification } from './Notification/Notification.js'
 import { TotInput } from './Input/Input.js'
 import { TotCalendar } from './Calendar/Calendar.js'
 import { TotChart } from './Chart/Chart.js'
+import { TotTwoTowers } from './TwoTowers/TwoTowers.js'
 import { TotEditableChart } from './EditableChart/EditableChart.js'
 import { TotFileInput } from './FileInput/FileInput.js'
 import { TotImagePreview } from './ImagePreview/ImagePreview.js'
@@ -77,6 +78,7 @@ defineElement('tot-notification', TotNotification)
 defineElement('tot-input', TotInput)
 defineElement('tot-calendar', TotCalendar)
 defineElement('tot-chart', TotChart)
+defineElement('tot-two-towers', TotTwoTowers)
 defineElement('tot-editable-chart', TotEditableChart)
 defineElement('tot-file-input', TotFileInput)
 defineElement('tot-image-preview', TotImagePreview)
@@ -125,6 +127,7 @@ export {
   TotInput,
   TotCalendar,
   TotChart,
+  TotTwoTowers,
   TotEditableChart,
   TotFileInput,
   TotImagePreview,
