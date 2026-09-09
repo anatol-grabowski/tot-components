@@ -22,6 +22,7 @@ import { TotInput } from './Input/Input.js'
 import { TotCalendar } from './Calendar/Calendar.js'
 import { TotChart } from './Chart/Chart.js'
 import { TotTwoTowers } from './TwoTowers/TwoTowers.js'
+import { TotGicsGrid } from './GicsGrid/GicsGrid.js'
 import { TotEditableChart } from './EditableChart/EditableChart.js'
 import { TotFileInput } from './FileInput/FileInput.js'
 import { TotImagePreview } from './ImagePreview/ImagePreview.js'
@@ -79,6 +80,7 @@ defineElement('tot-input', TotInput)
 defineElement('tot-calendar', TotCalendar)
 defineElement('tot-chart', TotChart)
 defineElement('tot-two-towers', TotTwoTowers)
+defineElement('tot-gics-grid', TotGicsGrid)
 defineElement('tot-editable-chart', TotEditableChart)
 defineElement('tot-file-input', TotFileInput)
 defineElement('tot-image-preview', TotImagePreview)
@@ -128,6 +130,7 @@ export {
   TotCalendar,
   TotChart,
   TotTwoTowers,
+  TotGicsGrid,
   TotEditableChart,
   TotFileInput,
   TotImagePreview,

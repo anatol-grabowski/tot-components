@@ -41,12 +41,13 @@ const twoTowersStyle = `
   .two-towers.is-fullscreen {
     align-content: stretch;
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    gap: var(--tot-spacing-2x-small, .25rem);
     grid-template-rows: minmax(0, 1fr) auto;
     height: 100dvh;
     inset: 0;
     max-width: none;
     overflow: hidden;
-    padding: var(--tot-spacing-small, .75rem);
+    padding: var(--tot-spacing-2x-small, .25rem);
     position: fixed;
     width: 100vw;
     z-index: var(--tot-z-index-fullscreen, 1300);
@@ -1252,6 +1253,11 @@ export class TotTwoTowers extends HTMLElement {
     this._skipHistoryOnClose = false
     this._handleKeyDown = event => this.handleKeyDown(event)
     this._handlePopState = () => this.handlePopState()
+    this._handleResize = () => {
+      if (this._fullscreen) {
+        this.render()
+      }
+    }
     this._shapeRegistry = new Map()
     this._legendRegistry = new Map()
     this._tooltipPinnedKey = null
@@ -1338,8 +1344,10 @@ export class TotTwoTowers extends HTMLElement {
     lockPageScroll()
     window.addEventListener('keydown', this._handleKeyDown)
     window.addEventListener('popstate', this._handlePopState)
+    window.addEventListener('resize', this._handleResize)
     this.pushFullscreenHistoryState()
     this.updateFullscreenUi()
+    this.render()
     this.dispatchEvent(new Event('fullscreen-change', { bubbles: true, composed: true }))
   }
 
@@ -1354,6 +1362,7 @@ export class TotTwoTowers extends HTMLElement {
     markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
     window.removeEventListener('popstate', this._handlePopState)
+    window.removeEventListener('resize', this._handleResize)
     unlockPageScroll()
 
     if (shouldSkipHistory) {
@@ -1364,6 +1373,9 @@ export class TotTwoTowers extends HTMLElement {
 
     if (shouldUpdate) {
       this.updateFullscreenUi()
+      if (this.isConnected) {
+        this.render()
+      }
       this.dispatchEvent(new Event('fullscreen-change', { bubbles: true, composed: true }))
     }
   }
@@ -1511,6 +1523,7 @@ export class TotTwoTowers extends HTMLElement {
     }
 
     this._svg.setAttribute('aria-label', config.label)
+    const portraitFullscreen = this._fullscreen && window.innerHeight > window.innerWidth
     const layout = config.orientation === 'horizontal'
       ? {
           orientation: 'horizontal',
@@ -1522,16 +1535,27 @@ export class TotTwoTowers extends HTMLElement {
           breadth: 112,
           margin: 24,
         }
-      : {
-          orientation: 'vertical',
-          viewWidth: 1000,
-          viewHeight: 640,
-          start: 44,
-          end: 590,
-          seam: 500,
-          breadth: 300,
-          margin: 24,
-        }
+      : portraitFullscreen
+        ? {
+            orientation: 'vertical',
+            viewWidth: 460,
+            viewHeight: 640,
+            start: 34,
+            end: 610,
+            seam: 230,
+            breadth: 140,
+            margin: 10,
+          }
+        : {
+            orientation: 'vertical',
+            viewWidth: 1000,
+            viewHeight: 640,
+            start: 44,
+            end: 590,
+            seam: 500,
+            breadth: 300,
+            margin: 24,
+          }
 
     const maximumBreadth = (layout.seam - layout.margin) / config.tearThreshold
     layout.breadth = Math.max(28, Math.min(layout.breadth, maximumBreadth))
