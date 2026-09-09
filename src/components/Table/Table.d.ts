@@ -55,6 +55,9 @@ export type TotTable = {
      * supported. @default { cells: [], sticky: {} }
      */
     table: TotTableData | string
+
+    /** Whether the fullscreen table view is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
@@ -64,6 +67,8 @@ export type TotTable = {
     getScrollContainer(): HTMLElement | null
     getTable(): HTMLTableElement | null
     getCellElements(): HTMLTableCellElement[]
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
   /** Emitted when any rendered `<td>` or `<th>` is clicked. The event bubbles and is composed. */
@@ -75,6 +80,8 @@ export type TotTable = {
       rowspan: number
       colspan: number
     }>
+    /** Carries no detail; read `fullscreen` from the component. */
+    'fullscreen-change': Event
   }
 
   /**
@@ -101,9 +108,10 @@ export type TotTable = {
    * ```text
    * base — focusable scrolling container
    * ├─ empty — empty-state slot container
-   * └─ table — native table
-   *    └─ cell — repeated native td/th; also exposes a dynamic type-* part
+   * ├─ table — native table
+   * │  └─ cell — repeated native td/th; also exposes a dynamic type-* part
+   * └─ fullscreen-button — opens/closes the fixed fullscreen table view
    * ```
    */
-  parts: 'base' | 'empty' | 'table' | 'cell' | `type-${string}`
+  parts: 'base' | 'empty' | 'table' | 'cell' | 'fullscreen-button' | `type-${string}`
 }

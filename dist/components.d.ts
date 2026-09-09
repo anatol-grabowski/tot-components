@@ -2029,14 +2029,18 @@ export type TotChart = {
 
     /** Resolves after the latest queued render finishes or fails. */
     readonly updateComplete: Promise<void>
+
+    /** Whether the fullscreen chart view is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
     getCanvas(): HTMLCanvasElement | null
     getStatus(): HTMLElement | null
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
-  /** `chart-render` and `chart-error` are local, non-bubbling custom events. */
   events: {
     'chart-render': CustomEvent<{
       type: string
@@ -2045,6 +2049,8 @@ export type TotChart = {
     'chart-error': CustomEvent<{
       message: string
     }>
+    /** Carries no detail; read `fullscreen` from the component. Bubbles and is composed. */
+    'fullscreen-change': Event
   }
 
   slots: {}
@@ -2053,10 +2059,11 @@ export type TotChart = {
    * ```text
    * base — complete responsive chart surface
    * ├─ canvas — native canvas used by Chart.js
-   * └─ status — error overlay, visible only after a render failure
+   * ├─ status — error overlay, visible only after a render failure
+   * └─ fullscreen-button — opens/closes the fixed fullscreen chart view
    * ```
    */
-  parts: 'base' | 'canvas' | 'status'
+  parts: 'base' | 'canvas' | 'status' | 'fullscreen-button'
 }
 
 /* ==========================================================================
@@ -2174,14 +2181,22 @@ export type TotTwoTowers = {
      * component can render the new state.
      */
     config: TotTwoTowersConfig
+
+    /** Whether the fullscreen visualization is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
     getSvg(): SVGSVGElement | null
     getLegend(): HTMLElement | null
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
-  events: {}
+  events: {
+    /** Carries no detail; read `fullscreen` from the component. */
+    'fullscreen-change': Event
+  }
 
   slots: {}
 
@@ -2192,10 +2207,11 @@ export type TotTwoTowers = {
    * ├─ legend — category legend
    * │  ├─ legend-item
    * │  └─ legend-swatch
-   * └─ tooltip — category comparison table shown on hover/tap
+   * ├─ tooltip — category comparison table shown on hover/tap
+   * └─ fullscreen-button — opens/closes the fixed fullscreen visualization
    * ```
    */
-  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip'
+  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'fullscreen-button'
 }
 
 /* ==========================================================================
@@ -3059,6 +3075,9 @@ export type TotTable = {
      * supported. @default { cells: [], sticky: {} }
      */
     table: TotTableData | string
+
+    /** Whether the fullscreen table view is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
@@ -3068,6 +3087,8 @@ export type TotTable = {
     getScrollContainer(): HTMLElement | null
     getTable(): HTMLTableElement | null
     getCellElements(): HTMLTableCellElement[]
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
   /** Emitted when any rendered `<td>` or `<th>` is clicked. The event bubbles and is composed. */
@@ -3079,6 +3100,8 @@ export type TotTable = {
       rowspan: number
       colspan: number
     }>
+    /** Carries no detail; read `fullscreen` from the component. */
+    'fullscreen-change': Event
   }
 
   /**
@@ -3105,11 +3128,12 @@ export type TotTable = {
    * ```text
    * base — focusable scrolling container
    * ├─ empty — empty-state slot container
-   * └─ table — native table
-   *    └─ cell — repeated native td/th; also exposes a dynamic type-* part
+   * ├─ table — native table
+   * │  └─ cell — repeated native td/th; also exposes a dynamic type-* part
+   * └─ fullscreen-button — opens/closes the fixed fullscreen table view
    * ```
    */
-  parts: 'base' | 'empty' | 'table' | 'cell' | `type-${string}`
+  parts: 'base' | 'empty' | 'table' | 'cell' | 'fullscreen-button' | `type-${string}`
 }
 
 /* ==========================================================================

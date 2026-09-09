@@ -31,14 +31,18 @@ export type TotChart = {
 
     /** Resolves after the latest queued render finishes or fails. */
     readonly updateComplete: Promise<void>
+
+    /** Whether the fullscreen chart view is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
     getCanvas(): HTMLCanvasElement | null
     getStatus(): HTMLElement | null
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
-  /** `chart-render` and `chart-error` are local, non-bubbling custom events. */
   events: {
     'chart-render': CustomEvent<{
       type: string
@@ -47,6 +51,8 @@ export type TotChart = {
     'chart-error': CustomEvent<{
       message: string
     }>
+    /** Carries no detail; read `fullscreen` from the component. Bubbles and is composed. */
+    'fullscreen-change': Event
   }
 
   slots: {}
@@ -55,8 +61,9 @@ export type TotChart = {
    * ```text
    * base — complete responsive chart surface
    * ├─ canvas — native canvas used by Chart.js
-   * └─ status — error overlay, visible only after a render failure
+   * ├─ status — error overlay, visible only after a render failure
+   * └─ fullscreen-button — opens/closes the fixed fullscreen chart view
    * ```
    */
-  parts: 'base' | 'canvas' | 'status'
+  parts: 'base' | 'canvas' | 'status' | 'fullscreen-button'
 }

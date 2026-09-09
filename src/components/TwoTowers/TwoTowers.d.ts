@@ -108,14 +108,22 @@ export type TotTwoTowers = {
      * component can render the new state.
      */
     config: TotTwoTowersConfig
+
+    /** Whether the fullscreen visualization is currently open. */
+    readonly fullscreen: boolean
   }
 
   methods: {
     getSvg(): SVGSVGElement | null
     getLegend(): HTMLElement | null
+    openFullscreen(): void
+    closeFullscreen(): void
   }
 
-  events: {}
+  events: {
+    /** Carries no detail; read `fullscreen` from the component. */
+    'fullscreen-change': Event
+  }
 
   slots: {}
 
@@ -126,8 +134,9 @@ export type TotTwoTowers = {
    * ├─ legend — category legend
    * │  ├─ legend-item
    * │  └─ legend-swatch
-   * └─ tooltip — category comparison table shown on hover/tap
+   * ├─ tooltip — category comparison table shown on hover/tap
+   * └─ fullscreen-button — opens/closes the fixed fullscreen visualization
    * ```
    */
-  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip'
+  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'fullscreen-button'
 }

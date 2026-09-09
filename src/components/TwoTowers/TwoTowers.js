@@ -34,7 +34,66 @@ const twoTowersStyle = `
     gap: var(--tot-spacing-x-small, .5rem);
     max-width: 100%;
     min-width: 0;
+    position: relative;
     width: 100%;
+  }
+
+  .two-towers.is-fullscreen {
+    align-content: stretch;
+    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100dvh;
+    inset: 0;
+    max-width: none;
+    overflow: hidden;
+    padding: var(--tot-spacing-small, .75rem);
+    position: fixed;
+    width: 100vw;
+    z-index: var(--tot-z-index-fullscreen, 1300);
+  }
+
+  .fullscreen-button {
+    -webkit-appearance: none;
+    appearance: none;
+    align-items: center;
+    background: color-mix(in srgb, var(--tot-panel-background-color, #fff) 88%, transparent);
+    border: 0;
+    border-radius: var(--tot-border-radius-small, 3px);
+    color: var(--tot-input-icon-color, var(--tot-color-neutral-500, #64748b));
+    cursor: pointer;
+    display: inline-flex;
+    height: 1.75rem;
+    justify-content: center;
+    padding: 0;
+    position: absolute;
+    right: var(--tot-spacing-2x-small, .25rem);
+    top: var(--tot-spacing-2x-small, .25rem);
+    width: 1.75rem;
+    z-index: 3;
+  }
+
+  .two-towers.is-fullscreen .fullscreen-button {
+    position: fixed;
+  }
+
+  .fullscreen-button:hover {
+    color: var(--tot-input-icon-color-hover, #475569);
+  }
+
+  .fullscreen-button:focus-visible {
+    outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
+    outline-offset: var(--tot-focus-ring-offset, 1px);
+  }
+
+  .fullscreen-button svg {
+    display: block;
+    fill: none;
+    height: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    width: 1rem;
   }
 
   .chart {
@@ -47,12 +106,27 @@ const twoTowersStyle = `
     width: 100%;
   }
 
+  .two-towers.is-fullscreen .chart {
+    align-items: center;
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+  }
+
   svg {
     display: block;
     height: auto;
     max-width: 100%;
     overflow: visible;
     width: 100%;
+  }
+
+  .two-towers.is-fullscreen svg {
+    height: 100%;
+    max-height: 100%;
   }
 
   .category-shape {
@@ -64,6 +138,11 @@ const twoTowersStyle = `
     flex-wrap: wrap;
     gap: var(--tot-spacing-2x-small, .25rem);
     min-width: 0;
+  }
+
+  .two-towers.is-fullscreen .legend {
+    max-height: min(30dvh, 10rem);
+    overflow: auto;
   }
 
   .legend-item {
@@ -209,6 +288,101 @@ const twoTowersStyle = `
     }
   }
 `
+
+
+function markFullscreenOpen() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  window.__totFullscreenOpenCount = (window.__totFullscreenOpenCount || 0) + 1
+  document.documentElement.setAttribute('data-tot-fullscreen-open', '')
+}
+
+function markFullscreenClosed() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  window.__totFullscreenOpenCount = Math.max(0, (window.__totFullscreenOpenCount || 0) - 1)
+  if (window.__totFullscreenOpenCount === 0) {
+    document.documentElement.removeAttribute('data-tot-fullscreen-open')
+  }
+}
+
+function lockPageScroll() {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+    return
+  }
+
+  const state = getScrollLockState()
+  if (state.count === 0) {
+    state.scrollX = window.scrollX || window.pageXOffset || 0
+    state.scrollY = window.scrollY || window.pageYOffset || 0
+    state.documentOverflow = document.documentElement.style.overflow
+    state.bodyOverflow = document.body.style.overflow
+    state.bodyPosition = document.body.style.position
+    state.bodyTop = document.body.style.top
+    state.bodyLeft = document.body.style.left
+    state.bodyRight = document.body.style.right
+    state.bodyWidth = document.body.style.width
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${state.scrollY}px`
+    document.body.style.left = `-${state.scrollX}px`
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
+  }
+
+  state.count += 1
+}
+
+function unlockPageScroll() {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+    return
+  }
+
+  const state = getScrollLockState()
+  state.count = Math.max(0, state.count - 1)
+  if (state.count !== 0) {
+    return
+  }
+
+  document.documentElement.style.overflow = state.documentOverflow || ''
+  document.body.style.overflow = state.bodyOverflow || ''
+  document.body.style.position = state.bodyPosition || ''
+  document.body.style.top = state.bodyTop || ''
+  document.body.style.left = state.bodyLeft || ''
+  document.body.style.right = state.bodyRight || ''
+  document.body.style.width = state.bodyWidth || ''
+  window.scrollTo(state.scrollX || 0, state.scrollY || 0)
+}
+
+function getScrollLockState() {
+  if (!window.__totFullscreenPreviewScrollLockState) {
+    window.__totFullscreenPreviewScrollLockState = { count: 0 }
+  }
+  return window.__totFullscreenPreviewScrollLockState
+}
+
+function getEnterFullscreenIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M2.5 6v-3.5h3.5"></path>
+    <path d="M10 2.5h3.5v3.5"></path>
+    <path d="M2.5 10v3.5h3.5"></path>
+    <path d="M10 13.5h3.5v-3.5"></path>
+  </svg>`
+}
+
+function getExitFullscreenIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M2.5 6h3.5v-3.5"></path>
+    <path d="M13.5 6h-3.5v-3.5"></path>
+    <path d="M2.5 10h3.5v3.5"></path>
+    <path d="M13.5 10h-3.5v3.5"></path>
+  </svg>`
+}
 
 const svgNamespace = 'http://www.w3.org/2000/svg'
 const defaultColors = [
@@ -1071,6 +1245,13 @@ export class TotTwoTowers extends HTMLElement {
   constructor() {
     super()
     this._config = normalizeConfig(null)
+    this._fullscreen = false
+    this._fullscreenButton = null
+    this._historyPushed = false
+    this._historyToken = ''
+    this._skipHistoryOnClose = false
+    this._handleKeyDown = event => this.handleKeyDown(event)
+    this._handlePopState = () => this.handlePopState()
     this._shapeRegistry = new Map()
     this._legendRegistry = new Map()
     this._tooltipPinnedKey = null
@@ -1089,12 +1270,24 @@ export class TotTwoTowers extends HTMLElement {
         </div>
         <div class="legend" part="legend"></div>
         <div class="tooltip" part="tooltip" hidden></div>
+        <button class="fullscreen-button" part="fullscreen-button" type="button" aria-label="Open fullscreen visualization">
+          ${getEnterFullscreenIcon()}
+        </button>
       </div>
     `
 
+    this._base = root.querySelector('.two-towers')
     this._svg = root.querySelector('svg')
     this._legend = root.querySelector('.legend')
     this._tooltip = root.querySelector('.tooltip')
+    this._fullscreenButton = root.querySelector('.fullscreen-button')
+    this._fullscreenButton.addEventListener('click', () => {
+      if (this._fullscreen) {
+        this.closeFullscreen()
+      } else {
+        this.openFullscreen()
+      }
+    })
     root.addEventListener('pointerdown', (event) => {
       if (event.pointerType !== 'touch') {
         return
@@ -1107,6 +1300,10 @@ export class TotTwoTowers extends HTMLElement {
         this.hideTooltip(true)
       }
     })
+  }
+
+  get fullscreen() {
+    return this._fullscreen
   }
 
   get config() {
@@ -1126,7 +1323,120 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.closeFullscreen(false, true)
     window.removeEventListener('pointerdown', this._onWindowPointerDown)
+  }
+
+
+  openFullscreen() {
+    if (this._fullscreen) {
+      return
+    }
+
+    this._fullscreen = true
+    markFullscreenOpen()
+    lockPageScroll()
+    window.addEventListener('keydown', this._handleKeyDown)
+    window.addEventListener('popstate', this._handlePopState)
+    this.pushFullscreenHistoryState()
+    this.updateFullscreenUi()
+    this.dispatchEvent(new Event('fullscreen-change', { bubbles: true, composed: true }))
+  }
+
+  closeFullscreen(shouldUpdate = true, skipHistory = false) {
+    if (!this._fullscreen) {
+      return
+    }
+
+    const shouldSkipHistory = skipHistory || this._skipHistoryOnClose
+    this._skipHistoryOnClose = false
+    this._fullscreen = false
+    markFullscreenClosed()
+    window.removeEventListener('keydown', this._handleKeyDown)
+    window.removeEventListener('popstate', this._handlePopState)
+    unlockPageScroll()
+
+    if (shouldSkipHistory) {
+      this.clearFullscreenHistoryState()
+    } else {
+      this.removeFullscreenHistoryState()
+    }
+
+    if (shouldUpdate) {
+      this.updateFullscreenUi()
+      this.dispatchEvent(new Event('fullscreen-change', { bubbles: true, composed: true }))
+    }
+  }
+
+  handleKeyDown(event) {
+    if (event.key !== 'Escape' || !this._fullscreen) {
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    if (typeof event.stopImmediatePropagation === 'function') {
+      event.stopImmediatePropagation()
+    }
+    this.closeFullscreen()
+  }
+
+  handlePopState() {
+    if (!this._fullscreen || !this._historyPushed) {
+      return
+    }
+
+    this._skipHistoryOnClose = true
+    this.closeFullscreen()
+  }
+
+  pushFullscreenHistoryState() {
+    if (this._historyPushed || typeof history === 'undefined') {
+      return
+    }
+
+    this._historyToken = `tot-fullscreen-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    try {
+      const currentState = history.state && typeof history.state === 'object' ? history.state : {}
+      history.pushState({ ...currentState, totFullscreenToken: this._historyToken }, '')
+      this._historyPushed = true
+    } catch (error) {
+      this.clearFullscreenHistoryState()
+    }
+  }
+
+  removeFullscreenHistoryState() {
+    if (!this._historyPushed || typeof history === 'undefined') {
+      this.clearFullscreenHistoryState()
+      return
+    }
+
+    const state = history.state
+    const isCurrentFullscreenState = state && state.totFullscreenToken === this._historyToken
+    this.clearFullscreenHistoryState()
+    if (isCurrentFullscreenState) {
+      history.back()
+    }
+  }
+
+  clearFullscreenHistoryState() {
+    this._historyPushed = false
+    this._historyToken = ''
+  }
+
+  updateFullscreenUi() {
+    if (!this._base || !this._fullscreenButton) {
+      return
+    }
+
+    this._base.classList.toggle('is-fullscreen', this._fullscreen)
+    this._fullscreenButton.innerHTML = this._fullscreen
+      ? getExitFullscreenIcon()
+      : getEnterFullscreenIcon()
+    this._fullscreenButton.setAttribute(
+      'aria-label',
+      this._fullscreen ? 'Exit fullscreen visualization' : 'Open fullscreen visualization',
+    )
   }
 
   getSvg() {
