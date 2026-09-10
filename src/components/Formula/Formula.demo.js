@@ -38,7 +38,7 @@ const balanceValues = {
   RetainedEarningsAccumulatedDeficit: 493371,
 }
 
-const balanceFormulaConfig = {
+export const balanceFormulaConfig = {
   title: 'Calculation group 23 — Balance sheet check',
   values: balanceValues,
   items: [
@@ -294,7 +294,7 @@ const comprehensiveIncomeValues = {
   OtherComprehensiveIncomeLossCashFlowHedgeGainLossReclassificationAfterTax: 85,
 }
 
-const comprehensiveIncomeFormulaConfig = {
+export const comprehensiveIncomeFormulaConfig = {
   title: 'Calculation groups 14 + 21 — Comprehensive income',
   values: comprehensiveIncomeValues,
   items: [
@@ -439,8 +439,8 @@ const comprehensiveIncomeFormulaConfig = {
 
 const cashFlowValues = {
   _Check: 0,
-  _CashPeriodStart: -81114,
-  _CashPeriodEnd: 55911,
+  CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: 30708,
+  _CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0: 55911,
   CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect: 25203,
   NetCashProvidedByUsedInOperatingActivities: 84859,
   NetIncomeLoss: 174771,
@@ -477,13 +477,13 @@ const cashFlowValues = {
   EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: -154,
 }
 
-const cashFlowFormulaConfig = {
+export const cashFlowFormulaConfig = {
   title: 'Calculation group 15 — Cash flows',
   values: cashFlowValues,
   items: [
     {
       sign: '+',
-      name: '_Check = CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect + _CashPeriodStart + _CashPeriodEnd',
+      name: '_Check = CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect + CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents - _CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0',
       shortName: 'Check',
       tag: '_Check',
       items: [
@@ -703,13 +703,13 @@ const cashFlowFormulaConfig = {
           sign: '+',
           name: 'Cash and cash equivalents at beginning of period',
           shortName: 'Dec 31, 2025',
-          tag: '_CashPeriodStart',
+          tag: 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents',
         },
         {
-          sign: '+',
+          sign: '-',
           name: 'Cash and cash equivalents at end of period',
           shortName: 'Jun 30, 2026',
-          tag: '_CashPeriodEnd',
+          tag: '_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0',
         },
       ],
     },

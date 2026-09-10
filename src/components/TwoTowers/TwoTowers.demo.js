@@ -1,280 +1,213 @@
 import { registerDemo } from '../demoCommon.js'
+import {
+  balanceFormulaConfig,
+  cashFlowFormulaConfig,
+  comprehensiveIncomeFormulaConfig,
+} from '../Formula/Formula.demo.js'
 
-const incomeCategories = [
-  {
-    key: 'revenue',
-    name: 'Revenues',
-    shortName: 'R',
-    color: 'var(--tot-color-blue-400)',
-    subcategories: [
-      { name: 'Revenues', shortName: 'R', current: 119796, previous: 96428 },
-    ],
-  },
-  {
-    key: 'costs',
-    name: 'Total costs and expenses',
-    shortName: 'C',
-    color: 'var(--tot-color-orange-400)',
-    subcategories: [
-      { name: 'Cost of revenues', shortName: 'CoR', current: -45943, previous: -39039, display: { current: 45943, previous: 39039 } },
-      { name: 'Research and development', shortName: 'R&D', current: -18219, previous: -13808, display: { current: 18219, previous: 13808 } },
-      { name: 'Sales and marketing', shortName: 'S&M', current: -8403, previous: -7101, display: { current: 8403, previous: 7101 } },
-      { name: 'General and administrative', shortName: 'G&A', current: -6461, previous: -5209, display: { current: 6461, previous: 5209 } },
-    ],
-  },
-  {
-    key: 'other-income',
-    name: 'Other income (expense), net',
-    shortName: 'OI',
-    color: 'var(--tot-color-violet-400)',
-    subcategories: [
-      { name: 'Other income (expense), net', shortName: 'OI', current: 97983, previous: 2662 },
-    ],
-  },
-  {
-    key: 'taxes',
-    name: 'Provision for income taxes',
-    shortName: 'T',
-    color: 'var(--tot-color-amber-400)',
-    subcategories: [
-      { name: 'Provision for income taxes', shortName: 'T', current: -26560, previous: -5737, display: { current: 26560, previous: 5737 } },
-    ],
-  },
-  {
-    key: 'preferred-dividends',
-    name: 'Preferred stock dividends',
-    shortName: 'PD',
-    color: 'var(--tot-color-neutral-400)',
-    subcategories: [
-      { name: 'Preferred stock dividends', shortName: 'PD', current: -86, previous: 0, display: { current: 86, previous: 0 } },
-    ],
-  },
-  {
-    key: 'oci',
-    name: 'Other comprehensive income (loss)',
-    shortName: 'OCI',
-    color: 'var(--tot-color-yellow-300)',
-    subcategories: [
-      {
-        name: 'Change in foreign currency translation adjustment',
-        shortName: 'FX',
-        current: -9,
-        previous: 2610,
-        display: { current: '(9)', previous: 2610 },
-      },
-      {
-        name: 'Available-for-sale investments — change in net unrealized gains (losses)',
-        shortName: 'AFS Δ',
-        current: -273,
-        previous: 191,
-        display: { current: '(273)', previous: 191 },
-      },
-      {
-        name: 'Available-for-sale investments — less: reclassification adjustment for net (gains) losses included in net income',
-        shortName: 'AFS R',
-        current: 34,
-        previous: -29,
-        display: { current: 34, previous: '(29)' },
-      },
-      {
-        name: 'Cash flow hedges — change in net unrealized gains (losses)',
-        shortName: 'CFH Δ',
-        current: 228,
-        previous: -920,
-        display: { current: 228, previous: '(920)' },
-      },
-      {
-        name: 'Cash flow hedges — less: reclassification adjustment for net (gains) losses included in net income',
-        shortName: 'CFH R',
-        current: -85,
-        previous: 107,
-        display: { current: '(85)', previous: 107 },
-      },
-    ],
-  },
-]
+const balanceValues = { ...balanceFormulaConfig.values }
+const balancePreviousValues = {
+  _Check: 0,
+  Assets: 595281,
+  AssetsCurrent: 206038,
+  CashCashEquivalentsAndShortTermInvestments: 126843,
+  CashAndCashEquivalentsAtCarryingValue: 30708,
+  MarketableSecuritiesCurrent: 96135,
+  AccountsReceivableNetCurrent: 62886,
+  OtherAssetsCurrent: 13870,
+  InventoryNet: 2439,
+  OtherLongTermInvestments: 68687,
+  DeferredIncomeTaxAssetsNet: 9113,
+  PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization: 246597,
+  OperatingLeaseRightOfUseAsset: 15221,
+  Goodwill: 33380,
+  OtherAssetsNoncurrent: 14962,
+  IntangibleAssetsNetExcludingGoodwill: 1283,
+  LiabilitiesAndStockholdersEquity: 595281,
+  Liabilities: 180016,
+  LiabilitiesCurrent: 102745,
+  AccountsPayableCurrent: 12200,
+  EmployeeRelatedLiabilitiesCurrent: 17546,
+  AccruedLiabilitiesCurrent: 55557,
+  AccruedRevenueShare: 10864,
+  ContractWithCustomerLiabilityCurrent: 6578,
+  LongTermDebtNoncurrent: 46547,
+  AccruedIncomeTaxesNoncurrent: 9531,
+  DeferredIncomeTaxLiabilitiesNet: 919,
+  OperatingLeaseLiabilityNoncurrent: 12744,
+  OtherLiabilitiesNoncurrent: 7530,
+  CommitmentsAndContingencies: 0,
+  StockholdersEquity: 415265,
+  ConvertiblePreferredStockNonredeemableOrRedeemableIssuerOptionValue: 0,
+  CommonStocksIncludingAdditionalPaidInCapital: 93126,
+  AccumulatedOtherComprehensiveIncomeLossNetOfTax: -1916,
+  RetainedEarningsAccumulatedDeficit: 324055,
+}
 
-const balanceCategories = [
-  {
-    key: 'current-assets',
+const balanceGroups = {
+  _Check: { hidden: true },
+  AssetsCurrent: {
     name: 'Total current assets',
     shortName: 'CA',
     color: 'var(--tot-color-blue-300)',
-    subcategories: [
-      { name: 'Cash and cash equivalents', shortName: 'Cash', current: 55911, previous: 30708 },
-      { name: 'Marketable securities', shortName: 'MS', current: 186563, previous: 96135 },
-      { name: 'Accounts receivable, net', shortName: 'AR', current: 69175, previous: 62886 },
-      { name: 'Inventory', shortName: 'Inv', current: 9991, previous: 2439 },
-      { name: 'Other current assets', shortName: 'OCA', current: 21884, previous: 13870 },
-    ],
   },
-  {
-    key: 'noncurrent-assets',
+  Assets: {
     name: 'Non-current assets excluding property and equipment',
     shortName: 'nCA',
     color: 'var(--tot-color-amber-200)',
-    subcategories: [
-      { name: 'Non-marketable securities', shortName: 'nMS', current: 131461, previous: 68687 },
-      { name: 'Deferred income taxes', shortName: 'DIT', current: 1448, previous: 9113 },
-      { name: 'Operating lease assets', shortName: 'OLA', current: 17694, previous: 15221 },
-      { name: 'Goodwill', shortName: 'GW', current: 57828, previous: 33380 },
-      { name: 'Intangible assets, net', shortName: 'IA', current: 9105, previous: 1283 },
-      { name: 'Other non-current assets', shortName: 'OnCA', current: 39711, previous: 14962 },
-    ],
   },
-  {
-    key: 'property-equipment',
+  PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization: {
     name: 'Property and equipment, net',
     shortName: 'PPE',
     color: 'var(--tot-color-green-300)',
-    subcategories: [
-      { name: 'Property and equipment, net', shortName: 'PPE', current: 321212, previous: 246597 },
-    ],
   },
-  {
-    key: 'current-liabilities',
+  LiabilitiesCurrent: {
     name: 'Total current liabilities',
     shortName: 'CL',
     color: 'var(--tot-color-rose-300)',
-    subcategories: [
-      { name: 'Accounts payable', shortName: 'AP', current: -20258, previous: -12200, display: { current: 20258, previous: 12200 } },
-      { name: 'Accrued compensation and benefits', shortName: 'Comp', current: -15086, previous: -17546, display: { current: 15086, previous: 17546 } },
-      { name: 'Accrued expenses and other current liabilities', shortName: 'AEL', current: -73014, previous: -55557, display: { current: 73014, previous: 55557 } },
-      { name: 'Accrued revenue share', shortName: 'ARS', current: -10599, previous: -10864, display: { current: 10599, previous: 10864 } },
-      { name: 'Deferred revenue', shortName: 'DR', current: -7154, previous: -6578, display: { current: 7154, previous: 6578 } },
-    ],
   },
-  {
-    key: 'noncurrent-liabilities',
+  Liabilities: {
     name: 'Non-current liabilities',
     shortName: 'nCL',
     color: 'var(--tot-color-orange-300)',
-    subcategories: [
-      { name: 'Long-term debt', shortName: 'LTD', current: -98165, previous: -46547, display: { current: 98165, previous: 46547 } },
-      { name: 'Income taxes payable, non-current', shortName: 'ITP', current: -11306, previous: -9531, display: { current: 11306, previous: 9531 } },
-      { name: 'Deferred income taxes', shortName: 'DIT', current: -22819, previous: -919, display: { current: 22819, previous: 919 } },
-      { name: 'Operating lease liabilities', shortName: 'OLL', current: -14591, previous: -12744, display: { current: 14591, previous: 12744 } },
-      { name: 'Other long-term liabilities', shortName: 'OLTL', current: -8511, previous: -7530, display: { current: 8511, previous: 7530 } },
-    ],
   },
-  {
-    key: 'equity',
+  CommitmentsAndContingencies: {
+    name: 'Commitments and Contingencies',
+    shortName: 'C&C',
+    color: 'var(--tot-color-neutral-300)',
+  },
+  StockholdersEquity: {
     name: 'Total stockholders’ equity',
     shortName: 'E',
     color: 'var(--tot-color-green-300)',
-    subcategories: [
-      {
-        name: 'Series A and Series B preferred stock and additional paid-in capital',
-        shortName: 'PS',
-        current: -18023,
-        previous: 0,
-        display: { current: 18023, previous: 0 },
-      },
-      {
-        name: 'Class A, Class B, and Class C stock and additional paid-in capital',
-        shortName: 'CS',
-        current: -131371,
-        previous: -93126,
-        display: { current: 131371, previous: 93126 },
-      },
-      {
-        name: 'Accumulated other comprehensive income (loss)',
-        shortName: 'AOCI',
-        current: 2285,
-        previous: 1916,
-        display: { current: -2285, previous: -1916 },
-      },
-      { name: 'Retained earnings', shortName: 'RE', current: -493371, previous: -324055, display: { current: 493371, previous: 324055 } },
-    ],
   },
-]
+}
 
-const cashFlowCategories = [
-  {
-    key: 'operating-activities',
+const incomeValues = { ...comprehensiveIncomeFormulaConfig.values }
+const incomePreviousValues = {
+  ComprehensiveIncomeNetOfTax: 30155,
+  NetIncomeLoss: 28196,
+  IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest: 33933,
+  OperatingIncomeLoss: 31271,
+  Revenues: 96428,
+  CostsAndExpenses: 65157,
+  CostOfRevenue: 39039,
+  ResearchAndDevelopmentExpense: 13808,
+  SellingAndMarketingExpense: 7101,
+  GeneralAndAdministrativeExpense: 5209,
+  NonoperatingIncomeExpense: 2662,
+  IncomeTaxExpenseBenefit: 5737,
+  OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent: 1959,
+  OtherComprehensiveIncomeLossForeignCurrencyTransactionAndTranslationAdjustmentNetOfTax: 2610,
+  OtherComprehensiveIncomeLossAvailableForSaleSecuritiesAdjustmentNetOfTax: 162,
+  OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodNetOfTax: 191,
+  OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIForSaleOfSecuritiesNetOfTax: 29,
+  OtherComprehensiveIncomeLossCashFlowHedgeGainLossAfterReclassificationAndTax: -813,
+  OtherComprehensiveIncomeLossCashFlowHedgeGainLossBeforeReclassificationAfterTax: -920,
+  OtherComprehensiveIncomeLossCashFlowHedgeGainLossReclassificationAfterTax: -107,
+}
+
+const incomeGroups = {
+  Revenues: {
+    name: 'Revenues',
+    shortName: 'R',
+    color: 'var(--tot-color-blue-400)',
+  },
+  CostsAndExpenses: {
+    name: 'Total costs and expenses',
+    shortName: 'C',
+    color: 'var(--tot-color-orange-400)',
+  },
+  NonoperatingIncomeExpense: {
+    name: 'Other income (expense), net',
+    shortName: 'OI',
+    color: 'var(--tot-color-violet-400)',
+  },
+  IncomeTaxExpenseBenefit: {
+    name: 'Provision for income taxes',
+    shortName: 'T',
+    color: 'var(--tot-color-amber-400)',
+  },
+  OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent: {
+    name: 'Other comprehensive income (loss)',
+    shortName: 'OCI',
+    color: 'var(--tot-color-yellow-300)',
+  },
+}
+
+const cashFlowValues = cashFlowFormulaConfig.values
+const cashFlowPreviousValues = {
+  _Check: 0,
+  CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect: -2430,
+  NetCashProvidedByUsedInOperatingActivities: 63897,
+  NetIncomeLoss: 62736,
+  Depreciation: 9485,
+  ShareBasedCompensation: 11514,
+  DeferredIncomeTaxesAndTaxCredits: -1596,
+  DebtAndEquitySecuritiesGainLoss: 11411,
+  OtherNoncashIncomeExpense: -1041,
+  IncreaseDecreaseInAccountsReceivable: 1201,
+  IncreaseDecreaseInIncomeTaxes: -2434,
+  IncreaseDecreaseInOtherOperatingAssets: 2139,
+  IncreaseDecreaseInAccountsPayable: -327,
+  IncreaseDecreaseInAccruedLiabilities: -1779,
+  IncreaseDecreaseInContractWithCustomerLiability: 636,
+  IncreaseDecreaseInInventories: 628,
+  NetCashProvidedByUsedInInvestingActivities: -40738,
+  PaymentsToAcquirePropertyPlantAndEquipment: 39643,
+  PaymentsToAcquireMarketableSecurities: 39870,
+  ProceedsFromSaleAndMaturityOfMarketableSecurities: 40930,
+  PaymentsToAcquireOtherInvestments: 2312,
+  ProceedsFromSaleAndMaturityOfOtherInvestments: 873,
+  AcquisitionsNetOfCashAcquiredAndPurchasesOfIntangibleAssets: 353,
+  PaymentsForProceedsFromOtherInvestingActivities: 363,
+  NetCashProvidedByUsedInFinancingActivities: -26033,
+  NetProceedsPaymentsRelatedToStockBasedAwardActivities: 5731,
+  PaymentsForRepurchaseOfCommonStock: 28306,
+  PaymentsOfOrdinaryDividends: 4977,
+  ProceedsFromIssuanceOfCommonStock: 0,
+  ProceedsFromIssuanceOfConvertiblePreferredStock: 0,
+  ProceedsFromDebtNetOfIssuanceCosts: 31378,
+  RepaymentsOfDebtAndCapitalLeaseObligations: 18397,
+  ProceedsFromMinorityShareholders: 400,
+  ProceedsFromPaymentsForOtherFinancingActivities: -400,
+  EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: 444,
+  CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: 23466,
+  _CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0: 21036,
+}
+
+const cashFlowGroups = {
+  _Check: { hidden: true },
+  NetCashProvidedByUsedInOperatingActivities: {
     name: 'Net cash provided by operating activities',
     shortName: 'Operating',
     color: 'var(--tot-color-green-400)',
-    subcategories: [
-      { name: 'Net income', shortName: 'NI', current: 174771, previous: 62736 },
-      { name: 'Depreciation of property and equipment', shortName: 'D&A', current: 13586, previous: 9485 },
-      { name: 'Stock-based compensation expense', shortName: 'SBC', current: 14708, previous: 11514 },
-      { name: 'Deferred income taxes', shortName: 'DIT', current: 27538, previous: -1596, display: { current: 27538, previous: '(1,596)' } },
-      { name: 'Loss (gain) on debt and equity securities, net', shortName: 'Sec', current: -135803, previous: -11411, display: { current: '(135,803)', previous: '(11,411)' } },
-      { name: 'Other', shortName: 'Other', current: 3161, previous: 1041 },
-      { name: 'Accounts receivable, net', shortName: 'AR', current: -6904, previous: -1201, display: { current: '(6,904)', previous: '(1,201)' } },
-      { name: 'Inventory', shortName: 'Inv', current: -7739, previous: -628, display: { current: '(7,739)', previous: '(628)' } },
-      { name: 'Income taxes, net', shortName: 'Tax', current: 8304, previous: -2434, display: { current: 8304, previous: '(2,434)' } },
-      { name: 'Other assets', shortName: 'OA', current: -9950, previous: -2139, display: { current: '(9,950)', previous: '(2,139)' } },
-      { name: 'Accounts payable', shortName: 'AP', current: 2090, previous: -327, display: { current: 2090, previous: '(327)' } },
-      { name: 'Accrued expenses and other liabilities', shortName: 'AEL', current: 308, previous: -1779, display: { current: 308, previous: '(1,779)' } },
-      { name: 'Deferred revenue', shortName: 'DR', current: 789, previous: 636 },
-    ],
   },
-  {
-    key: 'investing-activities',
+  NetCashProvidedByUsedInInvestingActivities: {
     name: 'Net cash used in investing activities',
     shortName: 'Investing',
     color: 'var(--tot-color-orange-400)',
-    subcategories: [
-      { name: 'Purchases of property and equipment', shortName: 'PPE', current: -80598, previous: -39643, display: { current: '(80,598)', previous: '(39,643)' } },
-      { name: 'Purchases of marketable securities', shortName: 'MS−', current: -76480, previous: -39870, display: { current: '(76,480)', previous: '(39,870)' } },
-      { name: 'Maturities and sales of marketable securities', shortName: 'MS+', current: 66696, previous: 40930 },
-      { name: 'Purchases of non-marketable securities', shortName: 'nMS−', current: -22051, previous: -2312, display: { current: '(22,051)', previous: '(2,312)' } },
-      { name: 'Maturities and sales of non-marketable securities', shortName: 'nMS+', current: 1667, previous: 873 },
-      { name: 'Acquisitions, net of cash acquired, and purchases of intangible assets', shortName: 'Acq', current: -33697, previous: -353, display: { current: '(33,697)', previous: '(353)' } },
-      { name: 'Other investing activities', shortName: 'Other', current: -1359, previous: -363, display: { current: '(1,359)', previous: '(363)' } },
-    ],
   },
-  {
-    key: 'financing-activities',
+  NetCashProvidedByUsedInFinancingActivities: {
     name: 'Net cash provided by (used in) financing activities',
     shortName: 'Financing',
     color: 'var(--tot-color-violet-400)',
-    subcategories: [
-      { name: 'Net payments related to stock-based award activities', shortName: 'SBA', current: -12056, previous: -5731, display: { current: '(12,056)', previous: '(5,731)' } },
-      { name: 'Repurchases of stock', shortName: 'Buyback', current: 0, previous: -28306, display: { current: 0, previous: '(28,306)' } },
-      { name: 'Dividend payments', shortName: 'Div', current: -5231, previous: -4977, display: { current: '(5,231)', previous: '(4,977)' } },
-      { name: 'Proceeds from issuance of common stock, net of costs', shortName: 'CS', current: 30499, previous: 0 },
-      { name: 'Proceeds from issuance of mandatory convertible preferred stock, net of costs', shortName: 'PS', current: 19063, previous: 0 },
-      { name: 'Proceeds from issuance of debt, net of costs', shortName: 'Debt+', current: 56226, previous: 31378 },
-      { name: 'Repayments of debt', shortName: 'Debt−', current: -5253, previous: -18397, display: { current: '(5,253)', previous: '(18,397)' } },
-      { name: 'Proceeds from sale of interests in consolidated entities, net', shortName: 'Sale', current: 3758, previous: 400 },
-      { name: 'Other financing activities', shortName: 'Other', current: -686, previous: -400, display: { current: '(686)', previous: '(400)' } },
-    ],
   },
-  {
-    key: 'exchange-rate-effect',
+  EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: {
     name: 'Effect of exchange rate changes on cash and cash equivalents',
     shortName: 'FX',
     color: 'var(--tot-color-amber-400)',
-    subcategories: [
-      { name: 'Effect of exchange rate changes on cash and cash equivalents', shortName: 'FX', current: -154, previous: 444, display: { current: '(154)', previous: 444 } },
-    ],
   },
-  {
-    key: 'cash-and-cash-equivalents',
+  CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: {
     name: 'Cash and cash equivalents',
     shortName: 'Cash',
     color: 'var(--tot-color-blue-300)',
-    display: { current: '55,911', previous: '21,036' },
-    subcategories: [
-      {
-        name: 'Cash and cash equivalents at beginning of period',
-        shortName: 'Dec 31, 2025',
-        current: 30708,
-        previous: 23466,
-      },
-      {
-        name: 'Cash and cash equivalents at end of period',
-        shortName: 'Jun 30, 2026',
-        current: -55911,
-        previous: -21036,
-        display: { current: '55,911', previous: '21,036' },
-      },
-    ],
+    valueTag: '_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0',
   },
-]
+  _CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0: {
+    group: 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents',
+  },
+}
 
 registerDemo({
   id: 'tot-two-towers',
@@ -387,7 +320,7 @@ registerDemo({
       </style>
 
       <div class="stack demo-group">
-        <div class="demo-label">Balance sheet — signed subcategories determine the tower</div>
+        <div class="demo-label">Balance sheet — grouped directly from the CAL formula</div>
         <div class="two-towers-demo-controls">
           <div class="two-towers-demo-values" id="balanceValues"></div>
         </div>
@@ -395,7 +328,7 @@ registerDemo({
       </div>
 
       <div class="stack demo-group">
-        <div class="demo-label">Cash flows — signed subcategories can share one category across both towers</div>
+        <div class="demo-label">Cash flows — grouped directly from the CAL formula</div>
         <div class="two-towers-demo-controls">
           <div class="two-towers-demo-toolbar">
             <label class="two-towers-demo-check">
@@ -408,7 +341,7 @@ registerDemo({
       </div>
 
       <div class="stack demo-group">
-        <div class="demo-label">Income statement — fully configurable</div>
+        <div class="demo-label">Income + comprehensive income — fully configurable</div>
         <div class="two-towers-demo-controls">
           <div class="two-towers-demo-toolbar">
             <label class="two-towers-demo-field">
@@ -436,12 +369,12 @@ registerDemo({
     const balanceTowers = demo.querySelector('#balanceTowers')
     const cashFlowTowers = demo.querySelector('#cashFlowTowers')
     const incomeTowers = demo.querySelector('#incomeTowers')
-    const balanceValues = demo.querySelector('#balanceValues')
+    const balanceValuesElement = demo.querySelector('#balanceValues')
     const cashFlowCompare = demo.querySelector('#cashFlowCompare')
     const orientation = demo.querySelector('#incomeOrientation')
     const compare = demo.querySelector('#incomeCompare')
     const tearThreshold = demo.querySelector('#incomeTearThreshold')
-    const incomeValues = demo.querySelector('#incomeValues')
+    const incomeValuesElement = demo.querySelector('#incomeValues')
 
     const renderBalance = () => {
       balanceTowers.config = createBalanceConfig()
@@ -459,11 +392,25 @@ registerDemo({
       })
     }
 
-    renderValueInputs(balanceValues, balanceCategories, renderBalance)
+    renderValueInputs(
+      balanceValuesElement,
+      balanceFormulaConfig.items,
+      balanceGroups,
+      balanceValues,
+      balancePreviousValues,
+      renderBalance,
+    )
     renderBalance()
     cashFlowCompare.addEventListener('change', renderCashFlow)
     renderCashFlow()
-    renderValueInputs(incomeValues, incomeCategories, renderIncome)
+    renderValueInputs(
+      incomeValuesElement,
+      comprehensiveIncomeFormulaConfig.items,
+      incomeGroups,
+      incomeValues,
+      incomePreviousValues,
+      renderIncome,
+    )
     orientation.addEventListener('change', renderIncome)
     compare.addEventListener('change', renderIncome)
     tearThreshold.addEventListener('input', renderIncome)
@@ -485,7 +432,10 @@ function createBalanceConfig() {
       current: 'Jun 30, 2026',
       previous: 'Dec 31, 2025',
     },
-    categories: balanceCategories,
+    formula: balanceFormulaConfig,
+    values: balanceValues,
+    previousValues: balancePreviousValues,
+    groups: balanceGroups,
   }
 }
 
@@ -501,13 +451,16 @@ function createCashFlowConfig(compare) {
       current: 'Jun 30, 2026',
       previous: 'Jun 30, 2025',
     },
-    categories: cashFlowCategories,
+    formula: cashFlowFormulaConfig,
+    values: cashFlowValues,
+    previousValues: cashFlowPreviousValues,
+    groups: cashFlowGroups,
   }
 }
 
 function createIncomeConfig(options) {
   return {
-    label: 'Income statement comparison',
+    label: 'Income and comprehensive income comparison',
     orientation: options.orientation,
     compare: options.compare,
     tearThreshold: options.tearThreshold,
@@ -517,25 +470,36 @@ function createIncomeConfig(options) {
       current: 'Jun 30, 2026',
       previous: 'Jun 30, 2025',
     },
-    categories: incomeCategories,
+    formula: comprehensiveIncomeFormulaConfig,
+    values: incomeValues,
+    previousValues: incomePreviousValues,
+    groups: incomeGroups,
   }
 }
 
-function renderValueInputs(container, categories, onChange) {
+function renderValueInputs(container, formulaItems, groups, currentValues, previousValues, onChange) {
   container.replaceChildren()
   appendValueHeaders(container)
+  const rowsByGroup = groupedLeafRows(formulaItems, groups)
+  const groupEntries = Object.entries(groups)
 
-  for (let categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
-    const category = categories[categoryIndex]
+  for (let groupIndex = 0; groupIndex < groupEntries.length; groupIndex++) {
+    const [tag, group] = groupEntries[groupIndex]
+    const rows = rowsByGroup.get(tag) || []
+    if (!rows.length) {
+      continue
+    }
+
     const categoryName = document.createElement('div')
     categoryName.className = 'category'
-    categoryName.textContent = category.shortName
-      ? `${category.shortName} — ${category.name}`
-      : category.name
+    const shortName = group.shortName || rows[0].groupShortName
+    const name = group.name || rows[0].groupName || tag
+    categoryName.textContent = shortName ? `${shortName} — ${name}` : name
     container.append(categoryName)
 
-    for (let subcategoryIndex = 0; subcategoryIndex < category.subcategories.length; subcategoryIndex++) {
-      appendValueRow(container, category.subcategories[subcategoryIndex], onChange)
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+      const row = rows[rowIndex]
+      appendValueRow(container, row, currentValues, previousValues, onChange)
     }
   }
 }
@@ -550,42 +514,22 @@ function appendValueHeaders(container) {
   }
 }
 
-function appendValueRow(container, item, onChange) {
+function appendValueRow(container, item, currentValues, previousValues, onChange) {
   const name = document.createElement('div')
   name.className = 'name'
-  name.textContent = `${item.shortName} — ${item.name}`
-  name.title = item.name
-  const currentDisplayFactor = getDisplayFactor(item, 'current')
-  const previousDisplayFactor = getDisplayFactor(item, 'previous', currentDisplayFactor)
+  name.textContent = item.shortName ? `${item.shortName} — ${item.name}` : item.name
+  name.title = `${item.name}\n${item.tag}`
 
-  const current = createNumberInput(item.current, (value) => {
-    item.current = value
-    syncDisplayValue(item, 'current', value, currentDisplayFactor)
+  const current = createNumberInput(currentValues[item.tag] ?? 0, (value) => {
+    currentValues[item.tag] = value
     onChange()
   })
-  const previous = createNumberInput(item.previous, (value) => {
-    item.previous = value
-    syncDisplayValue(item, 'previous', value, previousDisplayFactor)
+  const previous = createNumberInput(previousValues[item.tag] ?? 0, (value) => {
+    previousValues[item.tag] = value
     onChange()
   })
 
   container.append(name, current, previous)
-}
-
-function getDisplayFactor(item, period, fallback = 1) {
-  const raw = Number(item[period])
-  const display = Number(item.display?.[period])
-  if (Number.isFinite(raw) && Math.abs(raw) > 1e-9 && Number.isFinite(display)) {
-    return display / raw
-  }
-  return fallback
-}
-
-function syncDisplayValue(item, period, value, factor) {
-  if (!item.display || item.display[period] === undefined) {
-    return
-  }
-  item.display[period] = value * factor
 }
 
 function createNumberInput(value, onInput) {
@@ -598,4 +542,68 @@ function createNumberInput(value, onInput) {
     onInput(Number.isFinite(nextValue) ? nextValue : 0)
   })
   return input
+}
+
+function groupedLeafRows(items, groups) {
+  const groupTags = new Set(Object.keys(groups).filter(tag => !tag.startsWith('_')))
+  const rows = new Map()
+  const groupMeta = new Map()
+  for (const tag of groupTags) {
+    rows.set(tag, [])
+  }
+
+  const visit = (item, ancestors) => {
+    const nextAncestors = [...ancestors, item]
+    if (groupTags.has(item.tag)) {
+      groupMeta.set(item.tag, item)
+    }
+
+    const children = Array.isArray(item.items) ? item.items : []
+    if (children.length) {
+      for (let i = 0; i < children.length; i++) {
+        visit(children[i], nextAncestors)
+      }
+      return
+    }
+
+    let groupTag = ''
+    for (let i = nextAncestors.length - 1; i >= 0; i--) {
+      const tag = nextAncestors[i].tag
+      if (tag && !tag.startsWith('_') && groupTags.has(tag)) {
+        groupTag = tag
+        break
+      }
+    }
+
+    if (!groupTag) {
+      const match = /^_(.+?)\d+$/.exec(item.tag || '')
+      if (match && groupTags.has(match[1])) {
+        groupTag = match[1]
+      }
+    }
+
+    if (!groupTag) {
+      return
+    }
+    rows.get(groupTag).push(item)
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    visit(items[i], [])
+  }
+
+  const entries = Array.from(rows.entries())
+  for (let i = 0; i < entries.length; i++) {
+    const [tag, groupRows] = entries[i]
+    const meta = groupMeta.get(tag)
+    for (let rowIndex = 0; rowIndex < groupRows.length; rowIndex++) {
+      groupRows[rowIndex] = {
+        ...groupRows[rowIndex],
+        groupName: meta?.name || tag,
+        groupShortName: meta?.shortName || '',
+      }
+    }
+  }
+
+  return rows
 }

@@ -62,7 +62,8 @@ const twoTowersStyle = `
     z-index: var(--tot-z-index-fullscreen, 1300);
   }
 
-  .two-towers.is-fullscreen.has-details-table {
+  .two-towers.is-fullscreen.has-details-table,
+  .two-towers.is-fullscreen.has-formula {
     grid-template-areas:
       'details chart'
       'details legend';
@@ -70,7 +71,8 @@ const twoTowersStyle = `
   }
 
   .fullscreen-button,
-  .details-button {
+  .details-button,
+  .formula-button {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -91,37 +93,55 @@ const twoTowersStyle = `
   }
 
   .two-towers.is-fullscreen .fullscreen-button,
-  .two-towers.is-fullscreen .details-button {
+  .two-towers.is-fullscreen .details-button,
+  .two-towers.is-fullscreen .formula-button {
     position: fixed;
   }
 
-  .details-button {
+  .details-button,
+  .formula-button {
     display: none;
+  }
+
+  .details-button {
     right: calc(var(--tot-spacing-2x-small, .25rem) + 2rem);
   }
 
-  .two-towers.is-fullscreen .details-button {
+  .formula-button {
+    right: calc(var(--tot-spacing-2x-small, .25rem) + 4rem);
+  }
+
+  .formula-button[hidden] {
+    display: none !important;
+  }
+
+  .two-towers.is-fullscreen .details-button,
+  .two-towers.is-fullscreen .formula-button {
     display: inline-flex;
   }
 
-  .details-button[aria-expanded='true'] {
+  .details-button[aria-expanded='true'],
+  .formula-button[aria-expanded='true'] {
     background: var(--tot-color-primary-50, #f0f9ff);
     color: var(--tot-color-primary-700, #0369a1);
   }
 
   .fullscreen-button:hover,
-  .details-button:hover {
+  .details-button:hover,
+  .formula-button:hover {
     color: var(--tot-input-icon-color-hover, #475569);
   }
 
   .fullscreen-button:focus-visible,
-  .details-button:focus-visible {
+  .details-button:focus-visible,
+  .formula-button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
   .fullscreen-button svg,
-  .details-button svg {
+  .details-button svg,
+  .formula-button svg {
     display: block;
     fill: none;
     height: 1rem;
@@ -332,6 +352,62 @@ const twoTowersStyle = `
     color: var(--tot-color-danger-700, #b91c1c);
   }
 
+  .formula-panel {
+    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    border-right: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: none;
+    grid-area: details;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .two-towers.is-fullscreen.has-formula .formula-panel {
+    display: grid;
+  }
+
+  .formula-panel-header {
+    align-items: center;
+    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: flex;
+    gap: var(--tot-spacing-small, .75rem);
+    min-height: 2rem;
+    padding: 0 var(--tot-spacing-x-small, .5rem);
+  }
+
+  .formula-panel-title {
+    color: var(--tot-input-color, #1e293b);
+    font-size: var(--tot-font-size-x-small, .75rem);
+    font-weight: var(--tot-font-weight-semibold, 600);
+    margin-inline-end: auto;
+  }
+
+  .formula-simplified {
+    align-items: center;
+    color: var(--tot-color-neutral-600, #475569);
+    display: inline-flex;
+    font-size: var(--tot-font-size-2x-small, .625rem);
+    gap: var(--tot-spacing-3x-small, .125rem);
+    white-space: nowrap;
+  }
+
+  .formula-simplified input {
+    margin: 0;
+  }
+
+  .formula-panel-scroll {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: var(--tot-spacing-2x-small, .25rem);
+  }
+
+  .formula-panel tot-formula::part(base) {
+    border: 0;
+    border-radius: 0;
+  }
+
   .details-table {
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
     border-right: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
@@ -430,6 +506,40 @@ const twoTowersStyle = `
 
     .details-resize-handle::before {
       right: 13px;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .two-towers.is-fullscreen.has-details-table,
+    .two-towers.is-fullscreen.has-formula {
+      gap: 0;
+      grid-template-areas: 'details';
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      padding: 0;
+    }
+
+    .two-towers.is-fullscreen.has-details-table .chart,
+    .two-towers.is-fullscreen.has-details-table .legend,
+    .two-towers.is-fullscreen.has-formula .chart,
+    .two-towers.is-fullscreen.has-formula .legend {
+      display: none;
+    }
+
+    .two-towers.is-fullscreen.has-details-table .details-table,
+    .two-towers.is-fullscreen.has-formula .formula-panel {
+      border: 0;
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    .two-towers.is-fullscreen.has-details-table .details-table-header,
+    .two-towers.is-fullscreen.has-formula .formula-panel-header {
+      padding-inline-end: 6.5rem;
+    }
+
+    .two-towers.is-fullscreen.has-details-table .details-resize-handle {
+      display: none;
     }
   }
 
@@ -550,6 +660,14 @@ function getDetailsTableIcon() {
   return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
     <rect x="2.5" y="3" width="11" height="10" rx="1"></rect>
     <path d="M2.5 6.5h11M2.5 10h11M7 3v10"></path>
+  </svg>`
+}
+
+function getFormulaIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M3 4h2M3 8h2M3 12h2"></path>
+    <path d="M4 3v2M4 7v2M4 11v2"></path>
+    <path d="M8 4h5M8 8h5M8 12h5"></path>
   </svg>`
 }
 
@@ -712,22 +830,290 @@ function normalizeCategory(category, index) {
   }
 }
 
-function normalizeConfig(value) {
-  const source = Array.isArray(value)
-    ? { categories: value }
-    : value && typeof value === 'object'
-      ? value
-      : {}
-  const rawCategories = Array.isArray(source.categories) ? source.categories : []
-  const categories = []
+function signMultiplier(sign) {
+  return sign === '-' ? -1 : 1
+}
 
-  for (let i = 0; i < rawCategories.length; i++) {
-    categories.push(normalizeCategory(rawCategories[i], i))
+function normalizeValueDictionary(value) {
+  const source = value && typeof value === 'object' ? value : {}
+  const result = {}
+  const entries = Object.entries(source)
+
+  for (let i = 0; i < entries.length; i++) {
+    const [tag, rawValue] = entries[i]
+    const number = Number(rawValue)
+    if (Number.isFinite(number)) {
+      result[tag] = number
+    }
   }
 
+  return result
+}
+
+function buildFormulaNodes(items) {
+  const roots = []
+  const byTag = new Map()
+  let order = 0
+
+  const visit = (item, parent, effectiveSign, depth) => {
+    const source = item && typeof item === 'object' ? item : {}
+    const tag = String(source.tag || '').trim()
+    const children = []
+    const node = {
+      name: source.name || source.shortName || tag || 'Item',
+      shortName: source.shortName || '',
+      tag,
+      sign: source.sign === '-' ? '-' : '+',
+      effectiveSign,
+      parent,
+      children,
+      depth,
+      order: order++,
+    }
+    const rawChildren = Array.isArray(source.items) ? source.items : []
+
+    if (tag) {
+      if (!byTag.has(tag)) {
+        byTag.set(tag, [])
+      }
+      byTag.get(tag).push(node)
+    }
+
+    for (let i = 0; i < rawChildren.length; i++) {
+      const child = rawChildren[i]
+      children.push(visit(
+        child,
+        node,
+        effectiveSign * signMultiplier(child?.sign),
+        depth + 1,
+      ))
+    }
+
+    return node
+  }
+
+  const rawRoots = Array.isArray(items) ? items : []
+  for (let i = 0; i < rawRoots.length; i++) {
+    roots.push(visit(rawRoots[i], null, 1, 0))
+  }
+
+  return { roots, byTag }
+}
+
+function normalizeGroup(group, tag, index, formulaNodes) {
+  const source = typeof group === 'string'
+    ? { color: group }
+    : group && typeof group === 'object'
+      ? group
+      : {}
+  const nodes = formulaNodes.byTag.get(tag) || []
+  const node = nodes[0]
+
+  return {
+    tag,
+    key: tag,
+    name: source.name || node?.name || tag,
+    shortName: source.shortName || node?.shortName || '',
+    color: source.color || defaultColors[index % defaultColors.length],
+    valueTag: String(source.valueTag || '').trim(),
+    group: String(source.group || '').trim(),
+    hidden: source.hidden === true,
+    node,
+  }
+}
+
+function resolvedFormulaGroup(group, groupMap) {
+  let current = group
+  const visited = new Set()
+
+  while (current?.group && !visited.has(current.tag)) {
+    visited.add(current.tag)
+    const next = groupMap.get(current.group)
+    if (!next) {
+      break
+    }
+    current = next
+  }
+
+  return current
+}
+
+function formulaLeaves(roots) {
+  const leaves = []
+  const visit = (node) => {
+    if (!node.children.length) {
+      leaves.push(node)
+      return
+    }
+    for (let i = 0; i < node.children.length; i++) {
+      visit(node.children[i])
+    }
+  }
+
+  for (let i = 0; i < roots.length; i++) {
+    visit(roots[i])
+  }
+  return leaves
+}
+
+function nearestFormulaGroup(node, groupMap) {
+  let current = node
+  while (current) {
+    if (current.tag && groupMap.has(current.tag)) {
+      return resolvedFormulaGroup(groupMap.get(current.tag), groupMap)
+    }
+    current = current.parent
+  }
+  return null
+}
+
+function valueForTag(values, tag) {
+  return Object.prototype.hasOwnProperty.call(values, tag) ? values[tag] : undefined
+}
+
+function buildFormulaCategories(source) {
+  const formula = source.formula && typeof source.formula === 'object' ? source.formula : {}
+  const formulaNodes = buildFormulaNodes(formula.items)
+  const values = normalizeValueDictionary(source.values)
+  const previousValues = source.previousValues === undefined
+    ? null
+    : normalizeValueDictionary(source.previousValues)
+  const rawGroups = source.groups && typeof source.groups === 'object' ? source.groups : {}
+  const groupEntries = Object.entries(rawGroups)
+  const groups = []
+  const groupMap = new Map()
+
+  for (let i = 0; i < groupEntries.length; i++) {
+    const [tag, groupValue] = groupEntries[i]
+    if (!tag) {
+      continue
+    }
+    const group = normalizeGroup(groupValue, tag, groups.length, formulaNodes)
+    if (!group.node) {
+      continue
+    }
+    groups.push(group)
+    groupMap.set(tag, group)
+  }
+
+  const members = new Map()
+  for (let i = 0; i < groups.length; i++) {
+    const group = resolvedFormulaGroup(groups[i], groupMap)
+    if (!group.hidden && !group.group && !members.has(group.tag)) {
+      members.set(group.tag, [])
+    }
+  }
+
+  const leaves = formulaLeaves(formulaNodes.roots)
+  for (let i = 0; i < leaves.length; i++) {
+    const leaf = leaves[i]
+    const group = nearestFormulaGroup(leaf, groupMap)
+    if (!group || group.hidden || group.group || !members.has(group.tag) || !leaf.tag) {
+      continue
+    }
+
+    const rawCurrent = valueForTag(values, leaf.tag)
+    if (rawCurrent === undefined) {
+      continue
+    }
+    const rawPrevious = previousValues ? valueForTag(previousValues, leaf.tag) : undefined
+    const groupSign = group.node?.effectiveSign || 1
+    const relativeSign = leaf.effectiveSign / groupSign
+    members.get(group.tag).push({
+      leaf,
+      rawCurrent,
+      rawPrevious,
+      relativeSign,
+    })
+  }
+
+  const categories = []
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i]
+    if (group.hidden || group.group) {
+      continue
+    }
+    const groupMembers = members.get(group.tag) || []
+    if (!groupMembers.length) {
+      continue
+    }
+
+    const subcategories = []
+    let currentDisplay = 0
+    let previousDisplay = 0
+    let hasPreviousDisplay = false
+
+    for (let memberIndex = 0; memberIndex < groupMembers.length; memberIndex++) {
+      const member = groupMembers[memberIndex]
+      const leaf = member.leaf
+      const rawPrevious = member.rawPrevious
+      currentDisplay += member.relativeSign * member.rawCurrent
+      if (rawPrevious !== undefined) {
+        previousDisplay += member.relativeSign * rawPrevious
+        hasPreviousDisplay = true
+      }
+
+      subcategories.push({
+        key: leaf.tag || `${group.tag}-item-${memberIndex + 1}`,
+        name: leaf.name,
+        shortName: leaf.shortName,
+        tag: leaf.tag,
+        current: leaf.effectiveSign * member.rawCurrent,
+        previous: rawPrevious === undefined ? undefined : leaf.effectiveSign * rawPrevious,
+        display: {
+          current: member.rawCurrent,
+          previous: rawPrevious,
+        },
+      })
+    }
+
+    const summaryTag = group.valueTag || ''
+    if (summaryTag) {
+      const summaryCurrent = valueForTag(values, summaryTag)
+      const summaryPrevious = previousValues ? valueForTag(previousValues, summaryTag) : undefined
+      if (summaryCurrent !== undefined) {
+        currentDisplay = summaryCurrent
+      }
+      if (summaryPrevious !== undefined) {
+        previousDisplay = summaryPrevious
+        hasPreviousDisplay = true
+      }
+    }
+
+    categories.push({
+      key: group.key,
+      name: group.name,
+      shortName: group.shortName,
+      tag: group.tag,
+      color: group.color,
+      display: {
+        current: currentDisplay,
+        previous: hasPreviousDisplay ? previousDisplay : undefined,
+      },
+      subcategories,
+    })
+  }
+
+  return categories
+}
+
+function normalizeConfig(value) {
+  const source = value && typeof value === 'object' ? value : {}
+  let categories = []
+  if (source.formula && source.groups) {
+    categories = buildFormulaCategories(source)
+  } else if (Array.isArray(source.categories)) {
+    for (let i = 0; i < source.categories.length; i++) {
+      categories.push(normalizeCategory(source.categories[i], i))
+    }
+  }
   const periods = source.periods && typeof source.periods === 'object'
     ? source.periods
     : {}
+
+  const formula = source.formula && typeof source.formula === 'object'
+    ? source.formula
+    : { items: [] }
 
   return {
     label: source.label || 'Two towers visualization',
@@ -740,6 +1126,11 @@ function normalizeConfig(value) {
       current: periods.current || 'Current',
       previous: periods.previous || 'Previous',
     },
+    formula: {
+      title: formula.title == null ? '' : String(formula.title),
+      items: Array.isArray(formula.items) ? formula.items : [],
+    },
+    values: normalizeValueDictionary(source.values),
     categories,
   }
 }
@@ -1577,6 +1968,8 @@ export class TotTwoTowers extends HTMLElement {
     this._config = normalizeConfig(null)
     this._fullscreen = false
     this._detailsOpen = false
+    this._formulaOpen = false
+    this._formulaSimplified = false
     this._detailsWidthPx = null
     this._activeDetailsResize = null
     this._tooltipAnchor = null
@@ -1614,11 +2007,26 @@ export class TotTwoTowers extends HTMLElement {
           <div class="details-table-scroll" part="details-table-scroll"></div>
           <button class="details-resize-handle" part="details-resize-handle" type="button" aria-label="Resize details table"></button>
         </aside>
+        <aside class="formula-panel" part="formula-panel" aria-label="Formula">
+          <div class="formula-panel-header" part="formula-panel-header">
+            <span class="formula-panel-title">Formula</span>
+            <label class="formula-simplified" part="formula-simplified">
+              <input class="formula-simplified-input" type="checkbox">
+              Simplified
+            </label>
+          </div>
+          <div class="formula-panel-scroll" part="formula-panel-scroll">
+            <tot-formula class="formula-view" part="formula-view"></tot-formula>
+          </div>
+        </aside>
         <div class="chart" part="chart">
           <svg aria-label="Two towers visualization" role="img"></svg>
         </div>
         <div class="legend" part="legend"></div>
         <div class="tooltip" part="tooltip" hidden></div>
+        <button class="formula-button" part="formula-button" type="button" aria-label="Show formula" aria-expanded="false">
+          ${getFormulaIcon()}
+        </button>
         <button class="details-button" part="details-button" type="button" aria-label="Show all details" aria-expanded="false">
           ${getDetailsTableIcon()}
         </button>
@@ -1635,10 +2043,19 @@ export class TotTwoTowers extends HTMLElement {
     this._detailsTable = root.querySelector('.details-table')
     this._detailsTableScroll = root.querySelector('.details-table-scroll')
     this._detailsResizeHandle = root.querySelector('.details-resize-handle')
+    this._formulaPanel = root.querySelector('.formula-panel')
+    this._formulaView = root.querySelector('.formula-view')
+    this._formulaSimplifiedInput = root.querySelector('.formula-simplified-input')
+    this._formulaButton = root.querySelector('.formula-button')
     this._detailsButton = root.querySelector('.details-button')
     this._fullscreenButton = root.querySelector('.fullscreen-button')
 
     this._detailsButton.addEventListener('click', () => this.toggleDetailsTable())
+    this._formulaButton.addEventListener('click', () => this.toggleFormulaPanel())
+    this._formulaSimplifiedInput.addEventListener('change', () => {
+      this._formulaSimplified = this._formulaSimplifiedInput.checked
+      this.renderFormulaPanel()
+    })
     this._detailsResizeHandle.addEventListener('pointerdown', event => this.startDetailsResize(event))
     this._detailsResizeHandle.addEventListener('keydown', event => this.handleDetailsResizeKeyDown(event))
     this._fullscreenButton.addEventListener('click', () => {
@@ -1721,6 +2138,7 @@ export class TotTwoTowers extends HTMLElement {
     this._skipHistoryOnClose = false
     this._fullscreen = false
     this._detailsOpen = false
+    this._formulaOpen = false
     this.stopDetailsResize()
     markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
@@ -1800,17 +2218,26 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   updateFullscreenUi() {
-    if (!this._base || !this._fullscreenButton || !this._detailsButton) {
+    if (!this._base || !this._fullscreenButton || !this._detailsButton || !this._formulaButton) {
       return
     }
 
+    const detailsOpen = this._fullscreen && this._detailsOpen
+    const formulaOpen = this._fullscreen && this._formulaOpen
     this._base.classList.toggle('is-fullscreen', this._fullscreen)
-    this._base.classList.toggle('has-details-table', this._fullscreen && this._detailsOpen)
-    this._detailsButton.setAttribute('aria-expanded', String(this._fullscreen && this._detailsOpen))
+    this._base.classList.toggle('has-details-table', detailsOpen)
+    this._base.classList.toggle('has-formula', formulaOpen)
+    this._detailsButton.setAttribute('aria-expanded', String(detailsOpen))
     this._detailsButton.setAttribute(
       'aria-label',
-      this._detailsOpen ? 'Hide all details' : 'Show all details',
+      detailsOpen ? 'Hide all details' : 'Show all details',
     )
+    this._formulaButton.setAttribute('aria-expanded', String(formulaOpen))
+    this._formulaButton.setAttribute(
+      'aria-label',
+      formulaOpen ? 'Hide formula' : 'Show formula',
+    )
+    this._formulaButton.hidden = !this._config.formula.items.length
     this._fullscreenButton.innerHTML = this._fullscreen
       ? getExitFullscreenIcon()
       : getEnterFullscreenIcon()
@@ -1825,10 +2252,50 @@ export class TotTwoTowers extends HTMLElement {
       return
     }
 
-    this._detailsOpen = !this._detailsOpen
+    const next = !this._detailsOpen
+    this._detailsOpen = next
+    if (next) {
+      this._formulaOpen = false
+    }
     this.hideTooltip(true)
     this.updateFullscreenUi()
     this.renderDetailsTable()
+    this.renderFormulaPanel()
+  }
+
+  toggleFormulaPanel() {
+    if (!this._fullscreen || !this._config.formula.items.length) {
+      return
+    }
+
+    const next = !this._formulaOpen
+    this._formulaOpen = next
+    if (next) {
+      this._detailsOpen = false
+      this.stopDetailsResize()
+    }
+    this.hideTooltip(true)
+    this.updateFullscreenUi()
+    this.renderDetailsTable()
+    this.renderFormulaPanel()
+  }
+
+  renderFormulaPanel() {
+    if (!this._formulaView || !this._formulaSimplifiedInput) {
+      return
+    }
+
+    this._formulaSimplifiedInput.checked = this._formulaSimplified
+    if (!this._fullscreen || !this._formulaOpen) {
+      return
+    }
+
+    this._formulaView.config = {
+      title: this._config.formula.title,
+      simplified: this._formulaSimplified,
+      items: this._config.formula.items,
+      values: this._config.values,
+    }
   }
 
   renderDetailsTable() {
@@ -2130,6 +2597,8 @@ export class TotTwoTowers extends HTMLElement {
       this._hiddenCategoryKeys,
     )
     this.renderDetailsTable()
+    this.renderFormulaPanel()
+    this.updateFullscreenUi()
   }
 
   renderVertical(config, layout, scale) {
@@ -2155,7 +2624,7 @@ export class TotTwoTowers extends HTMLElement {
           continue
         }
 
-        const mainSize = Math.max(1.25, displayMagnitude * scale)
+        const mainSize = displayMagnitude * scale
         const geometry = categoryGeometryFrom({ x, main }, mainSize, layout)
         this.drawCategorySide(category, subcategories, geometry, side, config, layout)
         main += mainSize
@@ -2186,7 +2655,7 @@ export class TotTwoTowers extends HTMLElement {
           continue
         }
 
-        const mainSize = Math.max(1.25, displayMagnitude * scale)
+        const mainSize = displayMagnitude * scale
         const geometry = categoryGeometryFrom({ y, main }, mainSize, layout)
         this.drawCategorySide(category, subcategories, geometry, side, config, layout)
         main += mainSize

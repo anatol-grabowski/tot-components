@@ -1,20 +1,3 @@
-export type TotTwoTowersDisplayValue = number | string
-
-export type TotTwoTowersDisplayValues = {
-  /**
-   * Presentation value for the current column. Numbers are formatted by the
-   * component; strings are rendered verbatim. This never affects tower choice
-   * or geometry.
-   */
-  current?: TotTwoTowersDisplayValue
-  /**
-   * Presentation value for the previous column. Numbers are formatted by the
-   * component; strings are rendered verbatim. This never affects comparison
-   * geometry.
-   */
-  previous?: TotTwoTowersDisplayValue
-}
-
 export type TotTwoTowersPeriods = {
   /** Column label for current values in details tables. @default "Current" */
   current?: string
@@ -22,66 +5,49 @@ export type TotTwoTowersPeriods = {
   previous?: string
 }
 
-export type TotTwoTowersSubcategory = {
-  /** Optional stable key. */
-  key?: string
-  /** Human-readable subcategory name. */
+export type TotTwoTowersFormulaItem = {
+  /** Calculation weight relative to the parent item. @default '+' */
+  sign?: '+' | '-'
+  /** Human-readable XBRL concept name. */
   name: string
-  /** Compact label drawn in the block when there is enough space. */
-  shortName?: string
-  /**
-   * Optional XBRL concept/tag name. Tags without whitespace become exact CSS
-   * classes; CSS-safe tags are also exact shadow parts. Every tag is exposed as
-   * `tag-<sanitized-tag>` too.
-   */
-  tag?: string
-  /**
-   * Current-period signed value. Positive values are drawn in the positive
-   * tower and negative values in the negative tower.
-   */
-  current: number
-  /** Optional signed previous-period value used by comparison rendering. */
-  previous?: number
-  /**
-   * Optional values shown in the in-block amount label and details tables.
-   * Use this when the signed routing value differs from the source statement,
-   * for example a liability routed to the negative tower but displayed as a
-   * positive balance. Values may also be arbitrary text.
-   */
-  display?: TotTwoTowersDisplayValues
+  /** Compact label drawn in the visualization when there is enough space. */
+  shortName: string
+  /** XBRL concept/tag name. */
+  tag: string
+  /** Nested CAL formula children. */
+  items?: TotTwoTowersFormulaItem[]
 }
 
-export type TotTwoTowersCategory = {
-  /** Optional stable key used for hover/highlight grouping. */
-  key?: string
-  /** Human-readable category name used in the legend and details tables. */
-  name: string
-  /** Compact category label used in the legend and, when space permits, the grid. */
-  shortName?: string
-  /**
-   * Optional XBRL concept/tag name. The tag is attached as a CSS hook to the
-   * category's legend entry, outlines, labels, details rows, and all of its
-   * rendered subcategory fragments.
-   */
-  tag?: string
-  /**
-   * Any valid CSS color. Theme variables such as `var(--tot-color-blue-400)`
-   * are recommended. When omitted, a theme-aware series color is assigned.
-   */
-  color?: string
-  /**
-   * Optional presentation-only summary values for the category row in details
-   * tables. When omitted, the component sums subcategory presentation values
-   * when they are numeric/parseable; arbitrary text makes the aggregate unavailable.
-   */
-  display?: TotTwoTowersDisplayValues
-  /**
-   * Signed values live only on subcategories. A category itself has no value
-   * and no tower assignment; each subcategory chooses its tower from the sign
-   * of `current`.
-   */
-  subcategories: TotTwoTowersSubcategory[]
+export type TotTwoTowersFormula = {
+  /** Optional formula heading; ignored by TwoTowers but accepted for Formula.js compatibility. */
+  title?: string
+  /** CAL formula tree using the same item format as Formula.js. */
+  items: TotTwoTowersFormulaItem[]
 }
+
+export type TotTwoTowersGroup = {
+  /** Theme-aware CSS color used for the group. */
+  color?: string
+  /** Optional legend/tooltip name overriding the formula item's name. */
+  name?: string
+  /** Optional compact label overriding the formula item's shortName. */
+  shortName?: string
+  /** Do not create a visual category for this formula tag. @default false */
+  hidden?: boolean
+  /**
+   * Assign this tag to another configured group instead of creating its own
+   * category. Useful when two formula tags should share one visual category.
+   */
+  group?: string
+  /**
+   * Optional tag whose raw fact is used for the category summary row instead
+   * of the signed sum of the group's visible leaves. Useful for a group that
+   * combines two instant facts such as beginning/end cash.
+   */
+  valueTag?: string
+}
+
+export type TotTwoTowersGroups = Record<string, string | TotTwoTowersGroup>
 
 export type TotTwoTowersConfig = {
   /** Accessible label applied to the SVG. @default "Two towers visualization" */
@@ -104,49 +70,60 @@ export type TotTwoTowersConfig = {
   negativeLabel?: string
   /** Labels used by hover/tap and fullscreen details tables. */
   periods?: TotTwoTowersPeriods
+  /** CAL formula definition using the same recursive item format as Formula.js. */
+  formula: TotTwoTowersFormula
+  /** Current-period numeric facts keyed by XBRL tag name. */
+  values: Record<string, number>
+  /** Optional previous-period numeric facts keyed by XBRL tag name. */
+  previousValues?: Record<string, number>
   /**
-   * Ordered categories. Each category contains signed subcategories; positive
-   * current values go to the positive tower and negative values to the negative
-   * tower. Subcategories from one category may therefore appear on both sides
-   * and at different positions while still sharing highlighting and details.
+   * Visual groups keyed by formula tag. A string value is shorthand for
+   * `{ color: value }`.
+   *
+   * Leaves belong to the nearest configured ancestor group. Therefore a group
+   * for `AssetsCurrent` automatically takes its descendants out of an `Assets`
+   * group, while the remaining Assets descendants stay in `Assets`. Set
+   * `{ hidden: true }` to explicitly suppress a group, or `{ group: 'OtherTag' }`
+   * to assign a formula tag to another configured group. No tag name receives
+   * special treatment.
    */
-  categories: TotTwoTowersCategory[]
+  groups: TotTwoTowersGroups
 }
 
 /**
- * `<tot-two-towers>` - a theme-aware signed two-stack visualization.
+ * `<tot-two-towers>` - a theme-aware two-stack visualization derived from an
+ * XBRL CAL formula.
  *
- * The data model is category-first: routing/comparison numbers live on
- * subcategories and the sign of each current value determines its tower
- * automatically. Optional `display` values are presentation-only, so source
- * statement signs or arbitrary text can differ from the routing numbers.
+ * TwoTowers multiplies each leaf fact by the + / - weights along its path from
+ * the formula root. A positive effective contribution goes to the positive
+ * tower and a negative contribution goes to the negative tower. The raw fact
+ * itself is still shown in labels/details, so liabilities or ending cash can
+ * display as positive statement values while their formula contribution is on
+ * the negative side.
  *
- * Previous-period rendering is also evaluated per subcategory:
- * - same sign: the difference between current and previous magnitude is shown
- *   with a lighter version of the category color, without hatching;
- * - different signs: the previous-magnitude portion is hatched. When current is
- *   larger, the remaining current delta is light and unhatched; when previous
- *   is larger, the hatched previous extent protrudes beyond the current block;
- * - oversized protrusions use `tearThreshold` and a wavy tear mark.
+ * `groups` controls visual aggregation only. Descendant leaves inherit the
+ * nearest configured group, and a more-specific group automatically carves its
+ * subtree out of a broader ancestor group. Intermediate formula totals do not
+ * need separate groups when their descendants are fully covered.
  *
- * Hovering any fragment highlights every fragment in the category across both
- * towers. Touch users can tap to pin the same details table. Hold a legend item
- * on touch, or right-click it with a mouse, to hide/show that category while
- * keeping its legend entry available. In fullscreen, the complete details table
- * can be opened to the left and resized by dragging its edge.
+ * Previous-period rendering is evaluated per leaf contribution. Same-sign
+ * changes use a lighter unhatched comparison region; sign changes use hatching.
+ * Oversized previous protrusions use `tearThreshold` and a wavy tear mark.
  *
- * When `tag` is set, rendered pieces receive the exact tag as a class when it
- * has no whitespace, and as an exact part when CSS-safe. A
- * `tag-<sanitized-tag>` class/part is always added. This
- * allows selectors such as `tot-two-towers::part(AssetsCurrent)` or
- * `tot-two-towers::part(tag-us-gaap-AssetsCurrent)`.
+ * Hovering any fragment highlights every fragment in the same group across both
+ * towers. Touch users can tap to pin the details table. Hold a legend item on
+ * touch, or right-click it with a mouse, to hide/show that group. In fullscreen,
+ * the complete details table or the source Formula.js view can be opened beside
+ * the visualization. The table can be resized by dragging its edge. On narrow
+ * screens either panel replaces the visualization while it is open.
+ *
+ * Group and leaf tags are attached to rendered pieces as CSS hooks. Tags without
+ * whitespace become exact classes; CSS-safe tags are also exact shadow parts.
+ * A `tag-<sanitized-tag>` class/part is always added.
  */
 export type TotTwoTowers = {
   props: {
-    /**
-     * Visualization data and layout. Assign as a JavaScript property and
-     * reassign after mutating nested data so the component rerenders.
-     */
+    /** Visualization formula, fact dictionaries, grouping and layout. */
     config: TotTwoTowersConfig
 
     /** Whether the fullscreen visualization is currently open. */
@@ -171,17 +148,23 @@ export type TotTwoTowers = {
    * ```text
    * base — visualization plus legend
    * ├─ chart — SVG visualization surface
-   * ├─ legend — category legend
+   * ├─ legend — formula-group legend
    * │  ├─ legend-item
    * │  └─ legend-swatch
-   * ├─ tooltip — category comparison table shown on hover/tap
-   * ├─ details-table — resizable fullscreen table with every category/subcategory
+   * ├─ tooltip — group comparison table shown on hover/tap
+   * ├─ details-table — resizable fullscreen table with every group/leaf
    * │  ├─ details-table-header
    * │  ├─ details-table-scroll
    * │  └─ details-resize-handle
+   * ├─ formula-panel — fullscreen Formula.js view of the source CAL formula
+   * │  ├─ formula-panel-header
+   * │  ├─ formula-simplified
+   * │  ├─ formula-panel-scroll
+   * │  └─ formula-view
+   * ├─ formula-button — opens/closes the fullscreen formula view
    * ├─ details-button — opens/closes the fullscreen details table
    * └─ fullscreen-button — opens/closes the fixed fullscreen visualization
    * ```
    */
-  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'details-table' | 'details-table-header' | 'details-table-scroll' | 'details-resize-handle' | 'details-button' | 'fullscreen-button' | `tag-${string}`
+  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'details-table' | 'details-table-header' | 'details-table-scroll' | 'details-resize-handle' | 'formula-panel' | 'formula-panel-header' | 'formula-simplified' | 'formula-panel-scroll' | 'formula-view' | 'formula-button' | 'details-button' | 'fullscreen-button' | `tag-${string}`
 }
