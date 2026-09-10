@@ -15,6 +15,16 @@ export type TotFormulaItem = {
   items?: TotFormulaItem[]
 }
 
+
+export type TotFormulaItemEventDetail = {
+  path: string
+  sign: '+' | '-'
+  name: string
+  shortName: string
+  tag: string
+  value?: number
+}
+
 export type TotFormulaConfig = {
   /** Optional compact heading, for example "Calculation group 23". */
   title?: string
@@ -37,7 +47,9 @@ export type TotFormulaConfig = {
  * Clicking a parent item's sign collapses/expands its children. Collapsed rows
  * visually highlight the calculation sign without adding a separate caret. In simplified mode
  * rows show only `shortName` and value. Hovering a row, or tapping it on touch
- * devices, shows a compact tooltip with name, tag, short name, and value.
+ * devices, shows a compact tooltip with name, tag, short name, and value. Rows
+ * emit `item-hover`, `item-unhover`, and `item-click` events with the complete
+ * item identity and current value.
  *
  * Numeric parent values are checked against the signed sum of their direct
  * children. The header shows a validation icon with hover/touch details.
@@ -58,6 +70,12 @@ export class TotFormula extends HTMLElement {
 
   /** Returns the component's root formula panel. */
   getBase(): HTMLElement
+
+  addEventListener(
+    type: 'item-hover' | 'item-unhover' | 'item-click',
+    listener: (this: TotFormula, event: CustomEvent<TotFormulaItemEventDetail>) => unknown,
+    options?: boolean | AddEventListenerOptions,
+  ): void
 }
 
 declare global {

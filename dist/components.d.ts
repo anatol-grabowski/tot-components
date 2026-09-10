@@ -2186,9 +2186,13 @@ export type TotTwoTowersConfig = {
  * Hovering any fragment highlights every fragment in the same group across both
  * towers. Touch users can tap to pin the details table. Hold a legend item on
  * touch, or right-click it with a mouse, to hide/show that group. In fullscreen,
- * the complete details table or the source Formula.js view can be opened beside
- * the visualization. The table can be resized by dragging its edge. On narrow
- * screens either panel replaces the visualization while it is open.
+ * the complete details table, the source Formula.js view, or a read-only
+ * formula/group mapping view can be opened beside the visualization. Hovering a
+ * formula item, or an item in the group/color mapping view, highlights its
+ * corresponding visual leaf/subgroup and resolved legend group. The group view
+ * colors each formula item by its resolved visual category and marks configured
+ * hidden groups. The table can be resized by dragging its edge. On
+ * narrow screens any open panel replaces the visualization.
  *
  * Group and leaf tags are attached to rendered pieces as CSS hooks. Tags without
  * whitespace become exact classes; CSS-safe tags are also exact shadow parts.
@@ -2234,12 +2238,17 @@ export type TotTwoTowers = {
    * │  ├─ formula-simplified
    * │  ├─ formula-panel-scroll
    * │  └─ formula-view
+   * ├─ groups-panel — read-only hierarchical formula/group/color mapping
+   * │  ├─ groups-panel-header
+   * │  ├─ groups-panel-scroll
+   * │  └─ groups-item
+   * ├─ groups-button — opens/closes the fullscreen group/color view
    * ├─ formula-button — opens/closes the fullscreen formula view
    * ├─ details-button — opens/closes the fullscreen details table
    * └─ fullscreen-button — opens/closes the fixed fullscreen visualization
    * ```
    */
-  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'details-table' | 'details-table-header' | 'details-table-scroll' | 'details-resize-handle' | 'formula-panel' | 'formula-panel-header' | 'formula-simplified' | 'formula-panel-scroll' | 'formula-view' | 'formula-button' | 'details-button' | 'fullscreen-button' | `tag-${string}`
+  parts: 'base' | 'chart' | 'legend' | 'legend-item' | 'legend-swatch' | 'tooltip' | 'details-table' | 'details-table-header' | 'details-table-scroll' | 'details-resize-handle' | 'formula-panel' | 'formula-panel-header' | 'formula-simplified' | 'formula-panel-scroll' | 'formula-view' | 'groups-panel' | 'groups-panel-header' | 'groups-panel-scroll' | 'groups-item' | 'groups-button' | 'formula-button' | 'details-button' | 'fullscreen-button' | `tag-${string}`
 }
 
 /* ==========================================================================
@@ -4318,6 +4327,16 @@ export type TotFormulaItem = {
   items?: TotFormulaItem[]
 }
 
+
+export type TotFormulaItemEventDetail = {
+  path: string
+  sign: '+' | '-'
+  name: string
+  shortName: string
+  tag: string
+  value?: number
+}
+
 export type TotFormulaConfig = {
   /** Optional compact heading, for example "Calculation group 23". */
   title?: string
@@ -4340,7 +4359,9 @@ export type TotFormulaConfig = {
  * Clicking a parent item's sign collapses/expands its children. Collapsed rows
  * visually highlight the calculation sign without adding a separate caret. In simplified mode
  * rows show only `shortName` and value. Hovering a row, or tapping it on touch
- * devices, shows a compact tooltip with name, tag, short name, and value.
+ * devices, shows a compact tooltip with name, tag, short name, and value. Rows
+ * emit `item-hover`, `item-unhover`, and `item-click` events with the complete
+ * item identity and current value.
  *
  * Numeric parent values are checked against the signed sum of their direct
  * children. The header shows a validation icon with hover/touch details.
@@ -4361,6 +4382,12 @@ export class TotFormula extends HTMLElement {
 
   /** Returns the component's root formula panel. */
   getBase(): HTMLElement
+
+  addEventListener(
+    type: 'item-hover' | 'item-unhover' | 'item-click',
+    listener: (this: TotFormula, event: CustomEvent<TotFormulaItemEventDetail>) => unknown,
+    options?: boolean | AddEventListenerOptions,
+  ): void
 }
 
 declare global {

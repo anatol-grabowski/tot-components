@@ -63,7 +63,8 @@ const twoTowersStyle = `
   }
 
   .two-towers.is-fullscreen.has-details-table,
-  .two-towers.is-fullscreen.has-formula {
+  .two-towers.is-fullscreen.has-formula,
+  .two-towers.is-fullscreen.has-groups {
     grid-template-areas:
       'details chart'
       'details legend';
@@ -72,7 +73,8 @@ const twoTowersStyle = `
 
   .fullscreen-button,
   .details-button,
-  .formula-button {
+  .formula-button,
+  .groups-button {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -94,12 +96,14 @@ const twoTowersStyle = `
 
   .two-towers.is-fullscreen .fullscreen-button,
   .two-towers.is-fullscreen .details-button,
-  .two-towers.is-fullscreen .formula-button {
+  .two-towers.is-fullscreen .formula-button,
+  .two-towers.is-fullscreen .groups-button {
     position: fixed;
   }
 
   .details-button,
-  .formula-button {
+  .formula-button,
+  .groups-button {
     display: none;
   }
 
@@ -111,37 +115,47 @@ const twoTowersStyle = `
     right: calc(var(--tot-spacing-2x-small, .25rem) + 4rem);
   }
 
-  .formula-button[hidden] {
+  .groups-button {
+    right: calc(var(--tot-spacing-2x-small, .25rem) + 6rem);
+  }
+
+  .formula-button[hidden],
+  .groups-button[hidden] {
     display: none !important;
   }
 
   .two-towers.is-fullscreen .details-button,
-  .two-towers.is-fullscreen .formula-button {
+  .two-towers.is-fullscreen .formula-button,
+  .two-towers.is-fullscreen .groups-button {
     display: inline-flex;
   }
 
   .details-button[aria-expanded='true'],
-  .formula-button[aria-expanded='true'] {
+  .formula-button[aria-expanded='true'],
+  .groups-button[aria-expanded='true'] {
     background: var(--tot-color-primary-50, #f0f9ff);
     color: var(--tot-color-primary-700, #0369a1);
   }
 
   .fullscreen-button:hover,
   .details-button:hover,
-  .formula-button:hover {
+  .formula-button:hover,
+  .groups-button:hover {
     color: var(--tot-input-icon-color-hover, #475569);
   }
 
   .fullscreen-button:focus-visible,
   .details-button:focus-visible,
-  .formula-button:focus-visible {
+  .formula-button:focus-visible,
+  .groups-button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
   .fullscreen-button svg,
   .details-button svg,
-  .formula-button svg {
+  .formula-button svg,
+  .groups-button svg {
     display: block;
     fill: none;
     height: 1rem;
@@ -408,6 +422,151 @@ const twoTowersStyle = `
     border-radius: 0;
   }
 
+  .groups-panel {
+    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    border-right: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: none;
+    grid-area: details;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .two-towers.is-fullscreen.has-groups .groups-panel {
+    display: grid;
+  }
+
+  .groups-panel-header {
+    align-items: center;
+    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: flex;
+    min-height: 2rem;
+    padding: 0 var(--tot-spacing-x-small, .5rem);
+  }
+
+  .groups-panel-title {
+    color: var(--tot-input-color, #1e293b);
+    font-size: var(--tot-font-size-x-small, .75rem);
+    font-weight: var(--tot-font-weight-semibold, 600);
+  }
+
+  .groups-panel-scroll {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: var(--tot-spacing-2x-small, .25rem);
+  }
+
+  .groups-tree,
+  .groups-children {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .groups-tree {
+    color: var(--tot-input-color, #1e293b);
+    font-size: var(--tot-font-size-x-small, .75rem);
+    line-height: var(--tot-line-height-dense, 1.2);
+  }
+
+  .groups-node {
+    min-width: 0;
+  }
+
+  .groups-row {
+    align-items: start;
+    border: var(--tot-panel-border-width, 1px) solid color-mix(in srgb, var(--tot-two-towers-category-border-color) 22%, transparent);
+    border-radius: var(--tot-border-radius-small, 3px);
+    display: grid;
+    gap: 0 var(--tot-spacing-2x-small, .25rem);
+    grid-template-columns: .9rem minmax(0, 1fr) minmax(0, max-content);
+    margin: .08rem 0;
+    min-width: 0;
+    padding: .16rem .3rem;
+  }
+
+  .groups-row.has-group {
+    background: var(--tot-two-towers-group-row-background);
+  }
+
+  .groups-row.is-hidden-group {
+    background: color-mix(in srgb, var(--tot-color-neutral-100, #f1f5f9) 75%, transparent);
+    border-style: dashed;
+  }
+
+  .groups-sign {
+    font-family: var(--tot-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    font-weight: var(--tot-font-weight-bold, 700);
+    line-height: 1rem;
+    text-align: center;
+  }
+
+  .groups-sign.is-plus {
+    color: var(--tot-color-success-700, #15803d);
+  }
+
+  .groups-sign.is-minus {
+    color: var(--tot-color-danger-700, #b91c1c);
+  }
+
+  .groups-copy {
+    min-width: 0;
+  }
+
+  .groups-name,
+  .groups-tag {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .groups-name {
+    font-weight: var(--tot-font-weight-semibold, 600);
+  }
+
+  .groups-tag {
+    color: color-mix(in srgb, currentColor 68%, transparent);
+    font-family: var(--tot-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    font-size: var(--tot-font-size-2x-small, .625rem);
+    line-height: 1.05;
+  }
+
+  .groups-category {
+    align-items: center;
+    align-self: center;
+    background: color-mix(in srgb, var(--tot-panel-background-color, #fff) 76%, transparent);
+    border-radius: var(--tot-border-radius-small, 3px);
+    display: inline-flex;
+    font-size: var(--tot-font-size-2x-small, .625rem);
+    font-weight: var(--tot-font-weight-semibold, 600);
+    gap: var(--tot-spacing-3x-small, .125rem);
+    max-width: 13rem;
+    padding: .08rem .25rem;
+    white-space: normal;
+  }
+
+  .groups-category svg {
+    flex: 0 0 auto;
+    fill: none;
+    height: .8rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    width: .8rem;
+  }
+
+  .groups-children {
+    border-left: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    margin-left: .45rem;
+    padding-left: .35rem;
+  }
+
+  .groups-tree > .groups-node > .groups-children {
+    border-left: 0;
+  }
+
   .details-table {
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
     border-right: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
@@ -511,7 +670,8 @@ const twoTowersStyle = `
 
   @media (max-width: 48rem) {
     .two-towers.is-fullscreen.has-details-table,
-    .two-towers.is-fullscreen.has-formula {
+    .two-towers.is-fullscreen.has-formula,
+    .two-towers.is-fullscreen.has-groups {
       gap: 0;
       grid-template-areas: 'details';
       grid-template-columns: minmax(0, 1fr);
@@ -522,24 +682,38 @@ const twoTowersStyle = `
     .two-towers.is-fullscreen.has-details-table .chart,
     .two-towers.is-fullscreen.has-details-table .legend,
     .two-towers.is-fullscreen.has-formula .chart,
-    .two-towers.is-fullscreen.has-formula .legend {
+    .two-towers.is-fullscreen.has-formula .legend,
+    .two-towers.is-fullscreen.has-groups .chart,
+    .two-towers.is-fullscreen.has-groups .legend {
       display: none;
     }
 
     .two-towers.is-fullscreen.has-details-table .details-table,
-    .two-towers.is-fullscreen.has-formula .formula-panel {
+    .two-towers.is-fullscreen.has-formula .formula-panel,
+    .two-towers.is-fullscreen.has-groups .groups-panel {
       border: 0;
       height: 100dvh;
       width: 100vw;
     }
 
     .two-towers.is-fullscreen.has-details-table .details-table-header,
-    .two-towers.is-fullscreen.has-formula .formula-panel-header {
-      padding-inline-end: 6.5rem;
+    .two-towers.is-fullscreen.has-formula .formula-panel-header,
+    .two-towers.is-fullscreen.has-groups .groups-panel-header {
+      padding-inline-end: 8.5rem;
     }
 
     .two-towers.is-fullscreen.has-details-table .details-resize-handle {
       display: none;
+    }
+
+    .groups-row {
+      grid-template-columns: .9rem minmax(0, 1fr);
+    }
+
+    .groups-category {
+      grid-column: 2;
+      justify-self: start;
+      max-width: 100%;
     }
   }
 
@@ -665,9 +839,23 @@ function getDetailsTableIcon() {
 
 function getFormulaIcon() {
   return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-    <path d="M3 4h2M3 8h2M3 12h2"></path>
-    <path d="M4 3v2M4 7v2M4 11v2"></path>
-    <path d="M8 4h5M8 8h5M8 12h5"></path>
+    <text x="7.4" y="12.4" fill="currentColor" stroke="none" font-family="Georgia, Times New Roman, serif" font-size="15" font-style="italic" font-weight="700">f</text>
+  </svg>`
+}
+
+function getGroupsIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <rect x="2.5" y="2.5" width="4.5" height="4.5" rx=".6"></rect>
+    <rect x="9" y="2.5" width="4.5" height="4.5" rx=".6"></rect>
+    <rect x="5.75" y="9" width="4.5" height="4.5" rx=".6"></rect>
+  </svg>`
+}
+
+function getHiddenGroupIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M2 2l12 12"></path>
+    <path d="M6.2 4.2A7.9 7.9 0 0 1 8 4c3.4 0 5.6 2.7 6.2 4-.3.7-1.1 1.8-2.2 2.6"></path>
+    <path d="M9.7 11.8A8.3 8.3 0 0 1 8 12C4.6 12 2.4 9.3 1.8 8c.3-.6 1-1.6 2-2.4"></path>
   </svg>`
 }
 
@@ -1131,8 +1319,166 @@ function normalizeConfig(value) {
       items: Array.isArray(formula.items) ? formula.items : [],
     },
     values: normalizeValueDictionary(source.values),
+    groups: source.groups && typeof source.groups === 'object' ? { ...source.groups } : {},
     categories,
   }
+}
+
+function createGroupsPresentation(config, handlers = {}) {
+  const formulaNodes = buildFormulaNodes(config.formula.items)
+  const groupEntries = Object.entries(config.groups || {})
+  const groupMap = new Map()
+
+  for (let i = 0; i < groupEntries.length; i++) {
+    const [tag, groupValue] = groupEntries[i]
+    if (!tag) {
+      continue
+    }
+    const group = normalizeGroup(groupValue, tag, i, formulaNodes)
+    if (group.node) {
+      groupMap.set(tag, group)
+    }
+  }
+
+  const groupForNode = (node) => {
+    const direct = node.tag ? groupMap.get(node.tag) : null
+    if (direct) {
+      const resolved = resolvedFormulaGroup(direct, groupMap)
+      return {
+        group: resolved,
+        hidden: direct.hidden || resolved?.hidden === true,
+      }
+    }
+
+    const found = new Map()
+    const visitLeaves = (current) => {
+      if (!current.children.length) {
+        const group = nearestFormulaGroup(current, groupMap)
+        if (group) {
+          found.set(group.tag, group)
+        }
+        return
+      }
+      for (let i = 0; i < current.children.length; i++) {
+        visitLeaves(current.children[i])
+      }
+    }
+    visitLeaves(node)
+
+    if (found.size !== 1) {
+      return { group: null, hidden: false }
+    }
+    const group = found.values().next().value
+    return { group, hidden: group?.hidden === true }
+  }
+
+  const list = document.createElement('ul')
+  list.className = 'groups-tree'
+
+  const appendNode = (node, container) => {
+    const item = document.createElement('li')
+    item.className = 'groups-node'
+
+    const row = document.createElement('div')
+    row.className = 'groups-row'
+    applyTagHooks(row, [node.tag], 'groups-item')
+
+    const sign = document.createElement('span')
+    sign.className = `groups-sign ${node.sign === '-' ? 'is-minus' : 'is-plus'}`
+    sign.textContent = node.sign
+
+    const copy = document.createElement('span')
+    copy.className = 'groups-copy'
+    const name = document.createElement('span')
+    name.className = 'groups-name'
+    name.textContent = node.name
+    const tag = document.createElement('span')
+    tag.className = 'groups-tag'
+    tag.textContent = node.tag
+    copy.append(name, tag)
+
+    const mapping = groupForNode(node)
+    const category = document.createElement('span')
+    category.className = 'groups-category'
+    if (mapping.hidden) {
+      row.classList.add('is-hidden-group')
+      category.innerHTML = getHiddenGroupIcon()
+      const label = document.createElement('span')
+      label.textContent = 'Hidden'
+      category.append(label)
+    } else if (mapping.group) {
+      row.classList.add('has-group')
+      row.style.setProperty('--tot-two-towers-group-row-background', mapping.group.color)
+      category.textContent = mapping.group.shortName
+        ? `${mapping.group.shortName} — ${mapping.group.name}`
+        : mapping.group.name
+    } else {
+      category.textContent = 'No group'
+    }
+
+    row.append(sign, copy, category)
+    item.append(row)
+
+    row.addEventListener('pointerenter', event => {
+      if (event.pointerType !== 'touch') {
+        handlers.hover?.(node.tag)
+      }
+    })
+    row.addEventListener('pointerleave', event => {
+      if (event.pointerType !== 'touch') {
+        handlers.unhover?.(node.tag)
+      }
+    })
+    row.addEventListener('click', () => handlers.click?.(node.tag))
+
+    if (node.children.length) {
+      const children = document.createElement('ul')
+      children.className = 'groups-children'
+      for (let i = 0; i < node.children.length; i++) {
+        appendNode(node.children[i], children)
+      }
+      item.append(children)
+    }
+
+    container.append(item)
+  }
+
+  for (let i = 0; i < formulaNodes.roots.length; i++) {
+    appendNode(formulaNodes.roots[i], list)
+  }
+
+  return list
+}
+
+function configuredGroupHidden(config, tag) {
+  const group = config.groups?.[tag]
+  return Boolean(group && typeof group === 'object' && group.hidden === true)
+}
+
+function descendantLeafTagsForFormulaTag(config, tag) {
+  const tags = new Set()
+  if (!tag) {
+    return tags
+  }
+
+  const formulaNodes = buildFormulaNodes(config.formula.items)
+  const nodes = formulaNodes.byTag.get(tag) || []
+  const visit = node => {
+    if (!node.children.length) {
+      if (node.tag) {
+        tags.add(node.tag)
+      }
+      return
+    }
+    for (let i = 0; i < node.children.length; i++) {
+      visit(node.children[i])
+    }
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    visit(nodes[i])
+  }
+  return tags
 }
 
 function categorySubtitle(category) {
@@ -1411,21 +1757,31 @@ function registerShape(categoryKey, element, registry) {
   registry.get(categoryKey).push(element)
 }
 
-function setHighlight(key, registry, legendRegistry) {
+function setTargetHighlight(activeShapes, activeCategoryKeys, registry, legendRegistry, dimLegend = false) {
+  const hasHighlight = activeShapes.size > 0 || activeCategoryKeys.size > 0
   const shapeEntries = Array.from(registry.entries())
   for (let i = 0; i < shapeEntries.length; i++) {
-    const [shapeKey, shapes] = shapeEntries[i]
+    const shapes = shapeEntries[i][1]
     for (let j = 0; j < shapes.length; j++) {
-      const baseOpacity = shapes[j].dataset.baseOpacity || '1'
-      shapes[j].setAttribute('opacity', key && key !== shapeKey ? '.28' : baseOpacity)
+      const shape = shapes[j]
+      const baseOpacity = shape.dataset.baseOpacity || '1'
+      shape.setAttribute('opacity', hasHighlight && !activeShapes.has(shape) ? '.28' : baseOpacity)
     }
   }
 
   const legendEntries = Array.from(legendRegistry.entries())
   for (let i = 0; i < legendEntries.length; i++) {
     const [legendKey, element] = legendEntries[i]
-    element.classList.toggle('is-active', Boolean(key) && legendKey === key)
+    const active = activeCategoryKeys.has(legendKey)
+    element.classList.toggle('is-active', active)
+    element.classList.toggle('is-dimmed', dimLegend && hasHighlight && !active)
   }
+}
+
+function setHighlight(key, registry, legendRegistry) {
+  const activeShapes = new Set(key ? registry.get(key) || [] : [])
+  const activeCategoryKeys = new Set(key ? [key] : [])
+  setTargetHighlight(activeShapes, activeCategoryKeys, registry, legendRegistry)
 }
 
 function addPattern(id, color) {
@@ -1969,6 +2325,7 @@ export class TotTwoTowers extends HTMLElement {
     this._fullscreen = false
     this._detailsOpen = false
     this._formulaOpen = false
+    this._groupsOpen = false
     this._formulaSimplified = false
     this._detailsWidthPx = null
     this._activeDetailsResize = null
@@ -2019,6 +2376,12 @@ export class TotTwoTowers extends HTMLElement {
             <tot-formula class="formula-view" part="formula-view"></tot-formula>
           </div>
         </aside>
+        <aside class="groups-panel" part="groups-panel" aria-label="Groups and colors">
+          <div class="groups-panel-header" part="groups-panel-header">
+            <span class="groups-panel-title">Groups &amp; colors</span>
+          </div>
+          <div class="groups-panel-scroll" part="groups-panel-scroll"></div>
+        </aside>
         <div class="chart" part="chart">
           <svg aria-label="Two towers visualization" role="img"></svg>
         </div>
@@ -2026,6 +2389,9 @@ export class TotTwoTowers extends HTMLElement {
         <div class="tooltip" part="tooltip" hidden></div>
         <button class="formula-button" part="formula-button" type="button" aria-label="Show formula" aria-expanded="false">
           ${getFormulaIcon()}
+        </button>
+        <button class="groups-button" part="groups-button" type="button" aria-label="Show groups and colors" aria-expanded="false">
+          ${getGroupsIcon()}
         </button>
         <button class="details-button" part="details-button" type="button" aria-label="Show all details" aria-expanded="false">
           ${getDetailsTableIcon()}
@@ -2045,16 +2411,26 @@ export class TotTwoTowers extends HTMLElement {
     this._detailsResizeHandle = root.querySelector('.details-resize-handle')
     this._formulaPanel = root.querySelector('.formula-panel')
     this._formulaView = root.querySelector('.formula-view')
+    this._groupsPanel = root.querySelector('.groups-panel')
+    this._groupsPanelScroll = root.querySelector('.groups-panel-scroll')
     this._formulaSimplifiedInput = root.querySelector('.formula-simplified-input')
     this._formulaButton = root.querySelector('.formula-button')
+    this._groupsButton = root.querySelector('.groups-button')
     this._detailsButton = root.querySelector('.details-button')
     this._fullscreenButton = root.querySelector('.fullscreen-button')
 
     this._detailsButton.addEventListener('click', () => this.toggleDetailsTable())
     this._formulaButton.addEventListener('click', () => this.toggleFormulaPanel())
+    this._groupsButton.addEventListener('click', () => this.toggleGroupsPanel())
     this._formulaSimplifiedInput.addEventListener('change', () => {
       this._formulaSimplified = this._formulaSimplifiedInput.checked
       this.renderFormulaPanel()
+    })
+    this._formulaView.addEventListener('item-hover', event => {
+      this.highlightFormulaTag(event.detail?.tag)
+    })
+    this._formulaView.addEventListener('item-unhover', () => {
+      this.clearFormulaHighlight()
     })
     this._detailsResizeHandle.addEventListener('pointerdown', event => this.startDetailsResize(event))
     this._detailsResizeHandle.addEventListener('keydown', event => this.handleDetailsResizeKeyDown(event))
@@ -2139,6 +2515,7 @@ export class TotTwoTowers extends HTMLElement {
     this._fullscreen = false
     this._detailsOpen = false
     this._formulaOpen = false
+    this._groupsOpen = false
     this.stopDetailsResize()
     markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
@@ -2218,15 +2595,17 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   updateFullscreenUi() {
-    if (!this._base || !this._fullscreenButton || !this._detailsButton || !this._formulaButton) {
+    if (!this._base || !this._fullscreenButton || !this._detailsButton || !this._formulaButton || !this._groupsButton) {
       return
     }
 
     const detailsOpen = this._fullscreen && this._detailsOpen
     const formulaOpen = this._fullscreen && this._formulaOpen
+    const groupsOpen = this._fullscreen && this._groupsOpen
     this._base.classList.toggle('is-fullscreen', this._fullscreen)
     this._base.classList.toggle('has-details-table', detailsOpen)
     this._base.classList.toggle('has-formula', formulaOpen)
+    this._base.classList.toggle('has-groups', groupsOpen)
     this._detailsButton.setAttribute('aria-expanded', String(detailsOpen))
     this._detailsButton.setAttribute(
       'aria-label',
@@ -2238,6 +2617,12 @@ export class TotTwoTowers extends HTMLElement {
       formulaOpen ? 'Hide formula' : 'Show formula',
     )
     this._formulaButton.hidden = !this._config.formula.items.length
+    this._groupsButton.setAttribute('aria-expanded', String(groupsOpen))
+    this._groupsButton.setAttribute(
+      'aria-label',
+      groupsOpen ? 'Hide groups and colors' : 'Show groups and colors',
+    )
+    this._groupsButton.hidden = !this._config.formula.items.length || !Object.keys(this._config.groups).length
     this._fullscreenButton.innerHTML = this._fullscreen
       ? getExitFullscreenIcon()
       : getEnterFullscreenIcon()
@@ -2256,11 +2641,13 @@ export class TotTwoTowers extends HTMLElement {
     this._detailsOpen = next
     if (next) {
       this._formulaOpen = false
+      this._groupsOpen = false
     }
     this.hideTooltip(true)
     this.updateFullscreenUi()
     this.renderDetailsTable()
     this.renderFormulaPanel()
+    this.renderGroupsPanel()
   }
 
   toggleFormulaPanel() {
@@ -2269,15 +2656,104 @@ export class TotTwoTowers extends HTMLElement {
     }
 
     const next = !this._formulaOpen
+    this.clearFormulaHighlight()
     this._formulaOpen = next
     if (next) {
       this._detailsOpen = false
+      this._groupsOpen = false
       this.stopDetailsResize()
     }
     this.hideTooltip(true)
     this.updateFullscreenUi()
     this.renderDetailsTable()
     this.renderFormulaPanel()
+    this.renderGroupsPanel()
+  }
+
+  toggleGroupsPanel() {
+    if (!this._fullscreen || !this._config.formula.items.length || !Object.keys(this._config.groups).length) {
+      return
+    }
+
+    const next = !this._groupsOpen
+    this.clearFormulaHighlight()
+    this._groupsOpen = next
+    if (next) {
+      this._detailsOpen = false
+      this._formulaOpen = false
+      this.stopDetailsResize()
+    }
+    this.hideTooltip(true)
+    this.updateFullscreenUi()
+    this.renderDetailsTable()
+    this.renderFormulaPanel()
+    this.renderGroupsPanel()
+  }
+
+  highlightFormulaTag(tag) {
+    const value = String(tag || '').trim()
+    if (!value || configuredGroupHidden(this._config, value)) {
+      this.clearFormulaHighlight()
+      return
+    }
+
+    const activeShapes = new Set()
+    const activeCategoryKeys = new Set()
+    const directCategories = []
+
+    for (let i = 0; i < this._config.categories.length; i++) {
+      const category = this._config.categories[i]
+      if (category.tag === value) {
+        directCategories.push(category)
+      }
+    }
+
+    if (directCategories.length) {
+      for (let i = 0; i < directCategories.length; i++) {
+        const category = directCategories[i]
+        activeCategoryKeys.add(category.key)
+        const shapes = this._shapeRegistry.get(category.key) || []
+        for (let j = 0; j < shapes.length; j++) {
+          activeShapes.add(shapes[j])
+        }
+      }
+    } else {
+      const leafTags = descendantLeafTagsForFormulaTag(this._config, value)
+      if (!leafTags.size) {
+        leafTags.add(value)
+      }
+
+      for (let i = 0; i < this._config.categories.length; i++) {
+        const category = this._config.categories[i]
+        const categoryShapes = this._shapeRegistry.get(category.key) || []
+        let categoryMatched = false
+
+        for (let j = 0; j < category.subcategories.length; j++) {
+          const subcategory = category.subcategories[j]
+          if (!subcategory.tag || !leafTags.has(subcategory.tag)) {
+            continue
+          }
+          categoryMatched = true
+          const hook = tagHookToken(subcategory.tag)
+          for (let shapeIndex = 0; shapeIndex < categoryShapes.length; shapeIndex++) {
+            const shape = categoryShapes[shapeIndex]
+            if (hook && shape.classList.contains(hook)) {
+              activeShapes.add(shape)
+            }
+          }
+        }
+
+        if (categoryMatched) {
+          activeCategoryKeys.add(category.key)
+        }
+      }
+    }
+
+    setTargetHighlight(activeShapes, activeCategoryKeys, this._shapeRegistry, this._legendRegistry, true)
+  }
+
+  clearFormulaHighlight() {
+    setHighlight(null, this._shapeRegistry, this._legendRegistry)
   }
 
   renderFormulaPanel() {
@@ -2286,6 +2762,7 @@ export class TotTwoTowers extends HTMLElement {
     }
 
     this._formulaSimplifiedInput.checked = this._formulaSimplified
+    this.clearFormulaHighlight()
     if (!this._fullscreen || !this._formulaOpen) {
       return
     }
@@ -2296,6 +2773,23 @@ export class TotTwoTowers extends HTMLElement {
       items: this._config.formula.items,
       values: this._config.values,
     }
+  }
+
+  renderGroupsPanel() {
+    if (!this._groupsPanelScroll) {
+      return
+    }
+
+    this.clearFormulaHighlight()
+    if (!this._fullscreen || !this._groupsOpen) {
+      this._groupsPanelScroll.replaceChildren()
+      return
+    }
+
+    this._groupsPanelScroll.replaceChildren(createGroupsPresentation(this._config, {
+      hover: tag => this.highlightFormulaTag(tag),
+      unhover: () => this.clearFormulaHighlight(),
+    }))
   }
 
   renderDetailsTable() {
@@ -2598,6 +3092,7 @@ export class TotTwoTowers extends HTMLElement {
     )
     this.renderDetailsTable()
     this.renderFormulaPanel()
+    this.renderGroupsPanel()
     this.updateFullscreenUi()
   }
 

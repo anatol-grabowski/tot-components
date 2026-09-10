@@ -837,6 +837,9 @@ export class TotFormula extends HTMLElement {
       sign.addEventListener('pointerdown', event => event.stopPropagation())
       sign.addEventListener('click', event => {
         event.stopPropagation()
+        const itemValue = valueFor(item, this._config.values)
+        this.emitItemEvent('item-click', item, itemValue)
+        this.emitItemEvent('item-unhover', item, itemValue)
         if (this._collapsedPaths.has(item.path)) {
           this._collapsedPaths.delete(item.path)
         } else {
@@ -901,6 +904,7 @@ export class TotFormula extends HTMLElement {
       }
       this._itemTooltipPinned = false
       this.showItemTooltip(item, value, row)
+      this.emitItemEvent('item-hover', item, value)
     })
 
     row.addEventListener('pointermove', event => {
@@ -912,6 +916,7 @@ export class TotFormula extends HTMLElement {
     row.addEventListener('pointerleave', event => {
       if (event.pointerType !== 'touch' && !this._itemTooltipPinned) {
         this.hideItemTooltip()
+        this.emitItemEvent('item-unhover', item, value)
       }
     })
 
@@ -928,6 +933,28 @@ export class TotFormula extends HTMLElement {
       this._itemTooltipPinned = true
       this.showItemTooltip(item, value, row)
     })
+
+    row.addEventListener('click', event => {
+      if (event.target instanceof Element && event.target.closest('.formula__sign')) {
+        return
+      }
+      this.emitItemEvent('item-click', item, value)
+    })
+  }
+
+  emitItemEvent(type, item, value) {
+    this.dispatchEvent(new CustomEvent(type, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        path: item.path,
+        sign: item.sign,
+        name: item.name,
+        shortName: item.shortName,
+        tag: item.tag,
+        value,
+      },
+    }))
   }
 
   showItemTooltip(item, value, row) {
