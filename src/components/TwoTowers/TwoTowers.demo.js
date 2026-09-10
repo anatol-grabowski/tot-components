@@ -1,238 +1,280 @@
 import { registerDemo } from '../demoCommon.js'
 
-const incomeState = [
+const incomeCategories = [
   {
     key: 'revenue',
-    label: 'Revenues',
-    abbreviation: 'R',
-    effect: 1,
+    name: 'Revenues',
+    shortName: 'R',
     color: 'var(--tot-color-blue-400)',
-    value: 119796,
-    previous: 96428,
+    subcategories: [
+      { name: 'Revenues', shortName: 'R', current: 119796, previous: 96428 },
+    ],
   },
   {
     key: 'costs',
-    label: 'Costs and expenses',
-    abbreviation: 'C',
-    effect: -1,
+    name: 'Total costs and expenses',
+    shortName: 'C',
     color: 'var(--tot-color-orange-400)',
-    value: 79026,
-    previous: 65157,
     subcategories: [
-      { key: 'cost-revenue', label: 'Cost of revenues', abbreviation: 'CoR', value: 45943, previous: 39039 },
-      { key: 'research', label: 'Research and development', abbreviation: 'R&D', value: 18219, previous: 13808 },
-      { key: 'sales', label: 'Sales and marketing', abbreviation: 'S&M', value: 8403, previous: 7101 },
-      { key: 'admin', label: 'General and administrative', abbreviation: 'G&A', value: 6461, previous: 5209 },
+      { name: 'Cost of revenues', shortName: 'CoR', current: -45943, previous: -39039, display: { current: 45943, previous: 39039 } },
+      { name: 'Research and development', shortName: 'R&D', current: -18219, previous: -13808, display: { current: 18219, previous: 13808 } },
+      { name: 'Sales and marketing', shortName: 'S&M', current: -8403, previous: -7101, display: { current: 8403, previous: 7101 } },
+      { name: 'General and administrative', shortName: 'G&A', current: -6461, previous: -5209, display: { current: 6461, previous: 5209 } },
     ],
   },
   {
     key: 'other-income',
-    label: 'Other income (expense), net',
-    abbreviation: 'OI',
-    effect: 1,
+    name: 'Other income (expense), net',
+    shortName: 'OI',
     color: 'var(--tot-color-violet-400)',
-    value: 97983,
-    previous: 2662,
+    subcategories: [
+      { name: 'Other income (expense), net', shortName: 'OI', current: 97983, previous: 2662 },
+    ],
   },
   {
     key: 'taxes',
-    label: 'Provision for income taxes',
-    abbreviation: 'T',
-    effect: -1,
+    name: 'Provision for income taxes',
+    shortName: 'T',
     color: 'var(--tot-color-amber-400)',
-    value: 26560,
-    previous: 5737,
+    subcategories: [
+      { name: 'Provision for income taxes', shortName: 'T', current: -26560, previous: -5737, display: { current: 26560, previous: 5737 } },
+    ],
   },
   {
     key: 'preferred-dividends',
-    label: 'Preferred stock dividends',
-    abbreviation: 'PD',
-    effect: -1,
+    name: 'Preferred stock dividends',
+    shortName: 'PD',
     color: 'var(--tot-color-neutral-400)',
-    dimmed: true,
-    value: 86,
-    previous: 0,
+    subcategories: [
+      { name: 'Preferred stock dividends', shortName: 'PD', current: -86, previous: 0, display: { current: 86, previous: 0 } },
+    ],
   },
   {
     key: 'oci',
-    label: 'Other comprehensive income (loss)',
-    abbreviation: 'OCI',
-    effect: 1,
+    name: 'Other comprehensive income (loss)',
+    shortName: 'OCI',
     color: 'var(--tot-color-yellow-300)',
-    dimmed: true,
-    value: -105,
-    previous: 1959,
     subcategories: [
       {
-        key: 'fx-translation',
-        label: 'Change in foreign currency translation adjustment',
-        abbreviation: 'FX',
-        value: -9,
+        name: 'Change in foreign currency translation adjustment',
+        shortName: 'FX',
+        current: -9,
         previous: 2610,
+        display: { current: '(9)', previous: 2610 },
       },
       {
-        key: 'afs-unrealized',
-        label: 'Available-for-sale investments — change in net unrealized gains (losses)',
-        abbreviation: 'AFS Δ',
-        value: -273,
+        name: 'Available-for-sale investments — change in net unrealized gains (losses)',
+        shortName: 'AFS Δ',
+        current: -273,
         previous: 191,
+        display: { current: '(273)', previous: 191 },
       },
       {
-        key: 'afs-reclassification',
-        label: 'Available-for-sale investments — less: reclassification adjustment for net (gains) losses included in net income',
-        abbreviation: 'AFS R',
-        value: 34,
+        name: 'Available-for-sale investments — less: reclassification adjustment for net (gains) losses included in net income',
+        shortName: 'AFS R',
+        current: 34,
         previous: -29,
+        display: { current: 34, previous: '(29)' },
       },
       {
-        key: 'cash-flow-hedges-unrealized',
-        label: 'Cash flow hedges — change in net unrealized gains (losses)',
-        abbreviation: 'CFH Δ',
-        value: 228,
+        name: 'Cash flow hedges — change in net unrealized gains (losses)',
+        shortName: 'CFH Δ',
+        current: 228,
         previous: -920,
+        display: { current: 228, previous: '(920)' },
       },
       {
-        key: 'cash-flow-hedges-reclassification',
-        label: 'Cash flow hedges — less: reclassification adjustment for net (gains) losses included in net income',
-        abbreviation: 'CFH R',
-        value: -85,
+        name: 'Cash flow hedges — less: reclassification adjustment for net (gains) losses included in net income',
+        shortName: 'CFH R',
+        current: -85,
         previous: 107,
+        display: { current: '(85)', previous: 107 },
       },
     ],
   },
 ]
 
-const balanceConfig = {
-  label: 'Alphabet balance sheet comparison',
-  orientation: 'vertical',
-  compare: true,
-  tearThreshold: 1.5,
-  periods: {
-    current: 'June 2026',
-    previous: 'December 2025',
+const balanceCategories = [
+  {
+    key: 'current-assets',
+    name: 'Total current assets',
+    shortName: 'CA',
+    color: 'var(--tot-color-blue-300)',
+    subcategories: [
+      { name: 'Cash and cash equivalents', shortName: 'Cash', current: 55911, previous: 30708 },
+      { name: 'Marketable securities', shortName: 'MS', current: 186563, previous: 96135 },
+      { name: 'Accounts receivable, net', shortName: 'AR', current: 69175, previous: 62886 },
+      { name: 'Inventory', shortName: 'Inv', current: 9991, previous: 2439 },
+      { name: 'Other current assets', shortName: 'OCA', current: 21884, previous: 13870 },
+    ],
   },
-  towers: [
-    {
-      key: 'assets',
-      label: 'Assets',
-      categories: [
-        {
-          key: 'current-assets',
-          label: 'Current assets',
-          abbreviation: 'CA',
-          color: 'var(--tot-color-blue-300)',
-          value: 343524,
-          previous: 206038,
-          subcategories: [
-            { key: 'cash', label: 'Cash and cash equivalents', abbreviation: 'Cash', value: 55911, previous: 30708 },
-            { key: 'marketable', label: 'Marketable securities', abbreviation: 'MS', value: 186563, previous: 96135 },
-            { key: 'receivables', label: 'Accounts receivable, net', abbreviation: 'AR', value: 69175, previous: 62886 },
-            { key: 'inventory', label: 'Inventory', abbreviation: 'Inv', value: 9991, previous: 2439 },
-            { key: 'other-current', label: 'Other current assets', abbreviation: 'OCA', value: 21884, previous: 13870 },
-          ],
-        },
-        {
-          key: 'noncurrent-assets',
-          label: 'Non-current assets excluding property and equipment',
-          abbreviation: 'nCA',
-          color: 'var(--tot-color-amber-200)',
-          value: 257247,
-          previous: 142646,
-          subcategories: [
-            { key: 'nonmarketable', label: 'Non-marketable securities', abbreviation: 'nMS', value: 131461, previous: 68687 },
-            { key: 'deferred-income-taxes-asset', label: 'Deferred income taxes', abbreviation: 'DIT', value: 1448, previous: 9113 },
-            { key: 'lease-assets', label: 'Operating lease assets', abbreviation: 'OLA', value: 17694, previous: 15221 },
-            { key: 'goodwill', label: 'Goodwill', abbreviation: 'GW', value: 57828, previous: 33380 },
-            { key: 'intangibles', label: 'Intangible assets, net', abbreviation: 'IA', value: 9105, previous: 1283 },
-            { key: 'other-noncurrent', label: 'Other non-current assets', abbreviation: 'OnCA', value: 39711, previous: 14962 },
-          ],
-        },
-        {
-          key: 'property-equipment',
-          label: 'Property and equipment, net',
-          abbreviation: 'PPE',
-          color: 'var(--tot-color-green-300)',
-          value: 321212,
-          previous: 246597,
-        },
-      ],
-    },
-    {
-      key: 'liabilities-equity',
-      label: 'Liabilities + equity',
-      categories: [
-        {
-          key: 'current-liabilities',
-          label: 'Current liabilities',
-          abbreviation: 'CL',
-          color: 'var(--tot-color-rose-300)',
-          value: 126111,
-          previous: 102745,
-          subcategories: [
-            { key: 'accounts-payable', label: 'Accounts payable', abbreviation: 'AP', value: 20258, previous: 12200 },
-            { key: 'accrued-compensation', label: 'Accrued compensation and benefits', abbreviation: 'Comp', value: 15086, previous: 17546 },
-            { key: 'accrued-expenses', label: 'Accrued expenses and other current liabilities', abbreviation: 'AEL', value: 73014, previous: 55557 },
-            { key: 'accrued-revenue-share', label: 'Accrued revenue share', abbreviation: 'ARS', value: 10599, previous: 10864 },
-            { key: 'deferred-revenue', label: 'Deferred revenue', abbreviation: 'DR', value: 7154, previous: 6578 },
-          ],
-        },
-        {
-          key: 'noncurrent-liabilities',
-          label: 'Non-current liabilities',
-          abbreviation: 'nCL',
-          color: 'var(--tot-color-orange-300)',
-          value: 155392,
-          previous: 77271,
-          subcategories: [
-            { key: 'long-term-debt', label: 'Long-term debt', abbreviation: 'LTD', value: 98165, previous: 46547 },
-            { key: 'income-taxes-payable', label: 'Income taxes payable, non-current', abbreviation: 'ITP', value: 11306, previous: 9531 },
-            { key: 'deferred-income-taxes-liability', label: 'Deferred income taxes', abbreviation: 'DIT', value: 22819, previous: 919 },
-            { key: 'lease-liabilities', label: 'Operating lease liabilities', abbreviation: 'OLL', value: 14591, previous: 12744 },
-            { key: 'other-long-term-liabilities', label: 'Other long-term liabilities', abbreviation: 'OLTL', value: 8511, previous: 7530 },
-          ],
-        },
-        {
-          key: 'equity',
-          label: 'Stockholders’ equity',
-          abbreviation: 'E',
-          color: 'var(--tot-color-green-300)',
-          value: 640480,
-          previous: 415265,
-          subcategories: [
-            {
-              key: 'preferred-stock',
-              label: 'Series A and Series B preferred stock and additional paid-in capital',
-              abbreviation: 'PS',
-              value: 18023,
-              previous: 0,
-            },
-            {
-              key: 'common-stock',
-              label: 'Class A, Class B, and Class C stock and additional paid-in capital',
-              abbreviation: 'CS',
-              value: 131371,
-              previous: 93126,
-            },
-            {
-              key: 'accumulated-other-comprehensive-income',
-              label: 'Accumulated other comprehensive income (loss)',
-              abbreviation: 'AOCI',
-              value: -2285,
-              previous: -1916,
-            },
-            {
-              key: 'retained-earnings',
-              label: 'Retained earnings',
-              abbreviation: 'RE',
-              value: 493371,
-              previous: 324055,
-            },
-          ],
-        },
-      ],
-    },
-  ],
-}
+  {
+    key: 'noncurrent-assets',
+    name: 'Non-current assets excluding property and equipment',
+    shortName: 'nCA',
+    color: 'var(--tot-color-amber-200)',
+    subcategories: [
+      { name: 'Non-marketable securities', shortName: 'nMS', current: 131461, previous: 68687 },
+      { name: 'Deferred income taxes', shortName: 'DIT', current: 1448, previous: 9113 },
+      { name: 'Operating lease assets', shortName: 'OLA', current: 17694, previous: 15221 },
+      { name: 'Goodwill', shortName: 'GW', current: 57828, previous: 33380 },
+      { name: 'Intangible assets, net', shortName: 'IA', current: 9105, previous: 1283 },
+      { name: 'Other non-current assets', shortName: 'OnCA', current: 39711, previous: 14962 },
+    ],
+  },
+  {
+    key: 'property-equipment',
+    name: 'Property and equipment, net',
+    shortName: 'PPE',
+    color: 'var(--tot-color-green-300)',
+    subcategories: [
+      { name: 'Property and equipment, net', shortName: 'PPE', current: 321212, previous: 246597 },
+    ],
+  },
+  {
+    key: 'current-liabilities',
+    name: 'Total current liabilities',
+    shortName: 'CL',
+    color: 'var(--tot-color-rose-300)',
+    subcategories: [
+      { name: 'Accounts payable', shortName: 'AP', current: -20258, previous: -12200, display: { current: 20258, previous: 12200 } },
+      { name: 'Accrued compensation and benefits', shortName: 'Comp', current: -15086, previous: -17546, display: { current: 15086, previous: 17546 } },
+      { name: 'Accrued expenses and other current liabilities', shortName: 'AEL', current: -73014, previous: -55557, display: { current: 73014, previous: 55557 } },
+      { name: 'Accrued revenue share', shortName: 'ARS', current: -10599, previous: -10864, display: { current: 10599, previous: 10864 } },
+      { name: 'Deferred revenue', shortName: 'DR', current: -7154, previous: -6578, display: { current: 7154, previous: 6578 } },
+    ],
+  },
+  {
+    key: 'noncurrent-liabilities',
+    name: 'Non-current liabilities',
+    shortName: 'nCL',
+    color: 'var(--tot-color-orange-300)',
+    subcategories: [
+      { name: 'Long-term debt', shortName: 'LTD', current: -98165, previous: -46547, display: { current: 98165, previous: 46547 } },
+      { name: 'Income taxes payable, non-current', shortName: 'ITP', current: -11306, previous: -9531, display: { current: 11306, previous: 9531 } },
+      { name: 'Deferred income taxes', shortName: 'DIT', current: -22819, previous: -919, display: { current: 22819, previous: 919 } },
+      { name: 'Operating lease liabilities', shortName: 'OLL', current: -14591, previous: -12744, display: { current: 14591, previous: 12744 } },
+      { name: 'Other long-term liabilities', shortName: 'OLTL', current: -8511, previous: -7530, display: { current: 8511, previous: 7530 } },
+    ],
+  },
+  {
+    key: 'equity',
+    name: 'Total stockholders’ equity',
+    shortName: 'E',
+    color: 'var(--tot-color-green-300)',
+    subcategories: [
+      {
+        name: 'Series A and Series B preferred stock and additional paid-in capital',
+        shortName: 'PS',
+        current: -18023,
+        previous: 0,
+        display: { current: 18023, previous: 0 },
+      },
+      {
+        name: 'Class A, Class B, and Class C stock and additional paid-in capital',
+        shortName: 'CS',
+        current: -131371,
+        previous: -93126,
+        display: { current: 131371, previous: 93126 },
+      },
+      {
+        name: 'Accumulated other comprehensive income (loss)',
+        shortName: 'AOCI',
+        current: 2285,
+        previous: 1916,
+        display: { current: -2285, previous: -1916 },
+      },
+      { name: 'Retained earnings', shortName: 'RE', current: -493371, previous: -324055, display: { current: 493371, previous: 324055 } },
+    ],
+  },
+]
+
+const cashFlowCategories = [
+  {
+    key: 'operating-activities',
+    name: 'Net cash provided by operating activities',
+    shortName: 'Operating',
+    color: 'var(--tot-color-green-400)',
+    subcategories: [
+      { name: 'Net income', shortName: 'NI', current: 174771, previous: 62736 },
+      { name: 'Depreciation of property and equipment', shortName: 'D&A', current: 13586, previous: 9485 },
+      { name: 'Stock-based compensation expense', shortName: 'SBC', current: 14708, previous: 11514 },
+      { name: 'Deferred income taxes', shortName: 'DIT', current: 27538, previous: -1596, display: { current: 27538, previous: '(1,596)' } },
+      { name: 'Loss (gain) on debt and equity securities, net', shortName: 'Sec', current: -135803, previous: -11411, display: { current: '(135,803)', previous: '(11,411)' } },
+      { name: 'Other', shortName: 'Other', current: 3161, previous: 1041 },
+      { name: 'Accounts receivable, net', shortName: 'AR', current: -6904, previous: -1201, display: { current: '(6,904)', previous: '(1,201)' } },
+      { name: 'Inventory', shortName: 'Inv', current: -7739, previous: -628, display: { current: '(7,739)', previous: '(628)' } },
+      { name: 'Income taxes, net', shortName: 'Tax', current: 8304, previous: -2434, display: { current: 8304, previous: '(2,434)' } },
+      { name: 'Other assets', shortName: 'OA', current: -9950, previous: -2139, display: { current: '(9,950)', previous: '(2,139)' } },
+      { name: 'Accounts payable', shortName: 'AP', current: 2090, previous: -327, display: { current: 2090, previous: '(327)' } },
+      { name: 'Accrued expenses and other liabilities', shortName: 'AEL', current: 308, previous: -1779, display: { current: 308, previous: '(1,779)' } },
+      { name: 'Deferred revenue', shortName: 'DR', current: 789, previous: 636 },
+    ],
+  },
+  {
+    key: 'investing-activities',
+    name: 'Net cash used in investing activities',
+    shortName: 'Investing',
+    color: 'var(--tot-color-orange-400)',
+    subcategories: [
+      { name: 'Purchases of property and equipment', shortName: 'PPE', current: -80598, previous: -39643, display: { current: '(80,598)', previous: '(39,643)' } },
+      { name: 'Purchases of marketable securities', shortName: 'MS−', current: -76480, previous: -39870, display: { current: '(76,480)', previous: '(39,870)' } },
+      { name: 'Maturities and sales of marketable securities', shortName: 'MS+', current: 66696, previous: 40930 },
+      { name: 'Purchases of non-marketable securities', shortName: 'nMS−', current: -22051, previous: -2312, display: { current: '(22,051)', previous: '(2,312)' } },
+      { name: 'Maturities and sales of non-marketable securities', shortName: 'nMS+', current: 1667, previous: 873 },
+      { name: 'Acquisitions, net of cash acquired, and purchases of intangible assets', shortName: 'Acq', current: -33697, previous: -353, display: { current: '(33,697)', previous: '(353)' } },
+      { name: 'Other investing activities', shortName: 'Other', current: -1359, previous: -363, display: { current: '(1,359)', previous: '(363)' } },
+    ],
+  },
+  {
+    key: 'financing-activities',
+    name: 'Net cash provided by (used in) financing activities',
+    shortName: 'Financing',
+    color: 'var(--tot-color-violet-400)',
+    subcategories: [
+      { name: 'Net payments related to stock-based award activities', shortName: 'SBA', current: -12056, previous: -5731, display: { current: '(12,056)', previous: '(5,731)' } },
+      { name: 'Repurchases of stock', shortName: 'Buyback', current: 0, previous: -28306, display: { current: 0, previous: '(28,306)' } },
+      { name: 'Dividend payments', shortName: 'Div', current: -5231, previous: -4977, display: { current: '(5,231)', previous: '(4,977)' } },
+      { name: 'Proceeds from issuance of common stock, net of costs', shortName: 'CS', current: 30499, previous: 0 },
+      { name: 'Proceeds from issuance of mandatory convertible preferred stock, net of costs', shortName: 'PS', current: 19063, previous: 0 },
+      { name: 'Proceeds from issuance of debt, net of costs', shortName: 'Debt+', current: 56226, previous: 31378 },
+      { name: 'Repayments of debt', shortName: 'Debt−', current: -5253, previous: -18397, display: { current: '(5,253)', previous: '(18,397)' } },
+      { name: 'Proceeds from sale of interests in consolidated entities, net', shortName: 'Sale', current: 3758, previous: 400 },
+      { name: 'Other financing activities', shortName: 'Other', current: -686, previous: -400, display: { current: '(686)', previous: '(400)' } },
+    ],
+  },
+  {
+    key: 'exchange-rate-effect',
+    name: 'Effect of exchange rate changes on cash and cash equivalents',
+    shortName: 'FX',
+    color: 'var(--tot-color-amber-400)',
+    subcategories: [
+      { name: 'Effect of exchange rate changes on cash and cash equivalents', shortName: 'FX', current: -154, previous: 444, display: { current: '(154)', previous: 444 } },
+    ],
+  },
+  {
+    key: 'cash-and-cash-equivalents',
+    name: 'Cash and cash equivalents',
+    shortName: 'Cash',
+    color: 'var(--tot-color-blue-300)',
+    display: { current: '55,911', previous: '21,036' },
+    subcategories: [
+      {
+        name: 'Cash and cash equivalents at beginning of period',
+        shortName: 'Dec 31, 2025',
+        current: 30708,
+        previous: 23466,
+      },
+      {
+        name: 'Cash and cash equivalents at end of period',
+        shortName: 'Jun 30, 2026',
+        current: -55911,
+        previous: -21036,
+        display: { current: '55,911', previous: '21,036' },
+      },
+    ],
+  },
+]
 
 registerDemo({
   id: 'tot-two-towers',
@@ -304,21 +346,24 @@ registerDemo({
           text-transform: uppercase;
         }
 
+        .two-towers-demo-values .category {
+          color: var(--tot-input-color, #1e293b);
+          font-size: var(--tot-font-size-x-small, .75rem);
+          font-weight: var(--tot-font-weight-semibold, 600);
+          grid-column: 1 / -1;
+          padding: var(--tot-spacing-2x-small, .25rem) var(--tot-spacing-3x-small, .125rem) 0;
+        }
+
         .two-towers-demo-values .name {
           align-items: center;
-          color: var(--tot-input-color, #1e293b);
+          color: var(--tot-color-neutral-600, #475569);
           display: flex;
           font-size: var(--tot-font-size-x-small, .75rem);
           min-height: 1.8rem;
           overflow: hidden;
-          padding-inline: var(--tot-spacing-3x-small, .125rem);
+          padding-inline-start: var(--tot-spacing-medium, 1rem);
           text-overflow: ellipsis;
           white-space: nowrap;
-        }
-
-        .two-towers-demo-values .name.subcategory {
-          color: var(--tot-color-neutral-600, #475569);
-          padding-inline-start: var(--tot-spacing-medium, 1rem);
         }
 
         .two-towers-demo-values input {
@@ -342,12 +387,28 @@ registerDemo({
       </style>
 
       <div class="stack demo-group">
-        <div class="demo-label">Balance sheet — Alphabet 10-Q values and groupings from the reference statement</div>
+        <div class="demo-label">Balance sheet — signed subcategories determine the tower</div>
+        <div class="two-towers-demo-controls">
+          <div class="two-towers-demo-values" id="balanceValues"></div>
+        </div>
         <tot-two-towers id="balanceTowers"></tot-two-towers>
       </div>
 
       <div class="stack demo-group">
-        <div class="demo-label">Income statement — Alphabet, three months ended June 30, 2025 / 2026 — fully configurable</div>
+        <div class="demo-label">Cash flows — signed subcategories can share one category across both towers</div>
+        <div class="two-towers-demo-controls">
+          <div class="two-towers-demo-toolbar">
+            <label class="two-towers-demo-check">
+              <input id="cashFlowCompare" type="checkbox">
+              Compare previous
+            </label>
+          </div>
+        </div>
+        <tot-two-towers id="cashFlowTowers"></tot-two-towers>
+      </div>
+
+      <div class="stack demo-group">
+        <div class="demo-label">Income statement — fully configurable</div>
         <div class="two-towers-demo-controls">
           <div class="two-towers-demo-toolbar">
             <label class="two-towers-demo-field">
@@ -373,13 +434,22 @@ registerDemo({
     `
 
     const balanceTowers = demo.querySelector('#balanceTowers')
+    const cashFlowTowers = demo.querySelector('#cashFlowTowers')
     const incomeTowers = demo.querySelector('#incomeTowers')
+    const balanceValues = demo.querySelector('#balanceValues')
+    const cashFlowCompare = demo.querySelector('#cashFlowCompare')
     const orientation = demo.querySelector('#incomeOrientation')
     const compare = demo.querySelector('#incomeCompare')
     const tearThreshold = demo.querySelector('#incomeTearThreshold')
-    const values = demo.querySelector('#incomeValues')
+    const incomeValues = demo.querySelector('#incomeValues')
 
-    balanceTowers.config = balanceConfig
+    const renderBalance = () => {
+      balanceTowers.config = createBalanceConfig()
+    }
+
+    const renderCashFlow = () => {
+      cashFlowTowers.config = createCashFlowConfig(cashFlowCompare.checked)
+    }
 
     const renderIncome = () => {
       incomeTowers.config = createIncomeConfig({
@@ -389,7 +459,11 @@ registerDemo({
       })
     }
 
-    renderIncomeInputs(values, renderIncome)
+    renderValueInputs(balanceValues, balanceCategories, renderBalance)
+    renderBalance()
+    cashFlowCompare.addEventListener('change', renderCashFlow)
+    renderCashFlow()
+    renderValueInputs(incomeValues, incomeCategories, renderIncome)
     orientation.addEventListener('change', renderIncome)
     compare.addEventListener('change', renderIncome)
     tearThreshold.addEventListener('input', renderIncome)
@@ -399,71 +473,74 @@ registerDemo({
   },
 })
 
-function createIncomeConfig(options) {
-  const left = []
-  const right = []
-
-  for (let i = 0; i < incomeState.length; i++) {
-    const definition = incomeState[i]
-    const currentContribution = definition.value * definition.effect
-    const category = {
-      key: definition.key,
-      label: definition.label,
-      abbreviation: definition.abbreviation,
-      color: definition.color,
-      dimmed: definition.dimmed,
-      value: definition.value,
-      previous: definition.previous,
-    }
-
-    if (definition.subcategories) {
-      category.subcategories = []
-      for (let j = 0; j < definition.subcategories.length; j++) {
-        const subcategory = definition.subcategories[j]
-        category.subcategories.push({
-          key: subcategory.key,
-          label: subcategory.label,
-          abbreviation: subcategory.abbreviation,
-          value: subcategory.value,
-          previous: subcategory.previous,
-        })
-      }
-    }
-
-    if (currentContribution >= 0) {
-      left.push(category)
-    } else {
-      right.push(category)
-    }
+function createBalanceConfig() {
+  return {
+    label: 'Alphabet balance sheet comparison',
+    orientation: 'vertical',
+    compare: true,
+    tearThreshold: 1.5,
+    positiveLabel: 'Assets',
+    negativeLabel: 'Liabilities + equity',
+    periods: {
+      current: 'Jun 30, 2026',
+      previous: 'Dec 31, 2025',
+    },
+    categories: balanceCategories,
   }
+}
 
+function createCashFlowConfig(compare) {
+  return {
+    label: 'Alphabet cash flow reconciliation',
+    orientation: 'vertical',
+    compare,
+    tearThreshold: 1.5,
+    positiveLabel: 'Positive cash flows',
+    negativeLabel: 'Negative cash flows',
+    periods: {
+      current: 'Jun 30, 2026',
+      previous: 'Jun 30, 2025',
+    },
+    categories: cashFlowCategories,
+  }
+}
+
+function createIncomeConfig(options) {
   return {
     label: 'Income statement comparison',
     orientation: options.orientation,
     compare: options.compare,
     tearThreshold: options.tearThreshold,
+    positiveLabel: 'Positive contributions',
+    negativeLabel: 'Negative contributions',
     periods: {
-      current: 'June 2026',
-      previous: 'June 2025',
+      current: 'Jun 30, 2026',
+      previous: 'Jun 30, 2025',
     },
-    towers: [
-      {
-        key: 'income-positive',
-        label: 'Positive contributions',
-        categories: left,
-      },
-      {
-        key: 'income-negative',
-        label: 'Negative contributions',
-        categories: right,
-      },
-    ],
+    categories: incomeCategories,
   }
 }
 
-function renderIncomeInputs(container, onChange) {
+function renderValueInputs(container, categories, onChange) {
   container.replaceChildren()
+  appendValueHeaders(container)
 
+  for (let categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
+    const category = categories[categoryIndex]
+    const categoryName = document.createElement('div')
+    categoryName.className = 'category'
+    categoryName.textContent = category.shortName
+      ? `${category.shortName} — ${category.name}`
+      : category.name
+    container.append(categoryName)
+
+    for (let subcategoryIndex = 0; subcategoryIndex < category.subcategories.length; subcategoryIndex++) {
+      appendValueRow(container, category.subcategories[subcategoryIndex], onChange)
+    }
+  }
+}
+
+function appendValueHeaders(container) {
   const headers = ['Concept', 'Current', 'Previous']
   for (let i = 0; i < headers.length; i++) {
     const head = document.createElement('div')
@@ -471,42 +548,44 @@ function renderIncomeInputs(container, onChange) {
     head.textContent = headers[i]
     container.append(head)
   }
-
-  for (let categoryIndex = 0; categoryIndex < incomeState.length; categoryIndex++) {
-    const category = incomeState[categoryIndex]
-    appendValueRow(container, category, false, onChange)
-
-    if (!category.subcategories) {
-      continue
-    }
-
-    for (let subcategoryIndex = 0; subcategoryIndex < category.subcategories.length; subcategoryIndex++) {
-      appendValueRow(
-        container,
-        category.subcategories[subcategoryIndex],
-        true,
-        onChange,
-      )
-    }
-  }
 }
 
-function appendValueRow(container, item, subcategory, onChange) {
+function appendValueRow(container, item, onChange) {
   const name = document.createElement('div')
-  name.className = `name${subcategory ? ' subcategory' : ''}`
-  name.textContent = `${item.abbreviation} — ${item.label}`
-  name.title = item.label
+  name.className = 'name'
+  name.textContent = `${item.shortName} — ${item.name}`
+  name.title = item.name
+  const currentDisplayFactor = getDisplayFactor(item, 'current')
+  const previousDisplayFactor = getDisplayFactor(item, 'previous', currentDisplayFactor)
 
-  const current = createNumberInput(item.value, (value) => {
-    item.value = value
+  const current = createNumberInput(item.current, (value) => {
+    item.current = value
+    syncDisplayValue(item, 'current', value, currentDisplayFactor)
     onChange()
   })
   const previous = createNumberInput(item.previous, (value) => {
     item.previous = value
+    syncDisplayValue(item, 'previous', value, previousDisplayFactor)
     onChange()
   })
 
   container.append(name, current, previous)
+}
+
+function getDisplayFactor(item, period, fallback = 1) {
+  const raw = Number(item[period])
+  const display = Number(item.display?.[period])
+  if (Number.isFinite(raw) && Math.abs(raw) > 1e-9 && Number.isFinite(display)) {
+    return display / raw
+  }
+  return fallback
+}
+
+function syncDisplayValue(item, period, value, factor) {
+  if (!item.display || item.display[period] === undefined) {
+    return
+  }
+  item.display[period] = value * factor
 }
 
 function createNumberInput(value, onInput) {

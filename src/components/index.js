@@ -45,6 +45,7 @@ import { TotLabels } from './Labels/Labels.js'
 import { TotFields } from './Fields/Fields.js'
 import { TotSuggestions } from './Suggestions/Suggestions.js'
 import { TotTree, TotTreeItem } from './Tree/Tree.js'
+import { TotFormula } from './Formula/Formula.js'
 import { TotOdometer } from './Odometer/Odometer.js'
 
 export function defineElement(name, klass) {
@@ -104,6 +105,7 @@ defineElement('tot-fields', TotFields)
 defineElement('tot-suggestions', TotSuggestions)
 defineElement('tot-tree-item', TotTreeItem)
 defineElement('tot-tree', TotTree)
+defineElement('tot-formula', TotFormula)
 defineElement('tot-odometer', TotOdometer)
 
 export {
@@ -154,5 +156,6 @@ export {
   TotSuggestions,
   TotTree,
   TotTreeItem,
+  TotFormula,
   TotOdometer,
 }

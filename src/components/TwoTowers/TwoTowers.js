@@ -1,6 +1,7 @@
 const twoTowersStyle = `
   :host {
     --tot-two-towers-category-border-color: var(--tot-color-neutral-600, #475569);
+    --tot-two-towers-subcategory-border-color: color-mix(in srgb, var(--tot-two-towers-category-border-color) 55%, transparent);
     --tot-two-towers-dimmed-border-color: var(--tot-color-neutral-300, #cbd5e1);
     --tot-two-towers-hatch-color: color-mix(in srgb, var(--tot-color-neutral-0, #fff) 76%, transparent);
     --tot-two-towers-delta-overlay-color: color-mix(in srgb, var(--tot-color-neutral-0, #fff) 58%, transparent);
@@ -30,8 +31,12 @@ const twoTowersStyle = `
   }
 
   .two-towers {
+    --tot-two-towers-details-width: min(34rem, 42vw);
     display: grid;
     gap: var(--tot-spacing-x-small, .5rem);
+    grid-template-areas:
+      'chart'
+      'legend';
     max-width: 100%;
     min-width: 0;
     position: relative;
@@ -42,6 +47,10 @@ const twoTowersStyle = `
     align-content: stretch;
     background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
     gap: var(--tot-spacing-2x-small, .25rem);
+    grid-template-areas:
+      'chart'
+      'legend';
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
     height: 100dvh;
     inset: 0;
@@ -53,7 +62,15 @@ const twoTowersStyle = `
     z-index: var(--tot-z-index-fullscreen, 1300);
   }
 
-  .fullscreen-button {
+  .two-towers.is-fullscreen.has-details-table {
+    grid-template-areas:
+      'details chart'
+      'details legend';
+    grid-template-columns: clamp(10rem, var(--tot-two-towers-details-width), 72vw) minmax(0, 1fr);
+  }
+
+  .fullscreen-button,
+  .details-button {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -73,20 +90,38 @@ const twoTowersStyle = `
     z-index: 3;
   }
 
-  .two-towers.is-fullscreen .fullscreen-button {
+  .two-towers.is-fullscreen .fullscreen-button,
+  .two-towers.is-fullscreen .details-button {
     position: fixed;
   }
 
-  .fullscreen-button:hover {
+  .details-button {
+    display: none;
+    right: calc(var(--tot-spacing-2x-small, .25rem) + 2rem);
+  }
+
+  .two-towers.is-fullscreen .details-button {
+    display: inline-flex;
+  }
+
+  .details-button[aria-expanded='true'] {
+    background: var(--tot-color-primary-50, #f0f9ff);
+    color: var(--tot-color-primary-700, #0369a1);
+  }
+
+  .fullscreen-button:hover,
+  .details-button:hover {
     color: var(--tot-input-icon-color-hover, #475569);
   }
 
-  .fullscreen-button:focus-visible {
+  .fullscreen-button:focus-visible,
+  .details-button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
 
-  .fullscreen-button svg {
+  .fullscreen-button svg,
+  .details-button svg {
     display: block;
     fill: none;
     height: 1rem;
@@ -98,6 +133,7 @@ const twoTowersStyle = `
   }
 
   .chart {
+    grid-area: chart;
     background: var(--tot-two-towers-background-color, var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff)));
     border: var(--tot-two-towers-border-width, var(--tot-panel-border-width, 1px)) solid var(--tot-two-towers-border-color, var(--tot-panel-border-color, #e2e8f0));
     border-radius: var(--tot-two-towers-border-radius, var(--tot-border-radius-large, 6px));
@@ -136,6 +172,7 @@ const twoTowersStyle = `
 
   .legend {
     display: flex;
+    grid-area: legend;
     flex-wrap: wrap;
     gap: var(--tot-spacing-2x-small, .25rem);
     min-width: 0;
@@ -169,6 +206,14 @@ const twoTowersStyle = `
 
   .legend-item.is-dimmed {
     opacity: .7;
+  }
+
+  .legend-item.is-hidden {
+    opacity: .46;
+  }
+
+  .legend-item.is-hidden .legend-label {
+    text-decoration: line-through;
   }
 
   .legend-swatch {
@@ -224,14 +269,17 @@ const twoTowersStyle = `
     display: none;
   }
 
-  .tooltip table {
+  .tooltip table,
+  .details-table table {
     border-collapse: collapse;
     font-variant-numeric: tabular-nums;
     width: 100%;
   }
 
   .tooltip th,
-  .tooltip td {
+  .tooltip td,
+  .details-table th,
+  .details-table td {
     border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
     padding: var(--tot-spacing-3x-small, .125rem) var(--tot-spacing-x-small, .5rem);
     text-align: right;
@@ -239,7 +287,9 @@ const twoTowersStyle = `
   }
 
   .tooltip th:first-child,
-  .tooltip td:first-child {
+  .tooltip td:first-child,
+  .details-table th:first-child,
+  .details-table td:first-child {
     max-width: 19rem;
     overflow: hidden;
     text-align: left;
@@ -247,29 +297,140 @@ const twoTowersStyle = `
     white-space: normal;
   }
 
-  .tooltip th {
+  .tooltip th,
+  .details-table th {
     background: var(--tot-color-neutral-50, #f8fafc);
     color: var(--tot-color-neutral-500, #64748b);
     font-size: var(--tot-font-size-2x-small, .625rem);
     font-weight: var(--tot-font-weight-semibold, 600);
   }
 
-  .tooltip tr.total td {
-    border-bottom: 0;
-    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-400, #94a3b8);
+  .tooltip tr.total td,
+  .details-table tr.total td {
+    background: color-mix(in srgb, var(--tot-color-neutral-50, #f8fafc) 72%, transparent);
+    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-400, #94a3b8);
     font-weight: var(--tot-font-weight-semibold, 600);
   }
 
-  .tooltip tr.total td:first-child {
+  .tooltip tr.total td:first-child,
+  .details-table tr.total td:first-child {
     font-weight: var(--tot-font-weight-bold, 700);
   }
 
-  .tooltip .positive {
+  .tooltip tr.subcategory td:first-child,
+  .details-table tr.subcategory td:first-child {
+    padding-inline-start: var(--tot-spacing-medium, 1rem);
+  }
+
+  .tooltip .positive,
+  .details-table .positive {
     color: var(--tot-color-success-700, #15803d);
   }
 
-  .tooltip .negative {
+  .tooltip .negative,
+  .details-table .negative {
     color: var(--tot-color-danger-700, #b91c1c);
+  }
+
+  .details-table {
+    background: var(--tot-panel-background-color, var(--tot-color-neutral-0, #fff));
+    border-right: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: none;
+    grid-area: details;
+    min-height: 0;
+    min-width: 0;
+    overflow: visible;
+    position: relative;
+  }
+
+  .two-towers.is-fullscreen.has-details-table .details-table {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .details-table-header {
+    align-items: center;
+    border-bottom: var(--tot-panel-border-width, 1px) solid var(--tot-panel-border-color, #e2e8f0);
+    display: flex;
+    min-height: 2rem;
+    padding: 0 var(--tot-spacing-x-small, .5rem);
+  }
+
+  .details-table-title {
+    color: var(--tot-input-color, #1e293b);
+    font-size: var(--tot-font-size-x-small, .75rem);
+    font-weight: var(--tot-font-weight-semibold, 600);
+  }
+
+  .details-table-scroll {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .details-table table {
+    color: var(--tot-input-color, #1e293b);
+    font-size: var(--tot-font-size-x-small, .75rem);
+  }
+
+  .details-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .details-table tr.total:not(:first-child) td {
+    border-top: var(--tot-panel-border-width, 1px) solid var(--tot-color-neutral-300, #cbd5e1);
+  }
+
+  .details-resize-handle {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    bottom: 0;
+    cursor: ew-resize;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    right: -6px;
+    top: 0;
+    touch-action: none;
+    width: 12px;
+    z-index: 3;
+  }
+
+  .details-resize-handle::before {
+    background: var(--tot-focus-ring-color, hsl(198.6 88.7% 48.4% / 45%));
+    bottom: 0;
+    content: '';
+    opacity: 0;
+    position: absolute;
+    right: 5px;
+    top: 0;
+    transition: opacity var(--tot-transition-fast, 120ms);
+    width: 2px;
+  }
+
+  .details-resize-handle:hover::before,
+  .details-resize-handle:focus-visible::before,
+  .details-table.is-resizing .details-resize-handle::before {
+    opacity: 1;
+  }
+
+  .details-resize-handle:focus-visible {
+    outline: none;
+  }
+
+  @media (pointer: coarse) {
+    .details-resize-handle {
+      right: -14px;
+      width: 28px;
+    }
+
+    .details-resize-handle::before {
+      right: 13px;
+    }
   }
 
   @media (max-width: 36rem) {
@@ -385,6 +546,13 @@ function getExitFullscreenIcon() {
   </svg>`
 }
 
+function getDetailsTableIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <rect x="2.5" y="3" width="11" height="10" rx="1"></rect>
+    <path d="M2.5 6.5h11M2.5 10h11M7 3v10"></path>
+  </svg>`
+}
+
 const svgNamespace = 'http://www.w3.org/2000/svg'
 const defaultColors = [
   'var(--tot-two-towers-series-color-1)',
@@ -407,6 +575,47 @@ function positiveNumber(value, fallback) {
 
 function escapeKey(value) {
   return String(value || 'item').replace(/[^a-z0-9_-]/gi, '-')
+}
+
+function tagHookToken(tag) {
+  const value = String(tag || '').trim()
+  return value ? `tag-${value.replace(/[^a-z0-9_-]/gi, '-')}` : ''
+}
+
+function applyTagHooks(element, tags, basePart = '') {
+  const parts = basePart ? [basePart] : []
+  const seen = new Set(parts)
+
+  for (let i = 0; i < tags.length; i++) {
+    const tag = String(tags[i] || '').trim()
+    if (!tag) {
+      continue
+    }
+    const rawClass = !/\s/.test(tag) ? tag : ''
+    const rawPart = /^[a-z_][a-z0-9_-]*$/i.test(tag) ? tag : ''
+    const token = tagHookToken(tag)
+    const classTokens = rawClass ? [rawClass, token] : [token]
+    const partTokens = rawPart ? [rawPart, token] : [token]
+
+    for (let tokenIndex = 0; tokenIndex < classTokens.length; tokenIndex++) {
+      const currentToken = classTokens[tokenIndex]
+      if (currentToken) {
+        element.classList.add(currentToken)
+      }
+    }
+    for (let tokenIndex = 0; tokenIndex < partTokens.length; tokenIndex++) {
+      const currentToken = partTokens[tokenIndex]
+      if (!currentToken || seen.has(currentToken)) {
+        continue
+      }
+      seen.add(currentToken)
+      parts.push(currentToken)
+    }
+  }
+
+  if (parts.length) {
+    element.setAttribute('part', parts.join(' '))
+  }
 }
 
 function createSvgElement(name, attributes = {}, text = '') {
@@ -436,61 +645,84 @@ function sum(values) {
   return total
 }
 
-function normalizeSubcategory(subcategory, index) {
-  const source = subcategory && typeof subcategory === 'object' ? subcategory : {}
+function normalizeDisplay(display) {
+  const source = display && typeof display === 'object' ? display : {}
+  const normalizeValue = (value) => {
+    if (typeof value === 'string') {
+      return value
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+    return undefined
+  }
+
   return {
-    key: source.key || `subcategory-${index + 1}`,
-    label: source.label || source.abbreviation || `Subcategory ${index + 1}`,
-    abbreviation: source.abbreviation || source.short || '',
-    value: finiteNumber(source.value),
-    previous: source.previous === undefined ? undefined : finiteNumber(source.previous),
+    current: normalizeValue(source.current),
+    previous: normalizeValue(source.previous),
   }
 }
 
-function normalizeCategory(category, index, colorIndex) {
+function normalizeSubcategory(subcategory, categoryIndex, index) {
+  const source = subcategory && typeof subcategory === 'object' ? subcategory : {}
+  const current = source.current === undefined ? source.value : source.current
+  const name = source.name || source.label || source.shortName || source.abbreviation || `Subcategory ${index + 1}`
+
+  return {
+    key: source.key || `category-${categoryIndex + 1}-subcategory-${index + 1}`,
+    name,
+    shortName: source.shortName || source.short || source.abbreviation || '',
+    tag: String(source.tag || '').trim(),
+    current: finiteNumber(current),
+    previous: source.previous === undefined ? undefined : finiteNumber(source.previous),
+    display: normalizeDisplay(source.display),
+  }
+}
+
+function normalizeCategory(category, index) {
   const source = category && typeof category === 'object' ? category : {}
+  const name = source.name || source.label || source.shortName || source.abbreviation || `Category ${index + 1}`
   const rawSubcategories = Array.isArray(source.subcategories) ? source.subcategories : []
   const subcategories = []
 
   for (let i = 0; i < rawSubcategories.length; i++) {
-    subcategories.push(normalizeSubcategory(rawSubcategories[i], i))
+    subcategories.push(normalizeSubcategory(rawSubcategories[i], index, i))
+  }
+
+  if (!subcategories.length && (source.current !== undefined || source.value !== undefined)) {
+    subcategories.push(normalizeSubcategory({
+      key: `${source.key || `category-${index + 1}`}-value`,
+      name,
+      shortName: source.shortName || source.short || source.abbreviation || '',
+      tag: source.tag,
+      current: source.current === undefined ? source.value : source.current,
+      previous: source.previous,
+      display: source.display,
+    }, index, 0))
   }
 
   return {
     key: source.key || `category-${index + 1}`,
-    label: source.label || source.abbreviation || `Category ${index + 1}`,
-    abbreviation: source.abbreviation || source.short || '',
-    color: source.color || defaultColors[colorIndex % defaultColors.length],
-    dimmed: Boolean(source.dimmed),
-    value: source.value === undefined ? undefined : finiteNumber(source.value),
-    previous: source.previous === undefined ? undefined : finiteNumber(source.previous),
+    name,
+    shortName: source.shortName || source.short || source.abbreviation || '',
+    tag: String(source.tag || '').trim(),
+    color: source.color || defaultColors[index % defaultColors.length],
+    display: normalizeDisplay(source.display),
     subcategories,
   }
 }
 
-function normalizeTower(tower, index, colorOffset) {
-  const source = tower && typeof tower === 'object' ? tower : {}
+function normalizeConfig(value) {
+  const source = Array.isArray(value)
+    ? { categories: value }
+    : value && typeof value === 'object'
+      ? value
+      : {}
   const rawCategories = Array.isArray(source.categories) ? source.categories : []
   const categories = []
 
   for (let i = 0; i < rawCategories.length; i++) {
-    categories.push(normalizeCategory(rawCategories[i], i, colorOffset + i))
-  }
-
-  return {
-    key: source.key || `tower-${index + 1}`,
-    label: source.label || `Tower ${index + 1}`,
-    categories,
-  }
-}
-
-function normalizeConfig(value) {
-  const source = value && typeof value === 'object' ? value : {}
-  const rawTowers = Array.isArray(source.towers) ? source.towers : []
-  const towers = []
-
-  for (let i = 0; i < Math.min(2, rawTowers.length); i++) {
-    towers.push(normalizeTower(rawTowers[i], i, i * 3))
+    categories.push(normalizeCategory(rawCategories[i], i))
   }
 
   const periods = source.periods && typeof source.periods === 'object'
@@ -502,48 +734,110 @@ function normalizeConfig(value) {
     orientation: source.orientation === 'horizontal' ? 'horizontal' : 'vertical',
     compare: source.compare !== false,
     tearThreshold: Math.max(1.01, positiveNumber(source.tearThreshold, 1.5)),
+    positiveLabel: source.positiveLabel || 'Positive',
+    negativeLabel: source.negativeLabel || 'Negative',
     periods: {
       current: periods.current || 'Current',
       previous: periods.previous || 'Previous',
     },
-    towers,
+    categories,
   }
-}
-
-function categoryCurrent(category) {
-  if (category.value !== undefined) {
-    return Math.abs(finiteNumber(category.value))
-  }
-
-  const values = []
-  for (let i = 0; i < category.subcategories.length; i++) {
-    values.push(Math.abs(finiteNumber(category.subcategories[i].value)))
-  }
-  return sum(values)
-}
-
-function categoryPrevious(category) {
-  if (category.previous !== undefined) {
-    return Math.abs(finiteNumber(category.previous))
-  }
-
-  const values = []
-  for (let i = 0; i < category.subcategories.length; i++) {
-    if (category.subcategories[i].previous === undefined) {
-      continue
-    }
-    values.push(Math.abs(finiteNumber(category.subcategories[i].previous)))
-  }
-  return sum(values)
 }
 
 function categorySubtitle(category) {
   const labels = []
   for (let i = 0; i < category.subcategories.length; i++) {
     const subcategory = category.subcategories[i]
-    labels.push(subcategory.abbreviation || subcategory.label)
+    labels.push(subcategory.shortName || subcategory.name)
   }
   return labels.join(' · ')
+}
+
+function parseDisplayNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined
+  }
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const text = value.trim()
+  if (!text) {
+    return undefined
+  }
+
+  const parenthesized = /^\(.*\)$/.test(text)
+  const normalized = text
+    .replace(/^\(|\)$/g, '')
+    .replace(/[,$\s]/g, '')
+  if (!/^[-+]?\d+(?:\.\d+)?$/.test(normalized)) {
+    return undefined
+  }
+
+  const number = Number(normalized)
+  if (!Number.isFinite(number)) {
+    return undefined
+  }
+  return parenthesized ? -Math.abs(number) : number
+}
+
+function displayNumber(displayValue, rawValue) {
+  if (displayValue === undefined) {
+    return rawValue === undefined ? undefined : finiteNumber(rawValue)
+  }
+  return parseDisplayNumber(displayValue)
+}
+
+function formatDisplayValue(displayValue, rawValue) {
+  if (displayValue !== undefined) {
+    return typeof displayValue === 'number' ? formatNumber(displayValue) : displayValue
+  }
+  return rawValue === undefined ? '—' : formatNumber(rawValue)
+}
+
+function categoryDisplayNumber(category, period) {
+  const explicit = category.display?.[period]
+  if (explicit !== undefined) {
+    return displayNumber(explicit, undefined)
+  }
+
+  let total = 0
+  let hasValue = false
+  for (let i = 0; i < category.subcategories.length; i++) {
+    const subcategory = category.subcategories[i]
+    const rawValue = period === 'current' ? subcategory.current : subcategory.previous
+    if (rawValue === undefined) {
+      continue
+    }
+    const value = displayNumber(subcategory.display?.[period], rawValue)
+    if (value === undefined) {
+      return undefined
+    }
+    total += value
+    hasValue = true
+  }
+  return hasValue ? total : undefined
+}
+
+function categoryDisplayValue(category, period) {
+  const explicit = category.display?.[period]
+  if (explicit !== undefined) {
+    return formatDisplayValue(explicit, undefined)
+  }
+
+  const number = categoryDisplayNumber(category, period)
+  return number === undefined ? '—' : formatNumber(number)
+}
+
+function categorySideMagnitude(category, towerIndex) {
+  let total = 0
+  for (let i = 0; i < category.subcategories.length; i++) {
+    const current = category.subcategories[i].current
+    if ((towerIndex === 0 && current > 0) || (towerIndex === 1 && current < 0)) {
+      total += Math.abs(current)
+    }
+  }
+  return total
 }
 
 function formatNumber(value) {
@@ -558,8 +852,7 @@ function formatSignedNumber(value) {
   }
 
   const number = finiteNumber(value)
-  const sign = number > 0 ? '+' : ''
-  return `${sign}${formatNumber(number)}`
+  return `${number > 0 ? '+' : ''}${formatNumber(number)}`
 }
 
 function formatDeltaPercent(current, previous) {
@@ -568,41 +861,16 @@ function formatDeltaPercent(current, previous) {
   }
 
   const percent = (current - previous) / Math.abs(previous) * 100
-  const sign = percent > 0 ? '+' : ''
-  return `${sign}${formatNumber(percent)}%`
-}
-
-function categoryRawCurrent(category) {
-  if (category.value !== undefined) {
-    return finiteNumber(category.value)
-  }
-
-  const values = []
-  for (let i = 0; i < category.subcategories.length; i++) {
-    values.push(finiteNumber(category.subcategories[i].value))
-  }
-  return sum(values)
-}
-
-function categoryRawPrevious(category) {
-  if (category.previous !== undefined) {
-    return finiteNumber(category.previous)
-  }
-
-  const values = []
-  let hasPrevious = false
-  for (let i = 0; i < category.subcategories.length; i++) {
-    const previous = category.subcategories[i].previous
-    if (previous === undefined) {
-      continue
-    }
-    hasPrevious = true
-    values.push(finiteNumber(previous))
-  }
-  return hasPrevious ? sum(values) : undefined
+  return `${percent > 0 ? '+' : ''}${formatNumber(percent)}%`
 }
 
 function createTooltipTable(category, periods) {
+  const table = createComparisonTable(periods)
+  appendCategoryRows(table.querySelector('tbody'), category)
+  return table
+}
+
+function createComparisonTable(periods) {
   const table = document.createElement('table')
   const head = document.createElement('thead')
   const headRow = document.createElement('tr')
@@ -613,42 +881,55 @@ function createTooltipTable(category, periods) {
     cell.textContent = headings[i]
     headRow.append(cell)
   }
+
   head.append(headRow)
-
-  const body = document.createElement('tbody')
-  for (let i = 0; i < category.subcategories.length; i++) {
-    const subcategory = category.subcategories[i]
-    appendTooltipRow(
-      body,
-      subcategory.label,
-      finiteNumber(subcategory.value),
-      subcategory.previous === undefined ? undefined : finiteNumber(subcategory.previous),
-      false,
-    )
-  }
-
-  appendTooltipRow(
-    body,
-    category.label,
-    categoryRawCurrent(category),
-    categoryRawPrevious(category),
-    true,
-  )
-
-  table.append(head, body)
+  table.append(head, document.createElement('tbody'))
   return table
 }
 
-function appendTooltipRow(body, label, current, previous, total) {
+function appendCategoryRows(body, category) {
+  const current = categoryDisplayNumber(category, 'current')
+  const previous = categoryDisplayNumber(category, 'previous')
+  appendTooltipRow(
+    body,
+    category.name,
+    current,
+    previous,
+    true,
+    categoryDisplayValue(category, 'current'),
+    categoryDisplayValue(category, 'previous'),
+    [category.tag],
+  )
+
+  for (let i = 0; i < category.subcategories.length; i++) {
+    const subcategory = category.subcategories[i]
+    const subcategoryCurrent = displayNumber(subcategory.display?.current, subcategory.current)
+    const subcategoryPrevious = displayNumber(subcategory.display?.previous, subcategory.previous)
+    appendTooltipRow(
+      body,
+      subcategory.name,
+      subcategoryCurrent,
+      subcategoryPrevious,
+      false,
+      formatDisplayValue(subcategory.display?.current, subcategory.current),
+      formatDisplayValue(subcategory.display?.previous, subcategory.previous),
+      [category.tag, subcategory.tag],
+    )
+  }
+}
+
+function appendTooltipRow(body, label, current, previous, total, currentText, previousText, tags = []) {
   const row = document.createElement('tr')
+  applyTagHooks(row, tags)
   row.classList.toggle('total', total)
-  const delta = previous === undefined ? undefined : current - previous
+  row.classList.toggle('subcategory', !total)
+  const delta = current === undefined || previous === undefined ? undefined : current - previous
   const values = [
     label,
-    formatNumber(current),
-    previous === undefined ? '—' : formatNumber(previous),
+    currentText ?? (current === undefined ? '—' : formatNumber(current)),
+    previousText ?? (previous === undefined ? '—' : formatNumber(previous)),
     formatSignedNumber(delta),
-    formatDeltaPercent(current, previous),
+    current === undefined ? '—' : formatDeltaPercent(current, previous),
   ]
 
   for (let i = 0; i < values.length; i++) {
@@ -660,7 +941,19 @@ function appendTooltipRow(body, label, current, previous, total) {
     }
     row.append(cell)
   }
+
   body.append(row)
+}
+
+function createFullDetailsTable(config) {
+  const table = createComparisonTable(config.periods)
+  const body = table.querySelector('tbody')
+
+  for (let i = 0; i < config.categories.length; i++) {
+    appendCategoryRows(body, config.categories[i])
+  }
+
+  return table
 }
 
 function currentRegion(orientation, side, geometry, fraction) {
@@ -711,9 +1004,10 @@ function protrudingRegion(orientation, side, geometry, size) {
     : { x, y: y + height, width, height: size }
 }
 
-function appendRect(svg, attributes, categoryKey, registry) {
+function appendRect(svg, attributes, categoryKey, registry, tags = []) {
   const rect = createSvgElement('rect', attributes)
   rect.classList.add('category-shape')
+  applyTagHooks(rect, tags)
   svg.append(rect)
   registerShape(categoryKey, rect, registry)
   return rect
@@ -743,7 +1037,7 @@ function setHighlight(key, registry, legendRegistry) {
   }
 }
 
-function addPattern(svg, id, color) {
+function addPattern(id, color) {
   const pattern = createSvgElement('pattern', {
     id,
     width: 9,
@@ -767,6 +1061,7 @@ function addPattern(svg, id, color) {
       'stroke-width': 2.25,
     }),
   )
+
   return pattern
 }
 
@@ -813,10 +1108,31 @@ function drawTear(svg, options) {
     }
   }
 
+  const erasePadding = 2
+  const eraseAxisStart = axisStart - erasePadding
+  const eraseAxisLength = axisLength + erasePadding * 2
+  const eraseSampleCount = Math.max(4, Math.ceil(eraseAxisLength / 6))
+  const eraseEdgeA = []
+  const eraseEdgeB = []
+
+  for (let i = 0; i <= eraseSampleCount; i++) {
+    const ratio = i / eraseSampleCount
+    const along = eraseAxisStart + eraseAxisLength * ratio
+    const wave = Math.sin(along / wavelength * Math.PI * 2) * amplitude
+
+    if (orientation === 'vertical') {
+      eraseEdgeA.push({ x: center - gap / 2 + wave, y: along })
+      eraseEdgeB.push({ x: center + gap / 2 + wave, y: along })
+    } else {
+      eraseEdgeA.push({ x: along, y: center - gap / 2 + wave })
+      eraseEdgeB.push({ x: along, y: center + gap / 2 + wave })
+    }
+  }
+
   const pathA = pointsPath(edgeA)
   const pathB = pointsPath(edgeB)
-  const reversed = edgeB.slice().reverse()
-  const ribbon = `${pointsPath(edgeA)} L ${reversed[0].x} ${reversed[0].y} ${pointsPath(reversed, false)} Z`
+  const reversedEraseEdgeB = eraseEdgeB.slice().reverse()
+  const ribbon = `${pointsPath(eraseEdgeA)} L ${reversedEraseEdgeB[0].x} ${reversedEraseEdgeB[0].y} ${pointsPath(reversedEraseEdgeB, false)} Z`
 
   svg.append(
     createSvgElement('path', {
@@ -858,57 +1174,106 @@ function pointsPath(points, move = true) {
   return path
 }
 
+function appendPaleOverlay(svg, category, subcategory, region, registry, opacity = .45) {
+  if (region.width <= 0 || region.height <= 0) {
+    return
+  }
+
+  const overlay = appendRect(svg, {
+    x: region.x,
+    y: region.y,
+    width: region.width,
+    height: region.height,
+    fill: 'var(--tot-two-towers-delta-overlay-color)',
+    stroke: 'none',
+    opacity,
+    'shape-rendering': 'crispEdges',
+  }, category.key, registry, [category.tag, subcategory?.tag])
+  overlay.dataset.baseOpacity = String(opacity)
+}
+
+function appendHatchedRegion(svg, category, subcategory, region, patternId, registry, withBorder = false) {
+  if (region.width <= 0 || region.height <= 0) {
+    return
+  }
+
+  const rect = appendRect(svg, {
+    x: region.x,
+    y: region.y,
+    width: region.width,
+    height: region.height,
+    fill: `url(#${patternId})`,
+    stroke: withBorder ? 'var(--tot-two-towers-category-border-color)' : 'none',
+    'stroke-width': withBorder ? 1 : 0,
+    opacity: .94,
+  }, category.key, registry, [category.tag, subcategory?.tag])
+  rect.dataset.baseOpacity = '.94'
+}
+
+function appendPaleProtrusion(svg, category, subcategory, region, registry) {
+  const base = appendRect(svg, {
+    x: region.x,
+    y: region.y,
+    width: region.width,
+    height: region.height,
+    fill: category.color,
+    stroke: 'var(--tot-two-towers-category-border-color)',
+    'stroke-width': 1,
+    opacity: .88,
+  }, category.key, registry, [category.tag, subcategory?.tag])
+  base.dataset.baseOpacity = '.88'
+  appendPaleOverlay(svg, category, subcategory, region, registry, .5)
+}
+
 function drawComparison(svg, options) {
   const {
     category,
+    subcategory,
     geometry,
     orientation,
     side,
-    current,
-    previous,
     compare,
     tearThreshold,
     maxProtrusion,
     patternId,
     registry,
   } = options
+  const currentRaw = subcategory.current
+  const previousRaw = subcategory.previous
+  const current = Math.abs(currentRaw)
 
-  if (!compare || previous === undefined || current <= 1e-9) {
+  if (!compare || previousRaw === undefined || current <= 1e-9) {
     return
   }
 
-  const baseOpacity = category.dimmed ? .62 : 1
+  const previous = Math.abs(previousRaw)
+  const sameSign = previous <= 1e-9 || Math.sign(previousRaw) === Math.sign(currentRaw)
   const crossSize = orientation === 'vertical' ? geometry.width : geometry.height
 
   if (previous <= current) {
     const previousFraction = previous / current
-    const deltaFraction = 1 - previousFraction
 
-    if (deltaFraction > 1e-6) {
-      const deltaRegion = outerCurrentRegion(orientation, side, geometry, deltaFraction)
-      const overlay = appendRect(svg, {
-        x: deltaRegion.x,
-        y: deltaRegion.y,
-        width: deltaRegion.width,
-        height: deltaRegion.height,
-        fill: 'var(--tot-two-towers-delta-overlay-color)',
-        stroke: 'none',
-        opacity: category.dimmed ? .35 : .42,
-      }, category.key, registry)
-      overlay.dataset.baseOpacity = String(category.dimmed ? .35 : .42)
+    if (!sameSign && previousFraction > 1e-6) {
+      appendHatchedRegion(
+        svg,
+        category,
+        subcategory,
+        currentRegion(orientation, side, geometry, previousFraction),
+        patternId,
+        registry,
+      )
     }
 
-    const previousRegion = currentRegion(orientation, side, geometry, previousFraction)
-    const previousRect = appendRect(svg, {
-      x: previousRegion.x,
-      y: previousRegion.y,
-      width: previousRegion.width,
-      height: previousRegion.height,
-      fill: category.color,
-      stroke: 'none',
-      opacity: baseOpacity,
-    }, category.key, registry)
-    previousRect.dataset.baseOpacity = String(baseOpacity)
+    const deltaFraction = 1 - previousFraction
+    if (deltaFraction > 1e-6) {
+      appendPaleOverlay(
+        svg,
+        category,
+        subcategory,
+        outerCurrentRegion(orientation, side, geometry, deltaFraction),
+        registry,
+      )
+    }
     return
   }
 
@@ -920,20 +1285,12 @@ function drawComparison(svg, options) {
     ? Math.min(maxProtrusion, Math.max(8, thresholdSize))
     : rawSize
   const region = protrudingRegion(orientation, side, geometry, visibleSize)
-  const protrusionOpacity = category.dimmed ? .58 : .86
-  const protrusion = appendRect(svg, {
-    x: region.x,
-    y: region.y,
-    width: region.width,
-    height: region.height,
-    fill: `url(#${patternId})`,
-    stroke: category.dimmed
-      ? 'var(--tot-two-towers-dimmed-border-color)'
-      : 'var(--tot-two-towers-category-border-color)',
-    'stroke-width': 1,
-    opacity: protrusionOpacity,
-  }, category.key, registry)
-  protrusion.dataset.baseOpacity = String(protrusionOpacity)
+
+  if (sameSign) {
+    appendPaleProtrusion(svg, category, subcategory, region, registry)
+  } else {
+    appendHatchedRegion(svg, category, subcategory, region, patternId, registry, true)
+  }
 
   if (torn) {
     const normalEdge = orientation === 'vertical'
@@ -951,217 +1308,100 @@ function drawComparison(svg, options) {
       tearDistance: Math.min(58, Math.max(18, maxProtrusion * .42)),
       axisStart: orientation === 'vertical' ? geometry.y : geometry.x,
       axisLength: orientation === 'vertical' ? geometry.height : geometry.width,
-      stroke: category.dimmed
-        ? 'var(--tot-two-towers-dimmed-border-color)'
-        : 'var(--tot-two-towers-category-border-color)',
+      stroke: 'var(--tot-two-towers-category-border-color)',
     })
   }
 }
 
-function drawCategoryOutline(svg, geometry, orientation, dimmed) {
-  const { x, y, width, height } = geometry
-  const border = dimmed
-    ? 'var(--tot-two-towers-dimmed-border-color)'
-    : 'var(--tot-two-towers-category-border-color)'
-  const common = {
-    stroke: border,
-    'stroke-width': 1.25,
+function drawOutline(svg, geometry, width = 1, color = 'var(--tot-two-towers-category-border-color)', tags = []) {
+  const { x, y, height, width: rectWidth } = geometry
+  const outline = createSvgElement('rect', {
+    x,
+    y,
+    width: rectWidth,
+    height,
+    fill: 'none',
+    stroke: color,
+    'stroke-width': width,
     'pointer-events': 'none',
-  }
-
-  svg.append(
-    createSvgElement('line', {
-      ...common,
-      x1: x,
-      y1: y,
-      x2: x + width,
-      y2: y,
-    }),
-    createSvgElement('line', {
-      ...common,
-      x1: x,
-      y1: y + height,
-      x2: x + width,
-      y2: y + height,
-    }),
-    createSvgElement('line', {
-      ...common,
-      x1: x,
-      y1: y,
-      x2: x,
-      y2: y + height,
-    }),
-    createSvgElement('line', {
-      ...common,
-      x1: x + width,
-      y1: y,
-      x2: x + width,
-      y2: y + height,
-    }),
-  )
-
-  if (orientation === 'vertical') {
-    return
-  }
+    'shape-rendering': 'crispEdges',
+  })
+  applyTagHooks(outline, tags)
+  svg.append(outline)
 }
 
-function drawSubcategories(svg, options) {
-  const {
-    category,
-    geometry,
-    orientation,
-    side,
-    compare,
-    tearThreshold,
-    maxProtrusion,
-    patternId,
-    registry,
-  } = options
-  const subcategories = category.subcategories
-  if (!subcategories.length) {
-    return
-  }
-
-  const currentAmounts = []
-  for (let i = 0; i < subcategories.length; i++) {
-    currentAmounts.push(Math.abs(finiteNumber(subcategories[i].value)))
-  }
-  const currentTotal = sum(currentAmounts)
-  if (currentTotal <= 1e-9) {
-    return
-  }
-
-  let offset = 0
-  for (let i = 0; i < subcategories.length; i++) {
-    const subcategory = subcategories[i]
-    const current = currentAmounts[i]
-    const fraction = current / currentTotal
-    const subGeometry = orientation === 'vertical'
-      ? {
-          x: geometry.x,
-          y: geometry.y + geometry.height * offset,
-          width: geometry.width,
-          height: geometry.height * fraction,
-        }
-      : {
-          x: geometry.x + geometry.width * offset,
-          y: geometry.y,
-          width: geometry.width * fraction,
-          height: geometry.height,
-        }
-
-    const previous = subcategory.previous === undefined
-      ? undefined
-      : Math.abs(finiteNumber(subcategory.previous))
-    drawComparison(svg, {
-      category,
-      geometry: subGeometry,
-      orientation,
-      side,
-      current,
-      previous,
-      compare,
-      tearThreshold,
-      maxProtrusion,
-      patternId,
-      registry,
-    })
-
-    drawSubcategoryLabel(svg, category, subcategory, subGeometry, orientation, current)
-
-    offset += fraction
-    if (i < subcategories.length - 1) {
-      if (orientation === 'vertical') {
-        const y = geometry.y + geometry.height * offset
-        svg.append(createSvgElement('line', {
-          x1: geometry.x,
-          y1: y,
-          x2: geometry.x + geometry.width,
-          y2: y,
-          stroke: 'color-mix(in srgb, var(--tot-two-towers-category-border-color) 68%, transparent)',
-          'stroke-width': 1,
-          'pointer-events': 'none',
-        }))
-      } else {
-        const x = geometry.x + geometry.width * offset
-        svg.append(createSvgElement('line', {
-          x1: x,
-          y1: geometry.y,
-          x2: x,
-          y2: geometry.y + geometry.height,
-          stroke: 'color-mix(in srgb, var(--tot-two-towers-category-border-color) 68%, transparent)',
-          'stroke-width': 1,
-          'pointer-events': 'none',
-        }))
-      }
-    }
-  }
-}
-
-function drawSubcategoryLabel(svg, category, subcategory, geometry, orientation, current) {
+function drawSubcategoryLabel(svg, category, subcategory, geometry, orientation) {
+  const current = Math.abs(subcategory.current)
   if (current <= 0) {
     return
   }
 
-  const label = subcategory.abbreviation || ''
-  if (!label) {
-    return
-  }
-
   const mainPixels = orientation === 'vertical' ? geometry.height : geometry.width
-  if (mainPixels < (orientation === 'vertical' ? 10 : 20)) {
+  if (mainPixels < (orientation === 'vertical' ? 9 : 18)) {
     return
   }
 
-  const text = createSvgElement('text', orientation === 'vertical'
-    ? {
-        x: geometry.x + 5,
-        y: geometry.y + Math.min(11, Math.max(7, geometry.height - 2)),
-        fill: 'var(--tot-input-color, #1e293b)',
-        'font-size': mainPixels < 14 ? 7 : 8.5,
-        'font-weight': 600,
-        opacity: category.dimmed ? .72 : .88,
-        'pointer-events': 'none',
-      }
-    : {
-        x: geometry.x + geometry.width / 2,
-        y: geometry.y + 12,
-        fill: 'var(--tot-input-color, #1e293b)',
-        'font-size': mainPixels < 30 ? 7 : 8.5,
-        'font-weight': 600,
-        opacity: category.dimmed ? .72 : .88,
-        'pointer-events': 'none',
-        'text-anchor': 'middle',
-      }, label)
+  const fontSize = mainPixels < (orientation === 'vertical' ? 14 : 30) ? 7 : 8.5
+  const y = geometry.y + Math.min(11, Math.max(7, geometry.height - 2))
+  const common = {
+    fill: 'var(--tot-input-color, #1e293b)',
+    'font-size': fontSize,
+    'font-weight': 600,
+    opacity: .88,
+    'pointer-events': 'none',
+  }
 
-  svg.append(text)
+  if (subcategory.shortName) {
+    const label = createSvgElement('text', {
+      ...common,
+      x: geometry.x + 5,
+      y,
+      'text-anchor': 'start',
+    }, subcategory.shortName)
+    applyTagHooks(label, [category.tag, subcategory.tag])
+    svg.append(label)
+  }
+
+  if (geometry.width >= 28) {
+    const amount = createSvgElement('text', {
+      ...common,
+      x: geometry.x + geometry.width - 5,
+      y,
+      'font-variant-numeric': 'tabular-nums',
+      'text-anchor': 'end',
+    }, formatDisplayValue(subcategory.display?.current, subcategory.current))
+    applyTagHooks(amount, [category.tag, subcategory.tag])
+    svg.append(amount)
+  }
 }
 
-function drawCategoryLabel(svg, category, geometry) {
-  const label = category.abbreviation || ''
-  if (!label) {
+function drawCategoryGroupLabel(svg, category, geometry, orientation) {
+  if (!category.shortName) {
     return
   }
 
-  const size = Math.min(18, Math.max(9, Math.min(geometry.width, geometry.height) * .17))
-  if (geometry.width < 20 || geometry.height < 12) {
+  const mainSize = orientation === 'vertical' ? geometry.height : geometry.width
+  if (mainSize < (orientation === 'vertical' ? 46 : 70) || geometry.width < 36 || geometry.height < 24) {
     return
   }
 
-  svg.append(createSvgElement('text', {
+  const size = Math.min(17, Math.max(9, Math.min(geometry.width, geometry.height) * .14))
+  const label = createSvgElement('text', {
     x: geometry.x + geometry.width / 2,
     y: geometry.y + geometry.height / 2 + size * .34,
     fill: 'var(--tot-input-color, #1e293b)',
     'font-size': size,
     'font-weight': 700,
-    opacity: category.dimmed ? .72 : .92,
+    opacity: .78,
     'pointer-events': 'none',
     'text-anchor': 'middle',
-  }, label))
+  }, category.shortName)
+  applyTagHooks(label, [category.tag])
+  svg.append(label)
 }
 
-function drawTowerLabel(svg, tower, x, y, anchor) {
-  if (!tower.label) {
+function drawTowerLabel(svg, label, x, y, anchor) {
+  if (!label) {
     return
   }
 
@@ -1174,71 +1414,160 @@ function drawTowerLabel(svg, tower, x, y, anchor) {
     'letter-spacing': '.02em',
     'pointer-events': 'none',
     'text-anchor': anchor,
-  }, tower.label))
+  }, label))
 }
 
-function renderLegend(container, towers, registry, legendRegistry, handlers) {
-  container.replaceChildren()
-  let colorIndex = 0
-
-  for (let towerIndex = 0; towerIndex < towers.length; towerIndex++) {
-    const categories = towers[towerIndex].categories
-
-    for (let categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
-      const category = categories[categoryIndex]
-      const item = document.createElement('div')
-      item.className = `legend-item${category.dimmed ? ' is-dimmed' : ''}`
-      item.setAttribute('part', 'legend-item')
-
-      const swatch = document.createElement('span')
-      swatch.className = 'legend-swatch'
-      swatch.setAttribute('part', 'legend-swatch')
-      swatch.style.background = category.color || defaultColors[colorIndex % defaultColors.length]
-
-      const copy = document.createElement('span')
-      copy.className = 'legend-copy'
-
-      const label = document.createElement('span')
-      label.className = 'legend-label'
-      label.textContent = category.abbreviation
-        ? `${category.abbreviation} — ${category.label}`
-        : category.label
-
-      const subtitleText = categorySubtitle(category)
-      const subtitle = document.createElement('span')
-      subtitle.className = 'legend-subtitle'
-      subtitle.textContent = subtitleText
-      subtitle.hidden = !subtitleText
-
-      copy.append(label, subtitle)
-      item.append(swatch, copy)
-      item.addEventListener('pointerenter', (event) => {
-        setHighlight(category.key, registry, legendRegistry)
-        if (event.pointerType !== 'touch') {
-          handlers.show(category, event)
-        }
-      })
-      item.addEventListener('pointermove', (event) => {
-        if (event.pointerType !== 'touch') {
-          handlers.move(event)
-        }
-      })
-      item.addEventListener('pointerleave', (event) => {
-        if (event.pointerType === 'touch') {
-          return
-        }
-        handlers.hide()
-      })
-      item.addEventListener('pointerdown', (event) => {
-        if (event.pointerType === 'touch') {
-          handlers.show(category, event, true)
-        }
-      })
-
-      legendRegistry.set(category.key, item)
-      container.append(item)
-      colorIndex += 1
+function categorySideSubcategories(category, towerIndex) {
+  const result = []
+  for (let i = 0; i < category.subcategories.length; i++) {
+    const subcategory = category.subcategories[i]
+    if ((towerIndex === 0 && subcategory.current > 0) || (towerIndex === 1 && subcategory.current < 0)) {
+      result.push(subcategory)
     }
+  }
+  return result
+}
+
+function categoryGeometryFrom(position, mainSize, layout) {
+  if (layout.orientation === 'vertical') {
+    return {
+      x: position.x,
+      y: position.main,
+      width: layout.breadth,
+      height: mainSize,
+    }
+  }
+
+  return {
+    x: position.main,
+    y: position.y,
+    width: mainSize,
+    height: layout.breadth,
+  }
+}
+
+function subcategoryGeometry(categoryGeometry, offset, fraction, orientation) {
+  if (orientation === 'vertical') {
+    return {
+      x: categoryGeometry.x,
+      y: categoryGeometry.y + categoryGeometry.height * offset,
+      width: categoryGeometry.width,
+      height: categoryGeometry.height * fraction,
+    }
+  }
+
+  return {
+    x: categoryGeometry.x + categoryGeometry.width * offset,
+    y: categoryGeometry.y,
+    width: categoryGeometry.width * fraction,
+    height: categoryGeometry.height,
+  }
+}
+
+function renderLegend(container, categories, registry, legendRegistry, handlers, hiddenKeys) {
+  container.replaceChildren()
+
+  for (let categoryIndex = 0; categoryIndex < categories.length; categoryIndex++) {
+    const category = categories[categoryIndex]
+    const item = document.createElement('div')
+    item.className = 'legend-item'
+    item.classList.toggle('is-hidden', hiddenKeys.has(category.key))
+    item.title = hiddenKeys.has(category.key) ? 'Hold or right-click to show category' : 'Hold or right-click to hide category'
+    applyTagHooks(item, [category.tag], 'legend-item')
+
+    const swatch = document.createElement('span')
+    swatch.className = 'legend-swatch'
+    applyTagHooks(swatch, [category.tag], 'legend-swatch')
+    swatch.style.background = category.color
+
+    const copy = document.createElement('span')
+    copy.className = 'legend-copy'
+
+    const label = document.createElement('span')
+    label.className = 'legend-label'
+    label.textContent = category.shortName
+      ? `${category.shortName} — ${category.name}`
+      : category.name
+
+    const subtitleText = categorySubtitle(category)
+    const subtitle = document.createElement('span')
+    subtitle.className = 'legend-subtitle'
+    subtitle.textContent = subtitleText
+    subtitle.hidden = !subtitleText
+
+    copy.append(label, subtitle)
+    item.append(swatch, copy)
+    item.addEventListener('pointerenter', (event) => {
+      setHighlight(category.key, registry, legendRegistry)
+      if (event.pointerType !== 'touch') {
+        handlers.show(category, event, false, item)
+      }
+    })
+    item.addEventListener('pointerleave', (event) => {
+      if (event.pointerType !== 'touch') {
+        handlers.hide()
+      }
+    })
+    let holdTimer = null
+    let holdStart = null
+    let held = false
+    let lastHoldToggle = 0
+    const cancelHold = () => {
+      if (holdTimer !== null) {
+        clearTimeout(holdTimer)
+        holdTimer = null
+      }
+      holdStart = null
+    }
+
+    item.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
+      cancelHold()
+      if (Date.now() - lastHoldToggle < 1000) {
+        return
+      }
+      handlers.toggleHidden(category)
+    })
+    item.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.pointerType !== 'touch') {
+        return
+      }
+      held = false
+      holdStart = { x: event.clientX, y: event.clientY }
+      holdTimer = window.setTimeout(() => {
+        held = true
+        lastHoldToggle = Date.now()
+        holdTimer = null
+        handlers.hide()
+        handlers.toggleHidden(category)
+      }, 550)
+    })
+    item.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch' && holdStart) {
+        if (Math.hypot(event.clientX - holdStart.x, event.clientY - holdStart.y) > 8) {
+          cancelHold()
+        }
+        return
+      }
+      if (event.pointerType !== 'touch') {
+        handlers.move(event, item)
+      }
+    })
+    item.addEventListener('pointerup', (event) => {
+      if (event.pointerType !== 'touch') {
+        return
+      }
+      const wasHeld = held
+      cancelHold()
+      held = false
+      if (!wasHeld) {
+        handlers.show(category, event, true, item)
+      }
+    })
+    item.addEventListener('pointercancel', cancelHold)
+
+    legendRegistry.set(category.key, item)
+    container.append(item)
   }
 }
 
@@ -1247,20 +1576,27 @@ export class TotTwoTowers extends HTMLElement {
     super()
     this._config = normalizeConfig(null)
     this._fullscreen = false
-    this._fullscreenButton = null
+    this._detailsOpen = false
+    this._detailsWidthPx = null
+    this._activeDetailsResize = null
+    this._tooltipAnchor = null
+    this._tooltipCategoryKey = null
+    this._tooltipPinnedKey = null
     this._historyPushed = false
     this._historyToken = ''
     this._skipHistoryOnClose = false
+    this._shapeRegistry = new Map()
+    this._legendRegistry = new Map()
+    this._hiddenCategoryKeys = new Set()
     this._handleKeyDown = event => this.handleKeyDown(event)
     this._handlePopState = () => this.handlePopState()
+    this._handleDetailsResizeMove = event => this.handleDetailsResizeMove(event)
+    this._handleDetailsResizeEnd = () => this.stopDetailsResize()
     this._handleResize = () => {
       if (this._fullscreen) {
         this.render()
       }
     }
-    this._shapeRegistry = new Map()
-    this._legendRegistry = new Map()
-    this._tooltipPinnedKey = null
     this._onWindowPointerDown = (event) => {
       if (!event.composedPath().includes(this)) {
         this.hideTooltip(true)
@@ -1271,11 +1607,21 @@ export class TotTwoTowers extends HTMLElement {
     root.innerHTML = `
       <style>${twoTowersStyle}</style>
       <div class="two-towers" part="base">
+        <aside class="details-table" part="details-table" aria-label="All category details">
+          <div class="details-table-header" part="details-table-header">
+            <span class="details-table-title">All details</span>
+          </div>
+          <div class="details-table-scroll" part="details-table-scroll"></div>
+          <button class="details-resize-handle" part="details-resize-handle" type="button" aria-label="Resize details table"></button>
+        </aside>
         <div class="chart" part="chart">
           <svg aria-label="Two towers visualization" role="img"></svg>
         </div>
         <div class="legend" part="legend"></div>
         <div class="tooltip" part="tooltip" hidden></div>
+        <button class="details-button" part="details-button" type="button" aria-label="Show all details" aria-expanded="false">
+          ${getDetailsTableIcon()}
+        </button>
         <button class="fullscreen-button" part="fullscreen-button" type="button" aria-label="Open fullscreen visualization">
           ${getEnterFullscreenIcon()}
         </button>
@@ -1286,7 +1632,15 @@ export class TotTwoTowers extends HTMLElement {
     this._svg = root.querySelector('svg')
     this._legend = root.querySelector('.legend')
     this._tooltip = root.querySelector('.tooltip')
+    this._detailsTable = root.querySelector('.details-table')
+    this._detailsTableScroll = root.querySelector('.details-table-scroll')
+    this._detailsResizeHandle = root.querySelector('.details-resize-handle')
+    this._detailsButton = root.querySelector('.details-button')
     this._fullscreenButton = root.querySelector('.fullscreen-button')
+
+    this._detailsButton.addEventListener('click', () => this.toggleDetailsTable())
+    this._detailsResizeHandle.addEventListener('pointerdown', event => this.startDetailsResize(event))
+    this._detailsResizeHandle.addEventListener('keydown', event => this.handleDetailsResizeKeyDown(event))
     this._fullscreenButton.addEventListener('click', () => {
       if (this._fullscreen) {
         this.closeFullscreen()
@@ -1318,6 +1672,13 @@ export class TotTwoTowers extends HTMLElement {
 
   set config(value) {
     this._config = normalizeConfig(value)
+    const keys = new Set(this._config.categories.map(category => category.key))
+    const hidden = Array.from(this._hiddenCategoryKeys)
+    for (let i = 0; i < hidden.length; i++) {
+      if (!keys.has(hidden[i])) {
+        this._hiddenCategoryKeys.delete(hidden[i])
+      }
+    }
     if (this.isConnected) {
       this.render()
     }
@@ -1329,10 +1690,10 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.stopDetailsResize()
     this.closeFullscreen(false, true)
     window.removeEventListener('pointerdown', this._onWindowPointerDown)
   }
-
 
   openFullscreen() {
     if (this._fullscreen) {
@@ -1359,6 +1720,8 @@ export class TotTwoTowers extends HTMLElement {
     const shouldSkipHistory = skipHistory || this._skipHistoryOnClose
     this._skipHistoryOnClose = false
     this._fullscreen = false
+    this._detailsOpen = false
+    this.stopDetailsResize()
     markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
     window.removeEventListener('popstate', this._handlePopState)
@@ -1437,11 +1800,17 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   updateFullscreenUi() {
-    if (!this._base || !this._fullscreenButton) {
+    if (!this._base || !this._fullscreenButton || !this._detailsButton) {
       return
     }
 
     this._base.classList.toggle('is-fullscreen', this._fullscreen)
+    this._base.classList.toggle('has-details-table', this._fullscreen && this._detailsOpen)
+    this._detailsButton.setAttribute('aria-expanded', String(this._fullscreen && this._detailsOpen))
+    this._detailsButton.setAttribute(
+      'aria-label',
+      this._detailsOpen ? 'Hide all details' : 'Show all details',
+    )
     this._fullscreenButton.innerHTML = this._fullscreen
       ? getExitFullscreenIcon()
       : getEnterFullscreenIcon()
@@ -1449,6 +1818,112 @@ export class TotTwoTowers extends HTMLElement {
       'aria-label',
       this._fullscreen ? 'Exit fullscreen visualization' : 'Open fullscreen visualization',
     )
+  }
+
+  toggleDetailsTable() {
+    if (!this._fullscreen) {
+      return
+    }
+
+    this._detailsOpen = !this._detailsOpen
+    this.hideTooltip(true)
+    this.updateFullscreenUi()
+    this.renderDetailsTable()
+  }
+
+  renderDetailsTable() {
+    if (!this._detailsTableScroll) {
+      return
+    }
+
+    if (!this._fullscreen || !this._detailsOpen) {
+      this._detailsTableScroll.replaceChildren()
+      return
+    }
+
+    const categories = this._config.categories.filter(category => !this._hiddenCategoryKeys.has(category.key))
+    this._detailsTableScroll.replaceChildren(createFullDetailsTable({ ...this._config, categories }))
+  }
+
+  startDetailsResize(event) {
+    if (!this._fullscreen || !this._detailsOpen) {
+      return
+    }
+
+    const rect = this._detailsTable.getBoundingClientRect()
+    this._activeDetailsResize = {
+      startX: event.clientX,
+      startWidth: rect.width,
+    }
+    this._detailsTable.classList.add('is-resizing')
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    document.addEventListener('pointermove', this._handleDetailsResizeMove)
+    document.addEventListener('pointerup', this._handleDetailsResizeEnd)
+    event.preventDefault()
+  }
+
+  handleDetailsResizeMove(event) {
+    if (!this._activeDetailsResize) {
+      return
+    }
+
+    const delta = event.clientX - this._activeDetailsResize.startX
+    this.setDetailsTableWidth(this._activeDetailsResize.startWidth + delta)
+    event.preventDefault()
+  }
+
+  handleDetailsResizeKeyDown(event) {
+    if (!this._fullscreen || !this._detailsOpen) {
+      return
+    }
+
+    const rect = this._detailsTable.getBoundingClientRect()
+    const limits = this.getDetailsTableWidthLimits()
+    const step = event.shiftKey ? 48 : 16
+
+    if (event.key === 'ArrowLeft') {
+      this.setDetailsTableWidth(rect.width - step)
+    } else if (event.key === 'ArrowRight') {
+      this.setDetailsTableWidth(rect.width + step)
+    } else if (event.key === 'Home') {
+      this.setDetailsTableWidth(limits.min)
+    } else if (event.key === 'End') {
+      this.setDetailsTableWidth(limits.max)
+    } else {
+      return
+    }
+
+    event.preventDefault()
+  }
+
+  setDetailsTableWidth(width) {
+    const limits = this.getDetailsTableWidthLimits()
+    this._detailsWidthPx = Math.max(limits.min, Math.min(limits.max, width))
+    this._base.style.setProperty('--tot-two-towers-details-width', `${Math.round(this._detailsWidthPx)}px`)
+  }
+
+  getDetailsTableWidthLimits() {
+    const viewportWidth = Math.max(1, window.innerWidth)
+    const min = Math.min(224, viewportWidth * .42)
+    const max = Math.max(min, viewportWidth * .72)
+    return { min, max }
+  }
+
+  stopDetailsResize() {
+    this._detailsTable?.classList.remove('is-resizing')
+    document.removeEventListener('pointermove', this._handleDetailsResizeMove)
+    document.removeEventListener('pointerup', this._handleDetailsResizeEnd)
+    this._activeDetailsResize = null
+  }
+
+  toggleCategoryHidden(category) {
+    if (this._hiddenCategoryKeys.has(category.key)) {
+      this._hiddenCategoryKeys.delete(category.key)
+    } else {
+      this._hiddenCategoryKeys.add(category.key)
+    }
+    this.hideTooltip(true)
+    this.render()
   }
 
   getSvg() {
@@ -1459,7 +1934,7 @@ export class TotTwoTowers extends HTMLElement {
     return this._legend
   }
 
-  showTooltip(category, event, pinned = false) {
+  showTooltip(category, event, pinned = false, anchor = null) {
     if (pinned && this._tooltipPinnedKey === category.key && !this._tooltip.hidden) {
       this.hideTooltip(true)
       return
@@ -1468,30 +1943,72 @@ export class TotTwoTowers extends HTMLElement {
     this._tooltip.replaceChildren(createTooltipTable(category, this._config.periods))
     this._tooltip.hidden = false
     this._tooltipPinnedKey = pinned ? category.key : null
-    this.positionTooltip(event)
-    setHighlight(category.key, this._shapeRegistry, this._legendRegistry)
+    this._tooltipCategoryKey = category.key
+    this._tooltipAnchor = anchor instanceof Element ? anchor : null
+    this.positionTooltip(event, this._tooltipAnchor)
+    setHighlight(
+      this._hiddenCategoryKeys.has(category.key) ? null : category.key,
+      this._shapeRegistry,
+      this._legendRegistry,
+    )
   }
 
-  positionTooltip(event) {
+  positionTooltip(event, anchor = this._tooltipAnchor) {
     if (this._tooltip.hidden) {
       return
     }
 
     const margin = 8
     const offset = 12
-    const rect = this._tooltip.getBoundingClientRect()
-    let left = event.clientX + offset
-    let top = event.clientY + offset
+    const tooltipRect = this._tooltip.getBoundingClientRect()
+    const pointerX = finiteNumber(event?.clientX, window.innerWidth / 2)
+    const pointerY = finiteNumber(event?.clientY, window.innerHeight / 2)
+    const anchorRect = anchor instanceof Element ? anchor.getBoundingClientRect() : null
+    const maxLeft = Math.max(margin, window.innerWidth - margin - tooltipRect.width)
+    const maxTop = Math.max(margin, window.innerHeight - margin - tooltipRect.height)
 
-    if (left + rect.width + margin > window.innerWidth) {
-      left = event.clientX - rect.width - offset
-    }
-    if (top + rect.height + margin > window.innerHeight) {
-      top = event.clientY - rect.height - offset
+    if (!anchorRect || (!anchorRect.width && !anchorRect.height)) {
+      this._tooltip.style.left = `${Math.min(maxLeft, Math.max(margin, pointerX + offset))}px`
+      this._tooltip.style.top = `${Math.min(maxTop, Math.max(margin, pointerY + offset))}px`
+      return
     }
 
-    this._tooltip.style.left = `${Math.max(margin, left)}px`
-    this._tooltip.style.top = `${Math.max(margin, top)}px`
+    const candidates = [
+      { left: anchorRect.right + offset, top: pointerY - tooltipRect.height / 2 },
+      { left: anchorRect.left - tooltipRect.width - offset, top: pointerY - tooltipRect.height / 2 },
+      { left: pointerX - tooltipRect.width / 2, top: anchorRect.bottom + offset },
+      { left: pointerX - tooltipRect.width / 2, top: anchorRect.top - tooltipRect.height - offset },
+    ]
+    let best = null
+
+    for (let i = 0; i < candidates.length; i++) {
+      const candidate = candidates[i]
+      const overflow = Math.max(0, margin - candidate.left) +
+        Math.max(0, candidate.left + tooltipRect.width + margin - window.innerWidth) +
+        Math.max(0, margin - candidate.top) +
+        Math.max(0, candidate.top + tooltipRect.height + margin - window.innerHeight)
+      const left = Math.min(maxLeft, Math.max(margin, candidate.left))
+      const top = Math.min(maxTop, Math.max(margin, candidate.top))
+      const right = left + tooltipRect.width
+      const bottom = top + tooltipRect.height
+      const avoidShapes = this._shapeRegistry.get(this._tooltipCategoryKey) || []
+      let overlapArea = 0
+
+      for (let shapeIndex = 0; shapeIndex < avoidShapes.length; shapeIndex++) {
+        const shapeRect = avoidShapes[shapeIndex].getBoundingClientRect()
+        const overlapWidth = Math.max(0, Math.min(right, shapeRect.right) - Math.max(left, shapeRect.left))
+        const overlapHeight = Math.max(0, Math.min(bottom, shapeRect.bottom) - Math.max(top, shapeRect.top))
+        overlapArea += overlapWidth * overlapHeight
+      }
+
+      const score = overflow * 100000 + overlapArea * 10 + i
+      if (!best || score < best.score) {
+        best = { left, top, score }
+      }
+    }
+
+    this._tooltip.style.left = `${best.left}px`
+    this._tooltip.style.top = `${best.top}px`
   }
 
   hideTooltip(force = false) {
@@ -1501,6 +2018,8 @@ export class TotTwoTowers extends HTMLElement {
 
     this._tooltip.hidden = true
     this._tooltipPinnedKey = null
+    this._tooltipAnchor = null
+    this._tooltipCategoryKey = null
     setHighlight(null, this._shapeRegistry, this._legendRegistry)
   }
 
@@ -1510,15 +2029,18 @@ export class TotTwoTowers extends HTMLElement {
     this._legendRegistry = new Map()
     this._tooltip.hidden = true
     this._tooltipPinnedKey = null
+    this._tooltipAnchor = null
+    this._tooltipCategoryKey = null
     this._svg.replaceChildren()
 
-    const hasData = config.towers.length === 2 &&
-      (config.towers[0].categories.length || config.towers[1].categories.length)
-    this._svg.hidden = !hasData
-    this._legend.hidden = !hasData
+    const visibleCategories = config.categories.filter(category => !this._hiddenCategoryKeys.has(category.key))
+    const hasVisibleData = visibleCategories.some(category => category.subcategories.some(subcategory => Math.abs(subcategory.current) > 1e-9))
+    this._svg.hidden = !hasVisibleData
+    this._legend.hidden = !config.categories.length
 
-    if (!hasData) {
+    if (!config.categories.length) {
       this._legend.replaceChildren()
+      this._detailsTableScroll.replaceChildren()
       return
     }
 
@@ -1559,148 +2081,142 @@ export class TotTwoTowers extends HTMLElement {
 
     const maximumBreadth = (layout.seam - layout.margin) / config.tearThreshold
     layout.breadth = Math.max(28, Math.min(layout.breadth, maximumBreadth))
-    layout.maxProtrusion = Math.max(
-      8,
-      layout.seam - layout.breadth - layout.margin,
-    )
-
+    layout.maxProtrusion = Math.max(8, layout.seam - layout.breadth - layout.margin)
     this._svg.setAttribute('viewBox', `0 0 ${layout.viewWidth} ${layout.viewHeight}`)
 
     const defs = createSvgElement('defs')
-    const categories = []
-    for (let towerIndex = 0; towerIndex < config.towers.length; towerIndex++) {
-      for (let categoryIndex = 0; categoryIndex < config.towers[towerIndex].categories.length; categoryIndex++) {
-        categories.push(config.towers[towerIndex].categories[categoryIndex])
-      }
-    }
-
-    for (let i = 0; i < categories.length; i++) {
-      const patternId = `hatch-${escapeKey(categories[i].key)}-${i}`
-      categories[i]._patternId = patternId
-      defs.append(addPattern(this._svg, patternId, categories[i].color))
+    for (let i = 0; i < visibleCategories.length; i++) {
+      const category = visibleCategories[i]
+      category._patternId = `hatch-${escapeKey(category.key)}-${i}`
+      defs.append(addPattern(category._patternId, category.color))
     }
     this._svg.append(defs)
 
-    const towerTotals = []
-    for (let i = 0; i < config.towers.length; i++) {
-      const categoryValues = []
-      for (let j = 0; j < config.towers[i].categories.length; j++) {
-        categoryValues.push(categoryCurrent(config.towers[i].categories[j]))
+    const totals = [0, 0]
+    for (let towerIndex = 0; towerIndex < 2; towerIndex++) {
+      for (let i = 0; i < visibleCategories.length; i++) {
+        totals[towerIndex] += categorySideMagnitude(visibleCategories[i], towerIndex)
       }
-      towerTotals.push(sum(categoryValues))
     }
 
-    const scale = (layout.end - layout.start) / Math.max(1, towerTotals[0], towerTotals[1])
-
-    if (layout.orientation === 'vertical') {
-      this.renderVertical(config, layout, scale)
-    } else {
-      this.renderHorizontal(config, layout, scale)
+    const scale = (layout.end - layout.start) / Math.max(1, totals[0], totals[1])
+    const visibleConfig = { ...config, categories: visibleCategories }
+    if (hasVisibleData) {
+      if (layout.orientation === 'vertical') {
+        this.renderVertical(visibleConfig, layout, scale)
+      } else {
+        this.renderHorizontal(visibleConfig, layout, scale)
+      }
     }
 
+    this.bindShapeInteractions(visibleCategories)
     renderLegend(
       this._legend,
-      config.towers,
+      config.categories,
       this._shapeRegistry,
       this._legendRegistry,
       {
-        show: (category, event, pinned = false) => {
-          this.showTooltip(category, event, pinned)
+        show: (category, event, pinned = false, anchor = null) => {
+          this.showTooltip(category, event, pinned, anchor)
         },
-        move: (event) => {
+        move: (event, anchor = null) => {
           if (!this._tooltip.hidden) {
-            this.positionTooltip(event)
+            this.positionTooltip(event, anchor)
           }
         },
-        hide: () => {
-          this.hideTooltip()
-        },
+        hide: () => this.hideTooltip(),
+        toggleHidden: category => this.toggleCategoryHidden(category),
       },
+      this._hiddenCategoryKeys,
     )
+    this.renderDetailsTable()
   }
 
   renderVertical(config, layout, scale) {
     for (let towerIndex = 0; towerIndex < 2; towerIndex++) {
-      const tower = config.towers[towerIndex]
       const side = towerIndex === 0 ? 'left' : 'right'
       const x = side === 'left' ? layout.seam - layout.breadth : layout.seam
-      let y = layout.start
+      const label = towerIndex === 0 ? config.positiveLabel : config.negativeLabel
+      let main = layout.start
 
       drawTowerLabel(
         this._svg,
-        tower,
+        label,
         side === 'left' ? layout.seam - layout.breadth / 2 : layout.seam + layout.breadth / 2,
         24,
         'middle',
       )
 
-      for (let i = 0; i < tower.categories.length; i++) {
-        const category = tower.categories[i]
-        const current = categoryCurrent(category)
-        const previous = category.previous === undefined && !category.subcategories.length
-          ? undefined
-          : categoryPrevious(category)
-
-        if (current <= 1e-9) {
+      for (let i = 0; i < config.categories.length; i++) {
+        const category = config.categories[i]
+        const displayMagnitude = categorySideMagnitude(category, towerIndex)
+        const subcategories = categorySideSubcategories(category, towerIndex)
+        if (displayMagnitude <= 1e-9 || !subcategories.length) {
           continue
         }
 
-        const height = Math.max(3, current * scale)
-        const geometry = {
-          x,
-          y,
-          width: layout.breadth,
-          height,
-        }
-
-        this.drawCategory(category, geometry, side, config, layout, current, previous)
-        y += height
+        const mainSize = Math.max(1.25, displayMagnitude * scale)
+        const geometry = categoryGeometryFrom({ x, main }, mainSize, layout)
+        this.drawCategorySide(category, subcategories, geometry, side, config, layout)
+        main += mainSize
       }
     }
   }
 
   renderHorizontal(config, layout, scale) {
     for (let towerIndex = 0; towerIndex < 2; towerIndex++) {
-      const tower = config.towers[towerIndex]
       const side = towerIndex === 0 ? 'top' : 'bottom'
       const y = side === 'top' ? layout.seam - layout.breadth : layout.seam
-      let x = layout.start
+      const label = towerIndex === 0 ? config.positiveLabel : config.negativeLabel
+      let main = layout.start
 
       drawTowerLabel(
         this._svg,
-        tower,
+        label,
         14,
         side === 'top' ? layout.seam - layout.breadth / 2 + 5 : layout.seam + layout.breadth / 2 + 5,
         'start',
       )
 
-      for (let i = 0; i < tower.categories.length; i++) {
-        const category = tower.categories[i]
-        const current = categoryCurrent(category)
-        const previous = category.previous === undefined && !category.subcategories.length
-          ? undefined
-          : categoryPrevious(category)
-
-        if (current <= 1e-9) {
+      for (let i = 0; i < config.categories.length; i++) {
+        const category = config.categories[i]
+        const displayMagnitude = categorySideMagnitude(category, towerIndex)
+        const subcategories = categorySideSubcategories(category, towerIndex)
+        if (displayMagnitude <= 1e-9 || !subcategories.length) {
           continue
         }
 
-        const width = Math.max(3, current * scale)
-        const geometry = {
-          x,
-          y,
-          width,
-          height: layout.breadth,
-        }
-
-        this.drawCategory(category, geometry, side, config, layout, current, previous)
-        x += width
+        const mainSize = Math.max(1.25, displayMagnitude * scale)
+        const geometry = categoryGeometryFrom({ y, main }, mainSize, layout)
+        this.drawCategorySide(category, subcategories, geometry, side, config, layout)
+        main += mainSize
       }
     }
   }
 
-  drawCategory(category, geometry, side, config, layout, current, previous) {
-    const baseOpacity = category.dimmed ? .62 : 1
+  drawCategorySide(category, subcategories, geometry, side, config, layout) {
+    let total = 0
+    for (let i = 0; i < subcategories.length; i++) {
+      total += Math.abs(subcategories[i].current)
+    }
+    if (total <= 1e-9) {
+      return
+    }
+
+    let offset = 0
+    for (let i = 0; i < subcategories.length; i++) {
+      const subcategory = subcategories[i]
+      const fraction = Math.abs(subcategory.current) / total
+      const subGeometry = subcategoryGeometry(geometry, offset, fraction, layout.orientation)
+      this.drawSubcategory(category, subcategory, subGeometry, side, config, layout)
+      offset += fraction
+    }
+
+    drawOutline(this._svg, geometry, 1.25, 'var(--tot-two-towers-category-border-color)', [category.tag])
+    drawCategoryGroupLabel(this._svg, category, geometry, layout.orientation)
+  }
+
+  drawSubcategory(category, subcategory, geometry, side, config, layout) {
     const base = appendRect(this._svg, {
       x: geometry.x,
       y: geometry.y,
@@ -1708,30 +2224,18 @@ export class TotTwoTowers extends HTMLElement {
       height: geometry.height,
       fill: category.color,
       stroke: 'none',
-      opacity: baseOpacity,
-    }, category.key, this._shapeRegistry)
-    base.dataset.baseOpacity = String(baseOpacity)
+      opacity: 1,
+    }, category.key, this._shapeRegistry, [category.tag, subcategory.tag])
+    base.dataset.baseOpacity = '1'
 
-    if (category.subcategories.length) {
-      drawSubcategories(this._svg, {
-        category,
-        geometry,
-        orientation: layout.orientation,
-        side,
-        compare: config.compare,
-        tearThreshold: config.tearThreshold,
-        maxProtrusion: layout.maxProtrusion,
-        patternId: category._patternId,
-        registry: this._shapeRegistry,
-      })
-    } else {
+    const mainSize = layout.orientation === 'vertical' ? geometry.height : geometry.width
+    if (mainSize >= 3) {
       drawComparison(this._svg, {
         category,
+        subcategory,
         geometry,
         orientation: layout.orientation,
         side,
-        current,
-        previous,
         compare: config.compare,
         tearThreshold: config.tearThreshold,
         maxProtrusion: layout.maxProtrusion,
@@ -1740,37 +2244,53 @@ export class TotTwoTowers extends HTMLElement {
       })
     }
 
-    drawCategoryOutline(this._svg, geometry, layout.orientation, category.dimmed)
-    drawCategoryLabel(this._svg, category, geometry)
+    drawOutline(this._svg, geometry, 1, 'var(--tot-two-towers-subcategory-border-color)', [category.tag, subcategory.tag])
+    drawSubcategoryLabel(this._svg, category, subcategory, geometry, layout.orientation)
+  }
 
-    const shapes = this._shapeRegistry.get(category.key) || []
-    for (let i = 0; i < shapes.length; i++) {
-      shapes[i].dataset.categoryKey = category.key
-      shapes[i].addEventListener('pointerenter', (event) => {
-        if (event.pointerType !== 'touch') {
-          this.showTooltip(category, event)
-        }
-      })
-      shapes[i].addEventListener('pointermove', (event) => {
-        if (event.pointerType !== 'touch' && !this._tooltip.hidden) {
-          this.positionTooltip(event)
-        }
-      })
-      shapes[i].addEventListener('pointerleave', (event) => {
-        if (event.pointerType === 'touch') {
-          return
-        }
-        const relatedTarget = event.relatedTarget
-        if (relatedTarget instanceof Element && relatedTarget.dataset.categoryKey === category.key) {
-          return
-        }
-        this.hideTooltip()
-      })
-      shapes[i].addEventListener('pointerdown', (event) => {
-        if (event.pointerType === 'touch') {
-          this.showTooltip(category, event, true)
-        }
-      })
+  bindShapeInteractions(categories) {
+    const byKey = new Map()
+    for (let i = 0; i < categories.length; i++) {
+      byKey.set(categories[i].key, categories[i])
+    }
+
+    const entries = Array.from(this._shapeRegistry.entries())
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex++) {
+      const [key, shapes] = entries[entryIndex]
+      const category = byKey.get(key)
+      if (!category) {
+        continue
+      }
+
+      for (let shapeIndex = 0; shapeIndex < shapes.length; shapeIndex++) {
+        const shape = shapes[shapeIndex]
+        shape.dataset.categoryKey = key
+        shape.addEventListener('pointerenter', (event) => {
+          if (event.pointerType !== 'touch') {
+            this.showTooltip(category, event, false, shape)
+          }
+        })
+        shape.addEventListener('pointermove', (event) => {
+          if (event.pointerType !== 'touch' && !this._tooltip.hidden) {
+            this.positionTooltip(event, shape)
+          }
+        })
+        shape.addEventListener('pointerleave', (event) => {
+          if (event.pointerType === 'touch') {
+            return
+          }
+          const relatedTarget = event.relatedTarget
+          if (relatedTarget instanceof Element && relatedTarget.dataset.categoryKey === key) {
+            return
+          }
+          this.hideTooltip()
+        })
+        shape.addEventListener('pointerdown', (event) => {
+          if (event.pointerType === 'touch') {
+            this.showTooltip(category, event, true, shape)
+          }
+        })
+      }
     }
   }
 }
