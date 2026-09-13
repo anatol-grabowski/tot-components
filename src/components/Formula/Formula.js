@@ -501,22 +501,24 @@ function validateFormula(items, values) {
   }
 }
 
-function normalizeItem(item, path) {
+function normalizeItem(item, path, abbreviations) {
   if (!item || typeof item !== 'object') {
     return null
   }
 
   const name = String(item.name || '').trim()
-  const shortName = String(item.shortName || '').trim()
   const tag = String(item.tag || '').trim()
-  if (!name && !shortName && !tag) {
+  const shortName = tag && Object.prototype.hasOwnProperty.call(abbreviations, tag)
+    ? abbreviations[tag]
+    : ''
+  if (!name && !tag) {
     return null
   }
 
   const children = []
   if (Array.isArray(item.items)) {
     for (let i = 0; i < item.items.length; i++) {
-      const child = normalizeItem(item.items[i], `${path}.${i}`)
+      const child = normalizeItem(item.items[i], `${path}.${i}`, abbreviations)
       if (child) {
         children.push(child)
       }
@@ -527,7 +529,7 @@ function normalizeItem(item, path) {
     path,
     sign: item.sign === '-' ? '-' : '+',
     name,
-    shortName: shortName || name || tag,
+    shortName,
     tag,
     items: children,
   }
@@ -549,13 +551,31 @@ function normalizeValues(values) {
   return result
 }
 
+function normalizeAbbreviations(abbreviations) {
+  const result = {}
+  if (!abbreviations || typeof abbreviations !== 'object' || Array.isArray(abbreviations)) {
+    return result
+  }
+
+  const entries = Object.entries(abbreviations)
+  for (let i = 0; i < entries.length; i++) {
+    const [tag, abbreviation] = entries[i]
+    if (abbreviation == null) {
+      continue
+    }
+    result[String(tag)] = String(abbreviation)
+  }
+  return result
+}
+
 function normalizeConfig(config) {
   const value = config && typeof config === 'object' ? config : {}
+  const abbreviations = normalizeAbbreviations(value.abbreviations)
   const items = []
 
   if (Array.isArray(value.items)) {
     for (let i = 0; i < value.items.length; i++) {
-      const item = normalizeItem(value.items[i], String(i))
+      const item = normalizeItem(value.items[i], String(i), abbreviations)
       if (item) {
         items.push(item)
       }
@@ -564,8 +584,9 @@ function normalizeConfig(config) {
 
   return {
     title: value.title == null ? '' : String(value.title),
-    simplified: value.simplified === true,
+    simple: value.simple === true,
     values: normalizeValues(value.values),
+    abbreviations,
     items,
   }
 }
@@ -638,20 +659,6 @@ export class TotFormula extends HTMLElement {
     }
   }
 
-  get simplified() {
-    return this._config.simplified
-  }
-
-  set simplified(value) {
-    const next = value === true
-    if (this._config.simplified === next) {
-      return
-    }
-    this._config.simplified = next
-    if (this.isConnected) {
-      this.render()
-    }
-  }
 
   connectedCallback() {
     document.addEventListener('pointerdown', this._handleDocumentPointerDown)
@@ -853,11 +860,11 @@ export class TotFormula extends HTMLElement {
     content.className = 'formula__content'
     applyTagHook(content, item.tag, 'content')
 
-    if (this._config.simplified) {
+    if (this._config.simple) {
       const shortName = document.createElement('span')
       shortName.className = 'formula__short-name'
       applyTagHook(shortName, item.tag, 'short-name')
-      shortName.textContent = item.shortName
+      shortName.textContent = item.shortName || item.name || item.tag
       content.append(shortName)
     } else {
       const name = document.createElement('span')
@@ -964,7 +971,7 @@ export class TotFormula extends HTMLElement {
     const rows = [
       ['Name', item.name],
       ['Tag', item.tag],
-      ['Short', item.shortName],
+      ['Short', item.shortName || '—'],
       ['Value', value === undefined ? '—' : formatValue(value)],
     ]
 

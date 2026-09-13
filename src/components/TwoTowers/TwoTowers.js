@@ -74,7 +74,8 @@ const twoTowersStyle = `
   .fullscreen-button,
   .details-button,
   .formula-button,
-  .groups-button {
+  .groups-button,
+  .compare-button {
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
@@ -97,13 +98,15 @@ const twoTowersStyle = `
   .two-towers.is-fullscreen .fullscreen-button,
   .two-towers.is-fullscreen .details-button,
   .two-towers.is-fullscreen .formula-button,
-  .two-towers.is-fullscreen .groups-button {
+  .two-towers.is-fullscreen .groups-button,
+  .two-towers.is-fullscreen .compare-button {
     position: fixed;
   }
 
   .details-button,
   .formula-button,
-  .groups-button {
+  .groups-button,
+  .compare-button {
     display: none;
   }
 
@@ -119,20 +122,27 @@ const twoTowersStyle = `
     right: calc(var(--tot-spacing-2x-small, .25rem) + 6rem);
   }
 
+  .compare-button {
+    right: calc(var(--tot-spacing-2x-small, .25rem) + 8rem);
+  }
+
   .formula-button[hidden],
-  .groups-button[hidden] {
+  .groups-button[hidden],
+  .compare-button[hidden] {
     display: none !important;
   }
 
   .two-towers.is-fullscreen .details-button,
   .two-towers.is-fullscreen .formula-button,
-  .two-towers.is-fullscreen .groups-button {
+  .two-towers.is-fullscreen .groups-button,
+  .two-towers.is-fullscreen .compare-button {
     display: inline-flex;
   }
 
   .details-button[aria-expanded='true'],
   .formula-button[aria-expanded='true'],
-  .groups-button[aria-expanded='true'] {
+  .groups-button[aria-expanded='true'],
+  .compare-button[aria-pressed='true'] {
     background: var(--tot-color-primary-50, #f0f9ff);
     color: var(--tot-color-primary-700, #0369a1);
   }
@@ -140,14 +150,16 @@ const twoTowersStyle = `
   .fullscreen-button:hover,
   .details-button:hover,
   .formula-button:hover,
-  .groups-button:hover {
+  .groups-button:hover,
+  .compare-button:hover {
     color: var(--tot-input-icon-color-hover, #475569);
   }
 
   .fullscreen-button:focus-visible,
   .details-button:focus-visible,
   .formula-button:focus-visible,
-  .groups-button:focus-visible {
+  .groups-button:focus-visible,
+  .compare-button:focus-visible {
     outline: var(--tot-focus-ring, solid 3px hsl(198.6 88.7% 48.4% / 40%));
     outline-offset: var(--tot-focus-ring-offset, 1px);
   }
@@ -155,7 +167,8 @@ const twoTowersStyle = `
   .fullscreen-button svg,
   .details-button svg,
   .formula-button svg,
-  .groups-button svg {
+  .groups-button svg,
+  .compare-button svg {
     display: block;
     fill: none;
     height: 1rem;
@@ -210,6 +223,10 @@ const twoTowersStyle = `
     flex-wrap: wrap;
     gap: var(--tot-spacing-2x-small, .25rem);
     min-width: 0;
+  }
+
+  .legend[hidden] {
+    display: none;
   }
 
   .two-towers.is-fullscreen .legend {
@@ -851,6 +868,15 @@ function getGroupsIcon() {
   </svg>`
 }
 
+function getCompareIcon() {
+  return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M3 4.5h7.5"></path>
+    <path d="M8.5 2.5l2 2-2 2"></path>
+    <path d="M13 11.5H5.5"></path>
+    <path d="M7.5 9.5l-2 2 2 2"></path>
+  </svg>`
+}
+
 function getHiddenGroupIcon() {
   return `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
     <path d="M2 2l12 12"></path>
@@ -1038,7 +1064,23 @@ function normalizeValueDictionary(value) {
   return result
 }
 
-function buildFormulaNodes(items) {
+function normalizeAbbreviationDictionary(value) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  const result = {}
+  const entries = Object.entries(source)
+
+  for (let i = 0; i < entries.length; i++) {
+    const [tag, abbreviation] = entries[i]
+    if (abbreviation == null) {
+      continue
+    }
+    result[String(tag)] = String(abbreviation)
+  }
+
+  return result
+}
+
+function buildFormulaNodes(items, abbreviations = {}) {
   const roots = []
   const byTag = new Map()
   let order = 0
@@ -1048,8 +1090,10 @@ function buildFormulaNodes(items) {
     const tag = String(source.tag || '').trim()
     const children = []
     const node = {
-      name: source.name || source.shortName || tag || 'Item',
-      shortName: source.shortName || '',
+      name: source.name || tag || 'Item',
+      shortName: tag && Object.prototype.hasOwnProperty.call(abbreviations, tag)
+        ? abbreviations[tag]
+        : '',
       tag,
       sign: source.sign === '-' ? '-' : '+',
       effectiveSign,
@@ -1088,7 +1132,7 @@ function buildFormulaNodes(items) {
   return { roots, byTag }
 }
 
-function normalizeGroup(group, tag, index, formulaNodes) {
+function normalizeGroup(group, tag, index, formulaNodes, abbreviations) {
   const source = typeof group === 'string'
     ? { color: group }
     : group && typeof group === 'object'
@@ -1101,7 +1145,7 @@ function normalizeGroup(group, tag, index, formulaNodes) {
     tag,
     key: tag,
     name: source.name || node?.name || tag,
-    shortName: source.shortName || node?.shortName || '',
+    shortName: abbreviations[tag] || node?.shortName || '',
     color: source.color || defaultColors[index % defaultColors.length],
     valueTag: String(source.valueTag || '').trim(),
     group: String(source.group || '').trim(),
@@ -1161,7 +1205,8 @@ function valueForTag(values, tag) {
 
 function buildFormulaCategories(source) {
   const formula = source.formula && typeof source.formula === 'object' ? source.formula : {}
-  const formulaNodes = buildFormulaNodes(formula.items)
+  const abbreviations = normalizeAbbreviationDictionary(source.abbreviations || formula.abbreviations)
+  const formulaNodes = buildFormulaNodes(formula.items, abbreviations)
   const values = normalizeValueDictionary(source.values)
   const previousValues = source.previousValues === undefined
     ? null
@@ -1176,7 +1221,7 @@ function buildFormulaCategories(source) {
     if (!tag) {
       continue
     }
-    const group = normalizeGroup(groupValue, tag, groups.length, formulaNodes)
+    const group = normalizeGroup(groupValue, tag, groups.length, formulaNodes, abbreviations)
     if (!group.node) {
       continue
     }
@@ -1302,11 +1347,19 @@ function normalizeConfig(value) {
   const formula = source.formula && typeof source.formula === 'object'
     ? source.formula
     : { items: [] }
+  const abbreviations = normalizeAbbreviationDictionary(source.abbreviations || formula.abbreviations)
+
+  const hasPrevious = categories.some(category =>
+    category.subcategories.some(subcategory => subcategory.previous !== undefined)
+  )
 
   return {
     label: source.label || 'Two towers visualization',
     orientation: source.orientation === 'horizontal' ? 'horizontal' : 'vertical',
+    simple: source.simple === true,
+    legend: source.legend === true,
     compare: source.compare !== false,
+    hasPrevious,
     tearThreshold: Math.max(1.01, positiveNumber(source.tearThreshold, 1.5)),
     positiveLabel: source.positiveLabel || 'Positive',
     negativeLabel: source.negativeLabel || 'Negative',
@@ -1319,13 +1372,14 @@ function normalizeConfig(value) {
       items: Array.isArray(formula.items) ? formula.items : [],
     },
     values: normalizeValueDictionary(source.values),
+    abbreviations,
     groups: source.groups && typeof source.groups === 'object' ? { ...source.groups } : {},
     categories,
   }
 }
 
 function createGroupsPresentation(config, handlers = {}) {
-  const formulaNodes = buildFormulaNodes(config.formula.items)
+  const formulaNodes = buildFormulaNodes(config.formula.items, config.abbreviations)
   const groupEntries = Object.entries(config.groups || {})
   const groupMap = new Map()
 
@@ -1334,7 +1388,7 @@ function createGroupsPresentation(config, handlers = {}) {
     if (!tag) {
       continue
     }
-    const group = normalizeGroup(groupValue, tag, i, formulaNodes)
+    const group = normalizeGroup(groupValue, tag, i, formulaNodes, config.abbreviations)
     if (group.node) {
       groupMap.set(tag, group)
     }
@@ -1461,7 +1515,7 @@ function descendantLeafTagsForFormulaTag(config, tag) {
     return tags
   }
 
-  const formulaNodes = buildFormulaNodes(config.formula.items)
+  const formulaNodes = buildFormulaNodes(config.formula.items, config.abbreviations)
   const nodes = formulaNodes.byTag.get(tag) || []
   const visit = node => {
     if (!node.children.length) {
@@ -2326,7 +2380,8 @@ export class TotTwoTowers extends HTMLElement {
     this._detailsOpen = false
     this._formulaOpen = false
     this._groupsOpen = false
-    this._formulaSimplified = false
+    this._fullscreenCompare = null
+    this._formulaSimple = false
     this._detailsWidthPx = null
     this._activeDetailsResize = null
     this._tooltipAnchor = null
@@ -2369,7 +2424,7 @@ export class TotTwoTowers extends HTMLElement {
             <span class="formula-panel-title">Formula</span>
             <label class="formula-simplified" part="formula-simplified">
               <input class="formula-simplified-input" type="checkbox">
-              Simplified
+              Simple
             </label>
           </div>
           <div class="formula-panel-scroll" part="formula-panel-scroll">
@@ -2393,6 +2448,9 @@ export class TotTwoTowers extends HTMLElement {
         <button class="groups-button" part="groups-button" type="button" aria-label="Show groups and colors" aria-expanded="false">
           ${getGroupsIcon()}
         </button>
+        <button class="compare-button" part="compare-button" type="button" aria-label="Disable comparison" aria-pressed="true">
+          ${getCompareIcon()}
+        </button>
         <button class="details-button" part="details-button" type="button" aria-label="Show all details" aria-expanded="false">
           ${getDetailsTableIcon()}
         </button>
@@ -2413,17 +2471,19 @@ export class TotTwoTowers extends HTMLElement {
     this._formulaView = root.querySelector('.formula-view')
     this._groupsPanel = root.querySelector('.groups-panel')
     this._groupsPanelScroll = root.querySelector('.groups-panel-scroll')
-    this._formulaSimplifiedInput = root.querySelector('.formula-simplified-input')
+    this._formulaSimpleInput = root.querySelector('.formula-simplified-input')
     this._formulaButton = root.querySelector('.formula-button')
     this._groupsButton = root.querySelector('.groups-button')
+    this._compareButton = root.querySelector('.compare-button')
     this._detailsButton = root.querySelector('.details-button')
     this._fullscreenButton = root.querySelector('.fullscreen-button')
 
     this._detailsButton.addEventListener('click', () => this.toggleDetailsTable())
     this._formulaButton.addEventListener('click', () => this.toggleFormulaPanel())
     this._groupsButton.addEventListener('click', () => this.toggleGroupsPanel())
-    this._formulaSimplifiedInput.addEventListener('change', () => {
-      this._formulaSimplified = this._formulaSimplifiedInput.checked
+    this._compareButton.addEventListener('click', () => this.toggleFullscreenCompare())
+    this._formulaSimpleInput.addEventListener('change', () => {
+      this._formulaSimple = this._formulaSimpleInput.checked
       this.renderFormulaPanel()
     })
     this._formulaView.addEventListener('item-hover', event => {
@@ -2494,6 +2554,7 @@ export class TotTwoTowers extends HTMLElement {
     }
 
     this._fullscreen = true
+    this._fullscreenCompare = this._config.compare
     markFullscreenOpen()
     lockPageScroll()
     window.addEventListener('keydown', this._handleKeyDown)
@@ -2516,6 +2577,7 @@ export class TotTwoTowers extends HTMLElement {
     this._detailsOpen = false
     this._formulaOpen = false
     this._groupsOpen = false
+    this._fullscreenCompare = null
     this.stopDetailsResize()
     markFullscreenClosed()
     window.removeEventListener('keydown', this._handleKeyDown)
@@ -2595,7 +2657,7 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   updateFullscreenUi() {
-    if (!this._base || !this._fullscreenButton || !this._detailsButton || !this._formulaButton || !this._groupsButton) {
+    if (!this._base || !this._fullscreenButton || !this._detailsButton || !this._formulaButton || !this._groupsButton || !this._compareButton) {
       return
     }
 
@@ -2623,6 +2685,14 @@ export class TotTwoTowers extends HTMLElement {
       groupsOpen ? 'Hide groups and colors' : 'Show groups and colors',
     )
     this._groupsButton.hidden = !this._config.formula.items.length || !Object.keys(this._config.groups).length
+    const compareEnabled = this._fullscreenCompare === null ? this._config.compare : this._fullscreenCompare
+    this._compareButton.hidden = !this._config.hasPrevious
+    this._compareButton.setAttribute('aria-pressed', String(compareEnabled))
+    this._compareButton.setAttribute(
+      'aria-label',
+      compareEnabled ? 'Disable comparison' : 'Enable comparison',
+    )
+    this._compareButton.title = compareEnabled ? 'Hide previous-period comparison' : 'Show previous-period comparison'
     this._fullscreenButton.innerHTML = this._fullscreen
       ? getExitFullscreenIcon()
       : getEnterFullscreenIcon()
@@ -2630,6 +2700,17 @@ export class TotTwoTowers extends HTMLElement {
       'aria-label',
       this._fullscreen ? 'Exit fullscreen visualization' : 'Open fullscreen visualization',
     )
+  }
+
+  toggleFullscreenCompare() {
+    if (!this._fullscreen || !this._config.hasPrevious) {
+      return
+    }
+
+    const current = this._fullscreenCompare === null ? this._config.compare : this._fullscreenCompare
+    this._fullscreenCompare = !current
+    this.hideTooltip(true)
+    this.render()
   }
 
   toggleDetailsTable() {
@@ -2757,11 +2838,11 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   renderFormulaPanel() {
-    if (!this._formulaView || !this._formulaSimplifiedInput) {
+    if (!this._formulaView || !this._formulaSimpleInput) {
       return
     }
 
-    this._formulaSimplifiedInput.checked = this._formulaSimplified
+    this._formulaSimpleInput.checked = this._formulaSimple
     this.clearFormulaHighlight()
     if (!this._fullscreen || !this._formulaOpen) {
       return
@@ -2769,9 +2850,10 @@ export class TotTwoTowers extends HTMLElement {
 
     this._formulaView.config = {
       title: this._config.formula.title,
-      simplified: this._formulaSimplified,
+      simple: this._formulaSimple,
       items: this._config.formula.items,
       values: this._config.values,
+      abbreviations: this._config.abbreviations,
     }
   }
 
@@ -2985,7 +3067,14 @@ export class TotTwoTowers extends HTMLElement {
   }
 
   render() {
-    const config = this._config
+    const baseConfig = this._config
+    const compare = this._fullscreen && this._fullscreenCompare !== null
+      ? this._fullscreenCompare
+      : baseConfig.compare
+    const simple = this._fullscreen ? false : baseConfig.simple
+    const config = compare === baseConfig.compare && simple === baseConfig.simple
+      ? baseConfig
+      : { ...baseConfig, compare, simple }
     this._shapeRegistry = new Map()
     this._legendRegistry = new Map()
     this._tooltip.hidden = true
@@ -2996,8 +3085,9 @@ export class TotTwoTowers extends HTMLElement {
 
     const visibleCategories = config.categories.filter(category => !this._hiddenCategoryKeys.has(category.key))
     const hasVisibleData = visibleCategories.some(category => category.subcategories.some(subcategory => Math.abs(subcategory.current) > 1e-9))
+    const showLegend = this._fullscreen || config.legend
     this._svg.hidden = !hasVisibleData
-    this._legend.hidden = !config.categories.length
+    this._legend.hidden = !showLegend || !config.categories.length
 
     if (!config.categories.length) {
       this._legend.replaceChildren()
@@ -3071,25 +3161,29 @@ export class TotTwoTowers extends HTMLElement {
     }
 
     this.bindShapeInteractions(visibleCategories)
-    renderLegend(
-      this._legend,
-      config.categories,
-      this._shapeRegistry,
-      this._legendRegistry,
-      {
-        show: (category, event, pinned = false, anchor = null) => {
-          this.showTooltip(category, event, pinned, anchor)
+    if (showLegend) {
+      renderLegend(
+        this._legend,
+        config.categories,
+        this._shapeRegistry,
+        this._legendRegistry,
+        {
+          show: (category, event, pinned = false, anchor = null) => {
+            this.showTooltip(category, event, pinned, anchor)
+          },
+          move: (event, anchor = null) => {
+            if (!this._tooltip.hidden) {
+              this.positionTooltip(event, anchor)
+            }
+          },
+          hide: () => this.hideTooltip(),
+          toggleHidden: category => this.toggleCategoryHidden(category),
         },
-        move: (event, anchor = null) => {
-          if (!this._tooltip.hidden) {
-            this.positionTooltip(event, anchor)
-          }
-        },
-        hide: () => this.hideTooltip(),
-        toggleHidden: category => this.toggleCategoryHidden(category),
-      },
-      this._hiddenCategoryKeys,
-    )
+        this._hiddenCategoryKeys,
+      )
+    } else {
+      this._legend.replaceChildren()
+    }
     this.renderDetailsTable()
     this.renderFormulaPanel()
     this.renderGroupsPanel()
@@ -3164,6 +3258,27 @@ export class TotTwoTowers extends HTMLElement {
       total += Math.abs(subcategories[i].current)
     }
     if (total <= 1e-9) {
+      return
+    }
+
+    if (config.simple) {
+      const tags = [category.tag]
+      for (let i = 0; i < subcategories.length; i++) {
+        if (subcategories[i].tag) {
+          tags.push(subcategories[i].tag)
+        }
+      }
+      const block = appendRect(this._svg, {
+        x: geometry.x,
+        y: geometry.y,
+        width: geometry.width,
+        height: geometry.height,
+        fill: category.color,
+        stroke: 'none',
+        opacity: 1,
+      }, category.key, this._shapeRegistry, tags)
+      block.dataset.baseOpacity = '1'
+      drawOutline(this._svg, geometry, 1.25, 'var(--tot-two-towers-category-border-color)', tags)
       return
     }
 

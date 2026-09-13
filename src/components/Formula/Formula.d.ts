@@ -3,8 +3,6 @@ export type TotFormulaItem = {
   sign?: '+' | '-'
   /** Human-readable XBRL concept name. */
   name: string
-  /** Compact label used by simplified mode. */
-  shortName: string
   /**
    * XBRL concept/tag name. Tags without whitespace are used as exact CSS
    * classes; CSS-safe tags are also exact shadow parts. Every tag is exposed as
@@ -29,9 +27,11 @@ export type TotFormulaConfig = {
   /** Optional compact heading, for example "Calculation group 23". */
   title?: string
   /** Show only short names and values in formula rows. @default false */
-  simplified?: boolean
+  simple?: boolean
   /** Numeric values keyed by XBRL tag name. */
   values?: Record<string, number>
+  /** Compact labels keyed by XBRL tag name. */
+  abbreviations?: Record<string, string>
   /** One or more calculation roots. */
   items: TotFormulaItem[]
 }
@@ -41,12 +41,13 @@ export type TotFormulaConfig = {
  *
  * The `config` HTML attribute accepts JSON with the recursive formula in `items`
  * and numeric facts in a separate `values` dictionary keyed by XBRL tag name.
- * Formula items contain their + / - calculation sign, full concept name,
- * `shortName`, tag, and nested children; they do not contain values.
+ * Formula items contain their + / - calculation sign, full concept name, tag,
+ * and nested children; they do not contain values or compact labels. Compact
+ * labels live in the separate `abbreviations` dictionary keyed by tag.
  *
  * Clicking a parent item's sign collapses/expands its children. Collapsed rows
- * visually highlight the calculation sign without adding a separate caret. In simplified mode
- * rows show only `shortName` and value. Hovering a row, or tapping it on touch
+ * visually highlight the calculation sign without adding a separate caret. In simple mode
+ * rows show only the configured tag abbreviation and value. Hovering a row, or tapping it on touch
  * devices, shows a compact tooltip with name, tag, short name, and value. Rows
  * emit `item-hover`, `item-unhover`, and `item-click` events with the complete
  * item identity and current value.
@@ -65,8 +66,6 @@ export class TotFormula extends HTMLElement {
 
   config: TotFormulaConfig
 
-  /** Switches between full name/tag rows and short-name-only rows. */
-  simplified: boolean
 
   /** Returns the component's root formula panel. */
   getBase(): HTMLElement

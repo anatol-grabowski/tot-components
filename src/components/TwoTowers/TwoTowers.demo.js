@@ -48,37 +48,30 @@ const balanceGroups = {
   _Check: { hidden: true },
   AssetsCurrent: {
     name: 'Total current assets',
-    shortName: 'CA',
     color: 'var(--tot-color-blue-300)',
   },
   Assets: {
     name: 'Non-current assets excluding property and equipment',
-    shortName: 'nCA',
     color: 'var(--tot-color-amber-200)',
   },
   PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization: {
     name: 'Property and equipment, net',
-    shortName: 'PPE',
     color: 'var(--tot-color-green-300)',
   },
   LiabilitiesCurrent: {
     name: 'Total current liabilities',
-    shortName: 'CL',
     color: 'var(--tot-color-rose-300)',
   },
   Liabilities: {
     name: 'Non-current liabilities',
-    shortName: 'nCL',
     color: 'var(--tot-color-orange-300)',
   },
   CommitmentsAndContingencies: {
     name: 'Commitments and Contingencies',
-    shortName: 'C&C',
     color: 'var(--tot-color-neutral-300)',
   },
   StockholdersEquity: {
     name: 'Total stockholders’ equity',
-    shortName: 'E',
     color: 'var(--tot-color-green-300)',
   },
 }
@@ -110,27 +103,22 @@ const incomePreviousValues = {
 const incomeGroups = {
   Revenues: {
     name: 'Revenues',
-    shortName: 'R',
     color: 'var(--tot-color-blue-400)',
   },
   CostsAndExpenses: {
     name: 'Total costs and expenses',
-    shortName: 'C',
     color: 'var(--tot-color-orange-400)',
   },
   NonoperatingIncomeExpense: {
     name: 'Other income (expense), net',
-    shortName: 'OI',
     color: 'var(--tot-color-violet-400)',
   },
   IncomeTaxExpenseBenefit: {
     name: 'Provision for income taxes',
-    shortName: 'T',
     color: 'var(--tot-color-amber-400)',
   },
   OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent: {
     name: 'Other comprehensive income (loss)',
-    shortName: 'OCI',
     color: 'var(--tot-color-yellow-300)',
   },
 }
@@ -180,27 +168,22 @@ const cashFlowGroups = {
   _Check: { hidden: true },
   NetCashProvidedByUsedInOperatingActivities: {
     name: 'Net cash provided by operating activities',
-    shortName: 'Operating',
     color: 'var(--tot-color-green-400)',
   },
   NetCashProvidedByUsedInInvestingActivities: {
     name: 'Net cash used in investing activities',
-    shortName: 'Investing',
     color: 'var(--tot-color-orange-400)',
   },
   NetCashProvidedByUsedInFinancingActivities: {
     name: 'Net cash provided by (used in) financing activities',
-    shortName: 'Financing',
     color: 'var(--tot-color-violet-400)',
   },
   EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: {
     name: 'Effect of exchange rate changes on cash and cash equivalents',
-    shortName: 'FX',
     color: 'var(--tot-color-amber-400)',
   },
   CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents: {
     name: 'Cash and cash equivalents',
-    shortName: 'Cash',
     color: 'var(--tot-color-blue-300)',
     valueTag: '_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents0',
   },
@@ -319,6 +302,19 @@ registerDemo({
         }
       </style>
 
+      <div class="two-towers-demo-controls">
+        <div class="two-towers-demo-toolbar">
+          <label class="two-towers-demo-check">
+            <input id="twoTowersSimple" type="checkbox">
+            Simple
+          </label>
+          <label class="two-towers-demo-check">
+            <input id="twoTowersLegend" type="checkbox">
+            Show legend
+          </label>
+        </div>
+      </div>
+
       <div class="stack demo-group">
         <div class="demo-label">Balance sheet — grouped directly from the CAL formula</div>
         <div class="two-towers-demo-controls">
@@ -370,6 +366,8 @@ registerDemo({
     const cashFlowTowers = demo.querySelector('#cashFlowTowers')
     const incomeTowers = demo.querySelector('#incomeTowers')
     const balanceValuesElement = demo.querySelector('#balanceValues')
+    const simple = demo.querySelector('#twoTowersSimple')
+    const legend = demo.querySelector('#twoTowersLegend')
     const cashFlowCompare = demo.querySelector('#cashFlowCompare')
     const orientation = demo.querySelector('#incomeOrientation')
     const compare = demo.querySelector('#incomeCompare')
@@ -377,11 +375,11 @@ registerDemo({
     const incomeValuesElement = demo.querySelector('#incomeValues')
 
     const renderBalance = () => {
-      balanceTowers.config = createBalanceConfig()
+      balanceTowers.config = createBalanceConfig({ simple: simple.checked, legend: legend.checked })
     }
 
     const renderCashFlow = () => {
-      cashFlowTowers.config = createCashFlowConfig(cashFlowCompare.checked)
+      cashFlowTowers.config = createCashFlowConfig(cashFlowCompare.checked, { simple: simple.checked, legend: legend.checked })
     }
 
     const renderIncome = () => {
@@ -389,13 +387,24 @@ registerDemo({
         orientation: orientation.value,
         compare: compare.checked,
         tearThreshold: Number(tearThreshold.value),
+        simple: simple.checked,
+        legend: legend.checked,
       })
     }
+
+    const renderAll = () => {
+      renderBalance()
+      renderCashFlow()
+      renderIncome()
+    }
+    simple.addEventListener('change', renderAll)
+    legend.addEventListener('change', renderAll)
 
     renderValueInputs(
       balanceValuesElement,
       balanceFormulaConfig.items,
       balanceGroups,
+      balanceFormulaConfig.abbreviations,
       balanceValues,
       balancePreviousValues,
       renderBalance,
@@ -407,6 +416,7 @@ registerDemo({
       incomeValuesElement,
       comprehensiveIncomeFormulaConfig.items,
       incomeGroups,
+      comprehensiveIncomeFormulaConfig.abbreviations,
       incomeValues,
       incomePreviousValues,
       renderIncome,
@@ -420,10 +430,12 @@ registerDemo({
   },
 })
 
-function createBalanceConfig() {
+function createBalanceConfig(options = {}) {
   return {
     label: 'Alphabet balance sheet comparison',
     orientation: 'vertical',
+    simple: options.simple === true,
+    legend: options.legend === true,
     compare: true,
     tearThreshold: 1.5,
     positiveLabel: 'Assets',
@@ -433,16 +445,19 @@ function createBalanceConfig() {
       previous: 'Dec 31, 2025',
     },
     formula: balanceFormulaConfig,
+    abbreviations: balanceFormulaConfig.abbreviations,
     values: balanceValues,
     previousValues: balancePreviousValues,
     groups: balanceGroups,
   }
 }
 
-function createCashFlowConfig(compare) {
+function createCashFlowConfig(compare, options = {}) {
   return {
     label: 'Alphabet cash flow reconciliation',
     orientation: 'vertical',
+    simple: options.simple === true,
+    legend: options.legend === true,
     compare,
     tearThreshold: 1.5,
     positiveLabel: 'Positive cash flows',
@@ -452,6 +467,7 @@ function createCashFlowConfig(compare) {
       previous: 'Jun 30, 2025',
     },
     formula: cashFlowFormulaConfig,
+    abbreviations: cashFlowFormulaConfig.abbreviations,
     values: cashFlowValues,
     previousValues: cashFlowPreviousValues,
     groups: cashFlowGroups,
@@ -462,6 +478,8 @@ function createIncomeConfig(options) {
   return {
     label: 'Income and comprehensive income comparison',
     orientation: options.orientation,
+    simple: options.simple === true,
+    legend: options.legend === true,
     compare: options.compare,
     tearThreshold: options.tearThreshold,
     positiveLabel: 'Positive contributions',
@@ -471,16 +489,17 @@ function createIncomeConfig(options) {
       previous: 'Jun 30, 2025',
     },
     formula: comprehensiveIncomeFormulaConfig,
+    abbreviations: comprehensiveIncomeFormulaConfig.abbreviations,
     values: incomeValues,
     previousValues: incomePreviousValues,
     groups: incomeGroups,
   }
 }
 
-function renderValueInputs(container, formulaItems, groups, currentValues, previousValues, onChange) {
+function renderValueInputs(container, formulaItems, groups, abbreviations, currentValues, previousValues, onChange) {
   container.replaceChildren()
   appendValueHeaders(container)
-  const rowsByGroup = groupedLeafRows(formulaItems, groups)
+  const rowsByGroup = groupedLeafRows(formulaItems, groups, abbreviations)
   const groupEntries = Object.entries(groups)
 
   for (let groupIndex = 0; groupIndex < groupEntries.length; groupIndex++) {
@@ -492,7 +511,7 @@ function renderValueInputs(container, formulaItems, groups, currentValues, previ
 
     const categoryName = document.createElement('div')
     categoryName.className = 'category'
-    const shortName = group.shortName || rows[0].groupShortName
+    const shortName = abbreviations[tag] || rows[0].groupShortName
     const name = group.name || rows[0].groupName || tag
     categoryName.textContent = shortName ? `${shortName} — ${name}` : name
     container.append(categoryName)
@@ -544,7 +563,7 @@ function createNumberInput(value, onInput) {
   return input
 }
 
-function groupedLeafRows(items, groups) {
+function groupedLeafRows(items, groups, abbreviations) {
   const groupTags = new Set(Object.keys(groups).filter(tag => !tag.startsWith('_')))
   const rows = new Map()
   const groupMeta = new Map()
@@ -600,7 +619,8 @@ function groupedLeafRows(items, groups) {
       groupRows[rowIndex] = {
         ...groupRows[rowIndex],
         groupName: meta?.name || tag,
-        groupShortName: meta?.shortName || '',
+        shortName: abbreviations[groupRows[rowIndex].tag] || '',
+        groupShortName: abbreviations[tag] || '',
       }
     }
   }

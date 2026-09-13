@@ -10,8 +10,6 @@ export type TotTwoTowersFormulaItem = {
   sign?: '+' | '-'
   /** Human-readable XBRL concept name. */
   name: string
-  /** Compact label drawn in the visualization when there is enough space. */
-  shortName: string
   /** XBRL concept/tag name. */
   tag: string
   /** Nested CAL formula children. */
@@ -30,8 +28,6 @@ export type TotTwoTowersGroup = {
   color?: string
   /** Optional legend/tooltip name overriding the formula item's name. */
   name?: string
-  /** Optional compact label overriding the formula item's shortName. */
-  shortName?: string
   /** Do not create a visual category for this formula tag. @default false */
   hidden?: boolean
   /**
@@ -57,6 +53,13 @@ export type TotTwoTowersConfig = {
    * places them above and below a shared seam. @default "vertical"
    */
   orientation?: 'vertical' | 'horizontal'
+  /**
+   * Draw each visual group as one solid color block with no subcategory splits,
+   * labels, values, or comparison overlays. @default false
+   */
+  simple?: boolean
+  /** Show the legend outside fullscreen. Fullscreen always shows it. @default false */
+  legend?: boolean
   /** Show previous-value comparison inside each subcategory. @default true */
   compare?: boolean
   /**
@@ -74,6 +77,8 @@ export type TotTwoTowersConfig = {
   formula: TotTwoTowersFormula
   /** Current-period numeric facts keyed by XBRL tag name. */
   values: Record<string, number>
+  /** Compact labels keyed by XBRL tag name. */
+  abbreviations?: Record<string, string>
   /** Optional previous-period numeric facts keyed by XBRL tag name. */
   previousValues?: Record<string, number>
   /**
@@ -106,9 +111,17 @@ export type TotTwoTowersConfig = {
  * subtree out of a broader ancestor group. Intermediate formula totals do not
  * need separate groups when their descendants are fully covered.
  *
+ * Compact labels are supplied separately through `abbreviations`, keyed by XBRL
+ * tag. The same dictionary can be shared with Formula.js; formula items and
+ * group definitions do not need embedded short-name fields.
+ *
  * Previous-period rendering is evaluated per leaf contribution. Same-sign
  * changes use a lighter unhatched comparison region; sign changes use hatching.
  * Oversized previous protrusions use `tearThreshold` and a wavy tear mark.
+ *
+ * With `simple: true`, each side of a group is rendered as a single solid-color
+ * block without leaf dividers, labels, values, or comparison overlays. The legend
+ * is opt-in outside fullscreen and is always visible in fullscreen.
  *
  * Hovering any fragment highlights every fragment in the same group across both
  * towers. Touch users can tap to pin the details table. Hold a legend item on
